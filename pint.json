@@ -1,0 +1,21 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "simplified_null_return": true,
+        "new_with_parentheses": {
+            "anonymous_class": false,
+            "named_class": false
+        },
+        "align_multiline_comment" : true,
+        "array_indentation" : true,
+        "array_syntax": {
+            "syntax": "short"
+        },
+        "single_line_after_imports": false
+    },
+    "exclude": [
+        "vendor/",
+        ".phpstorm.meta.php",
+        "faker_mixin.php"
+    ]
+}
