@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9fa209cd6d1acf54cc5b642a46bc7a3d",
+    "content-hash": "beb401d31ee48a09e44c98dce4313d33",
     "packages": [
         {
             "name": "brick/math",
@@ -2018,6 +2018,80 @@
                 }
             ],
             "time": "2026-01-15T06:54:53+00:00"
+        },
+        {
+            "name": "lomkit/laravel-rest-api",
+            "version": "v2.18.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Lomkit/laravel-rest-api.git",
+                "reference": "605cd4a62719a4288dfc38b2a1a2f7af76030c7a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Lomkit/laravel-rest-api/zipball/605cd4a62719a4288dfc38b2a1a2f7af76030c7a",
+                "reference": "605cd4a62719a4288dfc38b2a1a2f7af76030c7a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel/framework": "^11|^12",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "guzzlehttp/guzzle": "^6.0|^7.0",
+                "laravel/scout": "^10",
+                "orchestra/testbench": "^9|^10",
+                "phpunit/phpunit": "^10|^11"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Rest": "Lomkit\\Rest\\Facades\\Rest"
+                    },
+                    "providers": [
+                        "Lomkit\\Rest\\RestServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "Lomkit\\Rest\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gautier Deleglise",
+                    "email": "gautier@lomkit.com"
+                }
+            ],
+            "description": "A package to build quick and robust rest api for the Laravel framework.",
+            "keywords": [
+                "api",
+                "graphql",
+                "laravel",
+                "lomkit",
+                "rest"
+            ],
+            "support": {
+                "issues": "https://github.com/Lomkit/laravel-rest-api/issues",
+                "source": "https://github.com/Lomkit/laravel-rest-api/tree/v2.18.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/GautierDele",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-02-03T17:53:20+00:00"
         },
         {
             "name": "monolog/monolog",
