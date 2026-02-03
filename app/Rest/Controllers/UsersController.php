@@ -2,8 +2,6 @@
 
 namespace App\Rest\Controllers;
 
-use App\Rest\Controllers\Controller;
-
 class UsersController extends Controller
 {
     /**
