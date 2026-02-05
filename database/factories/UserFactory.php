@@ -24,12 +24,11 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        // TODO fiinish to implement xefi faker
         return [
             'name' => faker()->name(),
             'email' => faker()->unique()->email(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= faker()->sha256(),
             'remember_token' => Str::random(10),
         ];
     }
