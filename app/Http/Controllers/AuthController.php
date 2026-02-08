@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -15,6 +16,10 @@ class AuthController extends Controller
         //
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function register(Request $request)
     {
         $data = $request->validate([
@@ -23,7 +28,7 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        $user = User::query()->firstOrCreate([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -34,7 +39,11 @@ class AuthController extends Controller
         return $this->respondWithToken($token);
     }
 
-    public function login(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function login(Request $request): JsonResponse //TODO Faire des Request pour clean un peu les validators
     {
         $credentials = $request->validate([
             'email' => ['required','email'],
