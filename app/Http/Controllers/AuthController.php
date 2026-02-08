@@ -27,6 +27,7 @@ class AuthController extends Controller
             'email' => ['required','email','max:255','unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
+        // TODO make a request for return an error on failed validation
 
         $user = User::create([
             'name' => $data['name'],
