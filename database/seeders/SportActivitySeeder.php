@@ -12,6 +12,6 @@ class SportActivitySeeder extends Seeder
      */
     public function run(): void
     {
-        SportActivity::factory(5)->create();
+        SportActivity::factory(100)->create();
     }
 }

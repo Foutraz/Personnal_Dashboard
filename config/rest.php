@@ -39,7 +39,7 @@ return [
     */
 
     'authorizations' => [
-        'enabled' => true,
+        'enabled' => false,
         'cache' => [
             'enabled' => true,
             'default' => 5, // Cache minutes by default
