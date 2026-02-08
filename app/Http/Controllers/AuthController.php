@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -28,7 +29,7 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        $token = auth('api')->login($user);
+        $token = JWTAuth::fromUser($user);
 
         return $this->respondWithToken($token);
     }
