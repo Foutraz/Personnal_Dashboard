@@ -17,14 +17,13 @@ class AuthController extends Controller
     }
 
     /**
-     * @param Request $request
      * @return JsonResponse
      */
     public function register(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required','string','max:255'],
-            'email' => ['required','email','max:255','unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
         // TODO make a request for return an error on failed validation
@@ -40,15 +39,11 @@ class AuthController extends Controller
         return $this->respondWithToken($token);
     }
 
-    /**
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function login(Request $request): JsonResponse //TODO Faire des Request pour clean un peu les validators
+    public function login(Request $request): JsonResponse // TODO Faire des Request pour clean un peu les validators
     {
         $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required','string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
         if (! $token = auth('api')->attempt($credentials)) {
@@ -66,6 +61,7 @@ class AuthController extends Controller
     public function logout()
     {
         auth('api')->logout();
+
         return response()->json(['message' => 'Successfully logged out']);
     }
 
@@ -78,8 +74,8 @@ class AuthController extends Controller
     {
         return response()->json([
             'access_token' => $token,
-            'token_type'   => 'bearer',
-            'expires_in'   => auth('api')->factory()->getTTL() * 60,
+            'token_type' => 'bearer',
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
         ]);
     }
 }

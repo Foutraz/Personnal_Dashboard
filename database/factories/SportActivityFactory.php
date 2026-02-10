@@ -22,10 +22,11 @@ class SportActivityFactory extends Factory
     {
         $start_time = faker()->dateTime('-1 years');
         $duration = fake()->numberBetween(10, 240);
-        $end_time = (clone $start_time)->modify('+' . $duration . ' minutes');
+        $end_time = (clone $start_time)->modify('+'.$duration.' minutes');
         $avgHr = fake()->numberBetween(120, 160);
         $maxHr = fake()->numberBetween($avgHr + 10, min($avgHr + 40, 195));
         $minHr = fake()->numberBetween(90, $avgHr - 20);
+
         return [
             'provider' => 'Strava',
             'provider_id' => faker()->unique()->uuid(),

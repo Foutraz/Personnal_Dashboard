@@ -18,7 +18,6 @@ class SportActivityResource extends Resource
     public static $model = SportActivity::class;
 
     /**
-     * @param RestRequest $request
      * @return string[]
      */
     public function fields(RestRequest $request): array
@@ -59,7 +58,6 @@ class SportActivityResource extends Resource
     }
 
     /**
-     * @param RestRequest $request
      * @return string[]
      */
     public function relations(RestRequest $request): array
@@ -70,7 +68,6 @@ class SportActivityResource extends Resource
     }
 
     /**
-     * @param RestRequest $request
      * @return int[]
      */
     public function limits(RestRequest $request): array
@@ -80,8 +77,6 @@ class SportActivityResource extends Resource
 
     /**
      * Base validation rules.
-     * @param RestRequest $request
-     * @return array
      */
     public function rules(RestRequest $request): array
     {
@@ -122,8 +117,6 @@ class SportActivityResource extends Resource
 
     /**
      * Validation rules for creation.
-     * @param RestRequest $request
-     * @return array
      */
     public function createRules(RestRequest $request): array
     {
