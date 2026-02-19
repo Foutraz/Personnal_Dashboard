@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -19,19 +19,14 @@ class AuthController extends Controller
     /**
      * @return JsonResponse
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-        ]);
-        // TODO make a request for return an error on failed validation
+        $validated = $request->validated();
 
         $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
         $token = JWTAuth::fromUser($user);
@@ -39,14 +34,11 @@ class AuthController extends Controller
         return $this->respondWithToken($token);
     }
 
-    public function login(Request $request): JsonResponse // TODO Faire des Request pour clean un peu les validators
+    public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
-        if (! $token = auth('api')->attempt($credentials)) {
+        if (! $token = auth('api')->attempt($validated)) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
