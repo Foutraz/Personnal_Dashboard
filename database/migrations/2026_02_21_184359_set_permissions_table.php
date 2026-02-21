@@ -28,7 +28,7 @@ return new class extends Migration
             foreach ($modelKeys as $modelKey) {
                 foreach ($perimeters as $perimeter) {
                     foreach ($abilities as $ability) {
-                        $name = "$ability.$perimeter.$modelKey";
+                        $name = "$ability $perimeter $modelKey";
                         Permission::findOrCreate($name, $guard);
                     }
                 }
@@ -37,7 +37,7 @@ return new class extends Migration
             $specials = ['connexion', 'settings'];
             foreach ($specials as $special) {
                 foreach ($perimeters as $perimeter) {
-                    $name = "manage.$perimeter.$special";
+                    $name = "manage $perimeter $special";
                     Permission::findOrCreate($name, $guard);
                 }
             }
@@ -59,7 +59,7 @@ return new class extends Migration
             foreach ($modelKeys as $modelKey) {
                 foreach ($perimeters as $perimeter) {
                     foreach ($abilities as $ability) {
-                        Permission::query()->where('name', "$ability.$perimeter.$modelKey")
+                        Permission::query()->where('name', "$ability $perimeter $modelKey")
                             ->where('guard_name', $guard)
                             ->delete();
                     }
@@ -68,7 +68,7 @@ return new class extends Migration
 
             foreach (['connexion','settings'] as $special) {
                 foreach ($perimeters as $perimeter) {
-                    Permission::query()->where('name', "manage.$perimeter.$special")
+                    Permission::query()->where('name', "manage $perimeter $special")
                         ->where('guard_name', $guard)
                         ->delete();
                 }
