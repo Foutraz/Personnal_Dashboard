@@ -28,7 +28,7 @@ class UserControl extends Control
         return [
             GlobalPerimeter::new()
                 ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s global models', $method));
+                    return $user->can(sprintf('%s global users', $method));
                 })
                 ->should(function () {
                     return true;
@@ -38,7 +38,7 @@ class UserControl extends Control
                 }),
             OwnPerimeter::new()
             ->allowed(function (User $user, string $method) {
-                return $user->can(sprintf('%s own models', $method));
+                return $user->can(sprintf('%s own users', $method));
             })
             ->should(function (User $user, User $model) {
                 return (int) $model->id === (int) $user->id;

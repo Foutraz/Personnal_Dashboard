@@ -29,7 +29,7 @@ class SportActivityControl extends Control
         return [
             GlobalPerimeter::new()
                 ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s global models', $method));
+                    return $user->can(sprintf('%s global sport_activities', $method));
                 })
                 ->should(function () {
                     return true;
@@ -39,7 +39,7 @@ class SportActivityControl extends Control
                 }),
             OwnPerimeter::new()
                 ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s own models', $method));
+                    return $user->can(sprintf('%s own sport_activities', $method));
                 })
                 ->should(function (User $user, SportActivity $sportActivity) {
                     return (int) $sportActivity->owner_id === (int) $user->id;
