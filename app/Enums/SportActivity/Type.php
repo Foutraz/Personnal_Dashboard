@@ -9,4 +9,6 @@ enum Type
     case SKI;
     case CYCLING;
     case HIKING;
+    case WEIGHT_TRAINING;
+    case WORKOUT;
 }
