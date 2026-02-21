@@ -13,7 +13,9 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory(5)->create()->assignRole('user');
+        User::factory(5)->create()->each(function ($user) {
+            $user->assignRole('user');
+        });
 
         User::factory()->create([
             'name' => 'Quentin Mari',
@@ -24,7 +26,7 @@ class UserSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'test simple user',
-            'email' => config('test@test.fr'),
+            'email' => 'test@test.fr',
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
         ])->assignRole('user');
