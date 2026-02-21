@@ -21,7 +21,7 @@ return new class extends Migration
             $admin->syncPermissions($allPermissions);
 
             $ownPermissions = Permission::query()->where('guard_name', $guard)
-                ->where('name', 'like', '%.own.%')
+                ->where('name', 'like', '% own %')
                 ->get();
 
             $user->syncPermissions($ownPermissions);
