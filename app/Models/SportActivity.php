@@ -8,11 +8,15 @@ use Database\Factories\SportActivityFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Lomkit\Access\Controls\HasControl;
 
+/**
+ * @property mixed $owner_id
+ */
 class SportActivity extends Model
 {
     /** @use HasFactory<SportActivityFactory> */
-    use HasFactory;
+    use HasFactory, HasControl;
 
     /**
      * The attributes that are mass assignable.
@@ -96,6 +100,6 @@ class SportActivity extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }
