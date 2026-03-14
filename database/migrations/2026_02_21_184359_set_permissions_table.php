@@ -66,7 +66,7 @@ return new class extends Migration
                 }
             }
 
-            foreach (['connexion','settings'] as $special) {
+            foreach (['connexion', 'settings'] as $special) {
                 foreach ($perimeters as $perimeter) {
                     Permission::query()->where('name', "manage $perimeter $special")
                         ->where('guard_name', $guard)

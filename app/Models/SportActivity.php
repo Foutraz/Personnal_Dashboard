@@ -16,7 +16,7 @@ use Lomkit\Access\Controls\HasControl;
 class SportActivity extends Model
 {
     /** @use HasFactory<SportActivityFactory> */
-    use HasFactory, HasControl;
+    use HasControl, HasFactory;
 
     /**
      * The attributes that are mass assignable.

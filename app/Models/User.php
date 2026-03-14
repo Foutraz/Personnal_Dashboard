@@ -16,7 +16,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles, HasControl;
+    use HasControl, HasFactory, HasRoles, Notifiable;
 
     protected string $guard_name = 'api';
 

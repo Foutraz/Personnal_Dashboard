@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 return new class extends Migration
@@ -15,7 +15,7 @@ return new class extends Migration
         DB::transaction(function () {
             $guard = 'api';
             $admin = Role::findOrCreate('admin', $guard);
-            $user  = Role::findOrCreate('user', $guard);
+            $user = Role::findOrCreate('user', $guard);
 
             $allPermissions = Permission::query()->where('guard_name', $guard)->get();
             $admin->syncPermissions($allPermissions);

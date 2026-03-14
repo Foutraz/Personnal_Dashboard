@@ -13,11 +13,12 @@ use Lomkit\Access\Perimeters\Perimeter;
 
 class SportActivityControl extends Control
 {
-     /**
-      * The model the control refers to.
-      * @var class-string<Model>
-      */
-     protected string $model = SportActivity::class;
+    /**
+     * The model the control refers to.
+     *
+     * @var class-string<Model>
+     */
+    protected string $model = SportActivity::class;
 
     /**
      * Retrieve the list of perimeter definitions for the current control.
@@ -46,7 +47,7 @@ class SportActivityControl extends Control
                 })
                 ->query(function (Builder $query, User $user) {
                     return $query->where('owner_id', $user->getKey());
-                })
+                }),
         ];
     }
 }
