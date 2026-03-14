@@ -1,0 +1,15 @@
+meta {
+  name: SportActivities Search
+  type: http
+}
+
+post {
+  url: {{baseUrl}}/sportActivities/search
+  body: json
+}
+
+body:json {
+{
+  "limit": 10
+}
+}

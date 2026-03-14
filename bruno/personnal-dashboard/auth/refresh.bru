@@ -1,0 +1,17 @@
+meta {
+  name: Refresh Token
+  type: http
+}
+
+post {
+  url: {{baseUrl}}/auth/refresh
+}
+
+script:post-response {
+  const body = res.getBody();
+
+  if (body.access_token) {
+    bru.setEnvVar("token", body.access_token);
+    console.log("Token refreshed");
+  }
+}

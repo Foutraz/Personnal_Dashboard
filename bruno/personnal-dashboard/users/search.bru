@@ -1,0 +1,15 @@
+meta {
+  name: Users Search
+  type: http
+}
+
+post {
+  url: {{baseUrl}}/users/search
+  body: json
+}
+
+body:json {
+{
+  "limit": 10
+}
+}

@@ -1,0 +1,21 @@
+meta {
+  name: SportActivities Mutate
+  type: http
+}
+
+post {
+  url: {{baseUrl}}/sportActivities/mutate
+  body: json
+}
+
+body:json {
+{
+  "create": [
+    {
+      "type": "Run",
+      "distance_meters": 5000,
+      "duration_seconds": 1500
+    }
+  ]
+}
+}
