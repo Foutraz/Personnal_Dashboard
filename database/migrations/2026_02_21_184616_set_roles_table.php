@@ -8,6 +8,9 @@ use Spatie\Permission\PermissionRegistrar;
 
 return new class extends Migration
 {
+    /**
+     * @throws Throwable
+     */
     public function up(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();

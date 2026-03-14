@@ -29,7 +29,8 @@ class SportActivityControl extends Control
         return [
             GlobalPerimeter::new()
                 ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s global sport_activities', $method));
+                    dump($user->can(sprintf('%s sport_activities', $method)));
+                    return $user->can(sprintf('%s sport_activities', $method));
                 })
                 ->should(function () {
                     return true;
@@ -39,10 +40,11 @@ class SportActivityControl extends Control
                 }),
             OwnPerimeter::new()
                 ->allowed(function (User $user, string $method) {
+                    dump($user->can(sprintf('%s own sport_activities', $method)));
                     return $user->can(sprintf('%s own sport_activities', $method));
                 })
                 ->should(function (User $user, SportActivity $sportActivity) {
-                    return (int) $sportActivity->owner_id === (int) $user->id;
+                    return $sportActivity->owner()->is($user);
                 })
                 ->query(function (Builder $query, User $user) {
                     return $query->where('owner_id', $user->getKey());
