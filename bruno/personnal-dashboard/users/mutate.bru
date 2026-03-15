@@ -1,0 +1,21 @@
+meta {
+  name: Users Mutate
+  type: http
+}
+
+post {
+  url: {{baseUrl}}/users/mutate
+  body: json
+}
+
+body:json {
+{
+  "create": [
+    {
+      "name": "Test",
+      "email": "new@test.fr",
+      "password": "password"
+    }
+  ]
+}
+}

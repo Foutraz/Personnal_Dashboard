@@ -1,0 +1,8 @@
+{
+    "version": "1",
+    "name": "Personal Dashboard API",
+    "type": "collection",
+    "headers": {
+        "Authorization": "Bearer {{token}}"
+    }
+}
