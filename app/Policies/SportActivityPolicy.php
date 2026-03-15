@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+
 use App\Access\Controls\SportActivityControl;
 use Lomkit\Access\Policies\ControlledPolicy;
 

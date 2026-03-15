@@ -12,12 +12,11 @@ use Lomkit\Access\Perimeters\Perimeter;
 
 class UserControl extends Control
 {
-    /**
-     * The model the control refers to.
-     *
-     * @var class-string<Model>
-     */
-    protected string $model = User::class;
+     /**
+      * The model the control refers to.
+      * @var class-string<Model>
+      */
+     protected string $model = User::class;
 
     /**
      * Retrieve the list of perimeter definitions for the current control.
@@ -27,9 +26,10 @@ class UserControl extends Control
     protected function perimeters(): array
     {
         return [
+            // TODO Fix that a day
             GlobalPerimeter::new()
                 ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s global users', $method));
+                    return $user->can(sprintf('%s users', $method));
                 })
                 ->should(function () {
                     return true;
@@ -38,15 +38,15 @@ class UserControl extends Control
                     return $query;
                 }),
             OwnPerimeter::new()
-                ->allowed(function (User $user, string $method) {
-                    return $user->can(sprintf('%s own users', $method));
-                })
-                ->should(function (User $user, User $model) {
-                    return (int) $model->id === (int) $user->id;
-                })
-                ->query(function (Builder $query, User $user) {
-                    return $query->where('id', $user->getKey());
-                }),
+            ->allowed(function (User $user, string $method) {
+                return $user->can(sprintf('%s own users', $method));
+            })
+            ->should(function (User $user, User $model) {
+                return $model->is($user);
+            })
+            ->query(function (Builder $query, User $user) {
+                return $query->where('id', $user->getKey());
+            })
         ];
     }
 }

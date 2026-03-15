@@ -48,7 +48,7 @@ class UserResource extends Resource
      */
     public function limits(RestRequest $request): array
     {
-        return [1, 10, 25, 50];
+        return [1, 10, 25, 50,];
     }
 
     /**

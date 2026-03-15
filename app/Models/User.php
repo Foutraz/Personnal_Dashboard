@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lomkit\Access\Controls\HasControl;
+use Lomkit\Rest\Concerns\Authorizable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
@@ -16,7 +17,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
-    use HasControl, HasFactory, HasRoles, Notifiable;
+    use HasFactory, Notifiable, HasRoles, HasControl, Authorizable;
 
     protected string $guard_name = 'api';
 
