@@ -26,6 +26,7 @@ class UserControl extends Control
     protected function perimeters(): array
     {
         return [
+            // TODO Fix that a day
             GlobalPerimeter::new()
                 ->allowed(function (User $user, string $method) {
                     return $user->can(sprintf('%s users', $method));
