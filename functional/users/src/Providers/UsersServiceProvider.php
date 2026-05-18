@@ -3,9 +3,9 @@
 namespace Functional\Users\Providers;
 
 use Functional\Users\Database\Seeders\UsersSeeder;
-use Xefi\LaravelOSDD\LayerServiceProvider;
+use Technical\Osdd\Providers\OsddServiceProvider;
 
-class UsersServiceProvider extends LayerServiceProvider
+class UsersServiceProvider extends OsddServiceProvider
 {
     public function boot(): void
     {

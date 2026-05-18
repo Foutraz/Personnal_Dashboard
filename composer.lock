@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "90b29affe02b3636cc85f49f13e1dbe8",
+    "content-hash": "2606eea63dae1d2950f98470ff21cf1f",
     "packages": [
         {
             "name": "brick/math",
@@ -585,7 +585,7 @@
             "dist": {
                 "type": "path",
                 "url": "./functional/users",
-                "reference": "f0a6fa248de0a1d7694ecaceaebd2599c7bca9e8"
+                "reference": "552c993cfe3cb87b7aed6b68a1ea520cc0deb778"
             },
             "require": {
                 "xefi/laravel-osdd": "*"
@@ -601,8 +601,8 @@
             "autoload": {
                 "psr-4": {
                     "Functional\\Users\\": "src/",
-                    "Functional\\Users\\Database\\Seeders\\": "database/seeders/",
-                    "Functional\\Users\\Database\\Factories\\": "database/factories/"
+                    "Functional\\Users\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Users\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
@@ -2856,6 +2856,69 @@
                 }
             ],
             "time": "2025-12-27T19:41:33+00:00"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v3.4.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/predis/predis.git",
+                "reference": "2033429520d8997a7815a2485f56abe6d2d0e075"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/predis/predis/zipball/2033429520d8997a7815a2485f56abe6d2d0e075",
+                "reference": "2033429520d8997a7815a2485f56abe6d2d0e075",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2 || ^8.0",
+                "psr/http-message": "^1.0|^2.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpcov": "^6.0 || ^8.0",
+                "phpunit/phpunit": "^8.0 || ~9.4.4"
+            },
+            "suggest": {
+                "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Predis\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Till Krüss",
+                    "homepage": "https://till.im",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A flexible and feature-complete Redis/Valkey client for PHP.",
+            "homepage": "http://github.com/predis/predis",
+            "keywords": [
+                "nosql",
+                "predis",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/predis/predis/issues",
+                "source": "https://github.com/predis/predis/tree/v3.4.2"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/tillkruss",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-03-09T20:33:04+00:00"
         },
         {
             "name": "psr/clock",
@@ -6193,6 +6256,36 @@
                 }
             ],
             "time": "2026-03-30T13:44:50+00:00"
+        },
+        {
+            "name": "technical/application",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./technical/application",
+                "reference": "e5741c906ec87e059fde1062e1365b651b323b6d"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Technical\\Application\\Providers\\ApplicationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Technical\\Application\\": "src/",
+                    "Technical\\Application\\Database\\Seeders\\": "database/seeders/",
+                    "Technical\\Application\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "technical/osdd",
@@ -9901,7 +9994,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2"
+        "php": "^8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

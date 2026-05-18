@@ -1,5 +1,5 @@
 {
-    "name": "functional/users",
+    "name": "technical/application",
     "description": "",
     "type": "layer",
     "version": "1.0.0",
@@ -8,9 +8,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Functional\\Users\\": "src/",
-            "Functional\\Users\\Database\\Seeders\\": "database/Seeders/",
-            "Functional\\Users\\Database\\Factories\\": "database/Factories/"
+            "Technical\\Application\\": "src/",
+            "Technical\\Application\\Database\\Seeders\\": "database/Seeders/",
+            "Technical\\Application\\Database\\Factories\\": "database/Factories/"
         }
     },
     "minimum-stability": "stable",
@@ -18,7 +18,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Functional\\Users\\Providers\\UsersServiceProvider"
+                "Technical\\Application\\Providers\\ApplicationServiceProvider"
             ]
         }
     }

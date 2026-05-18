@@ -4,6 +4,7 @@ namespace Technical\Osdd\Providers;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
+use Illuminate\Support\Facades\Event;
 use Xefi\LaravelOSDD\LayerServiceProvider;
 
 class OsddServiceProvider extends LayerServiceProvider
@@ -32,6 +33,17 @@ class OsddServiceProvider extends LayerServiceProvider
             $config->set($configKey, array_merge(
                 $config->get($configKey, []), require $path
             ));
+        }
+    }
+
+    protected function loadListenEvent(): void
+    {
+        $listenEvent = $this->listen ?? [];
+
+        foreach ($listenEvent as $event => $listeners) {
+            foreach ($listeners as $listener) {
+                Event::listen($event, $listener);
+            }
         }
     }
 }
