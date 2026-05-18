@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -12,7 +15,10 @@
         "lomkit/laravel-access-control": "^0.3.2",
         "lomkit/laravel-rest-api": "^2.18",
         "spatie/laravel-permission": "^7.2",
-        "tymon/jwt-auth": "^2.2"
+        "tymon/jwt-auth": "^2.2",
+        "xefi/laravel-osdd": "^1.2",
+        "functional/users": "*",
+        "technical/osdd": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -26,11 +32,7 @@
         "xefi/faker-php-laravel": "^1.2"
     },
     "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
-        }
+        "psr-4": {}
     },
     "autoload-dev": {
         "psr-4": {
@@ -88,5 +90,15 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./functional/*"
+        },
+        {
+            "type": "path",
+            "url": "./technical/*"
+        }
+    ]
 }

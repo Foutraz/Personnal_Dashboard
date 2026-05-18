@@ -1,0 +1,24 @@
+{
+    "name": "functional/users",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Users\\": "src/",
+            "Functional\\Users\\Database": "database/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Users\\Providers\\UsersServiceProvider"
+            ]
+        }
+    }
+}
