@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2606eea63dae1d2950f98470ff21cf1f",
+    "content-hash": "90cf9c7d92e9bb42ad182d60fe18e88c",
     "packages": [
         {
             "name": "brick/math",
@@ -6263,7 +6263,7 @@
             "dist": {
                 "type": "path",
                 "url": "./technical/application",
-                "reference": "e5741c906ec87e059fde1062e1365b651b323b6d"
+                "reference": "bf3e25463672fc9101e06bf5e2d1d2fdf6cd0f2d"
             },
             "require": {
                 "xefi/laravel-osdd": "*"
@@ -6279,8 +6279,38 @@
             "autoload": {
                 "psr-4": {
                     "Technical\\Application\\": "src/",
-                    "Technical\\Application\\Database\\Seeders\\": "database/seeders/",
-                    "Technical\\Application\\Database\\Factories\\": "database/factories/"
+                    "Technical\\Application\\Database\\Seeders\\": "database/Seeders/",
+                    "Technical\\Application\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "technical/authentication",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./technical/authentication",
+                "reference": "37a936cc744890db55556f164a376120d3871f63"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Technical\\Authentication\\Providers\\AuthenticationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Technical\\Authentication\\": "src/",
+                    "Technical\\Authentication\\Database\\Seeders\\": "database/seeders/",
+                    "Technical\\Authentication\\Database\\Factories\\": "database/factories/"
                 }
             },
             "transport-options": {
@@ -9994,8 +10024,9 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.4"
+        "php": "^8.4",
+        "ext-pdo": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

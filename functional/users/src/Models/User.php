@@ -3,6 +3,7 @@
 namespace Functional\Users\Models;
 
 use Functional\Users\Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,8 +15,10 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 /**
  * @method static UserFactory factory($count = null, $state = [])
- * @property mixed $id
+ * @property string $id
+ * @property string $email
  */
+#[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */

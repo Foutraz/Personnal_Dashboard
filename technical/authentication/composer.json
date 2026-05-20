@@ -1,0 +1,23 @@
+{
+    "name": "technical/authentication",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Technical\\Authentication\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Technical\\Authentication\\Providers\\AuthenticationServiceProvider"
+            ]
+        }
+    }
+}

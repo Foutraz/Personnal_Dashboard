@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "ext-pdo": "*",
         "functional/users": "*",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
@@ -19,9 +20,9 @@
         "spatie/laravel-permission": "^7.2",
         "technical/application": "*",
         "technical/osdd": "*",
-        "tymon/jwt-auth": "^2.2",
+        "tymon/jwt-auth": "^2.3",
         "xefi/laravel-osdd": "^1.2",
-        "ext-pdo": "*"
+        "technical/authentication": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

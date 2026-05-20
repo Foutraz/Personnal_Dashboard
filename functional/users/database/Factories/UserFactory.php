@@ -2,12 +2,20 @@
 
 namespace Functional\Users\Database\Factories;
 
+use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UserFactory extends Factory
 {
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var class-string<User>
+     */
+    protected $model = User::class;
+
     /**
      * Define the model's default state.
      *
@@ -18,7 +26,7 @@ class UserFactory extends Factory
         return [
             'name' => faker()->name(),
             'email' => faker()->unique()->email(),
-            'email_verified_at' => faker()->boolean(80) ? faker()->dateTime('-1 years') : $this->unverified(),
+            'email_verified_at' => faker()->boolean(80) ? faker()->dateTime('-1 years') : null,
             'password' => Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
