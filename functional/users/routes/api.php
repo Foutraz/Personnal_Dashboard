@@ -4,5 +4,7 @@ use Functional\Users\Rest\Controller\UsersController;
 use Lomkit\Rest\Facades\Rest;
 
 Route::prefix('api')->group(function () {
-    Rest::resource('/users', UsersController::class);
+    Route::middleware('auth:api')->group(function () {
+        Rest::resource('users', UsersController::class)->withSoftDeletes();
+    });
 });

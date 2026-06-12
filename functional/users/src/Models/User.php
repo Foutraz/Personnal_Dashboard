@@ -6,6 +6,7 @@ use Functional\Users\Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Lomkit\Access\Controls\HasControl;
@@ -22,7 +23,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
-    use Notifiable, HasRoles, HasControl, Authorizable, HasUlids, HasFactory;
+    use Notifiable, HasRoles, HasControl, Authorizable, HasUlids, HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
