@@ -1,0 +1,27 @@
+{
+    "name": "functional/goals",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*",
+        "functional/sport": "*",
+        "functional/finance": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Goals\\": "src/",
+            "Functional\\Goals\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Goals\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Goals\\Providers\\GoalsServiceProvider"
+            ]
+        }
+    }
+}
