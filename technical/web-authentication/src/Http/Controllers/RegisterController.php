@@ -38,6 +38,6 @@ class RegisterController
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect()->intended(route('dashboard'));
     }
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Technical\WebAuthentication\Http\Controllers\LoginController;
 use Technical\WebAuthentication\Http\Controllers\RegisterController;
 use Technical\WebAuthentication\Http\Controllers\SocialiteController;
+use Technical\WebAuthentication\Livewire\Dashboard;
 
 Route::middleware('web')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login')->middleware('guest:web');
@@ -14,3 +15,5 @@ Route::middleware('web')->group(function () {
     Route::get('/auth/google/redirect', [SocialiteController::class, 'redirect'])->name('auth.google.redirect')->middleware('guest:web');
     Route::get('/auth/google/callback', [SocialiteController::class, 'callback'])->name('auth.google.callback')->middleware('guest:web');
 });
+
+Route::middleware(['web', 'auth:web'])->get('/dashboard', Dashboard::class)->name('dashboard');
