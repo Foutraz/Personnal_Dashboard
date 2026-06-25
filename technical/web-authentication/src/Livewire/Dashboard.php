@@ -2,10 +2,12 @@
 
 namespace Technical\WebAuthentication\Livewire;
 
+use Functional\Sport\Models\SportActivity;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Technical\Integrations\Models\IntegrationConnection;
 
 class Dashboard extends Component
 {
@@ -29,14 +31,43 @@ class Dashboard extends Component
     }
 
     /**
+     * Aggregate the headline figures rendered in the dashboard stat tiles.
+     *
+     * @param  array<int, array<string, mixed>>  $modules
+     * @return array{modules_available: int, modules_total: int, activities_count: int, integrations_count: int, integration_labels: string, last_activity: ?SportActivity}
+     */
+    public function stats(array $modules): array
+    {
+        $userId = auth('web')->id();
+
+        $connections = IntegrationConnection::query()->where('user_id', $userId)->get();
+
+        $lastActivity = SportActivity::query()->where('user_id', $userId)->latest('started_at')->latest('id')->first();
+
+        return [
+            'modules_available' => collect($modules)->where('available', true)->count(),
+            'modules_total' => count($modules),
+            'activities_count' => SportActivity::query()->where('user_id', $userId)->count(),
+            'integrations_count' => $connections->count(),
+            'integration_labels' => $connections->isEmpty()
+                ? 'Aucune intégration connectée.'
+                : $connections->map(fn (IntegrationConnection $connection): string => $connection->provider->label())->join(', '),
+            'last_activity' => $lastActivity,
+        ];
+    }
+
+    /**
      * Render the authenticated dashboard shell.
      */
     #[Layout('layouts.app')]
     #[Title('Dashboard')]
     public function render(): View
     {
+        $modules = $this->modules();
+
         return view('web-authentication::livewire.dashboard', [
-            'modules' => $this->modules(),
+            'modules' => $modules,
+            'stats' => $this->stats($modules),
         ]);
     }
 }
