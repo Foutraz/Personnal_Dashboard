@@ -19,6 +19,7 @@
         "predis/predis": "^3.4",
         "spatie/laravel-permission": "^7.2",
         "technical/application": "*",
+        "technical/integrations": "*",
         "technical/osdd": "*",
         "tymon/jwt-auth": "^2.3",
         "xefi/laravel-osdd": "^1.2",
