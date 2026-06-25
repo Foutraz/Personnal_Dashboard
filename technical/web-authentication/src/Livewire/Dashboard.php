@@ -42,7 +42,7 @@ class Dashboard extends Component
 
         $connections = IntegrationConnection::query()->where('user_id', $userId)->get();
 
-        $lastActivity = SportActivity::query()->where('user_id', $userId)->latest('started_at')->first();
+        $lastActivity = SportActivity::query()->where('user_id', $userId)->latest('started_at')->latest('id')->first();
 
         return [
             'modules_available' => collect($modules)->where('available', true)->count(),
