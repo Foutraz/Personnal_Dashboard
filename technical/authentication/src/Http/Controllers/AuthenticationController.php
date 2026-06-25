@@ -6,6 +6,7 @@ use Functional\Users\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Technical\Authentication\Http\Requests\LoginRequest;
+use Tymon\JWTAuth\JWTGuard;
 
 class AuthenticationController
 {
@@ -34,7 +35,12 @@ class AuthenticationController
             'password' => $validated['password'],
         ];
 
-        if (! $token = Auth('api')->attempt($credentials)) {
+        /** @var JWTGuard $guard */
+        $guard = auth('api');
+
+        $token = $guard->attempt($credentials);
+
+        if (! is_string($token)) {
             throw new AuthenticationException('Unable to authenticate.');
         }
 
@@ -64,19 +70,25 @@ class AuthenticationController
      */
     public function refresh(): JsonResponse
     {
-        return $this->respondWithToken(auth()->refresh());
+        /** @var JWTGuard $guard */
+        $guard = auth('api');
+
+        return $this->respondWithToken($guard->refresh());
     }
 
     /**
      * Create the response with token
      */
-    protected function respondWithToken($token): JsonResponse
+    protected function respondWithToken(string $token): JsonResponse
     {
+        /** @var JWTGuard $guard */
+        $guard = auth('api');
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60,
-            'user' => auth()->user(),
+            'expires_in' => $guard->factory()->getTTL() * 60,
+            'user' => $guard->user(),
         ]);
     }
 }

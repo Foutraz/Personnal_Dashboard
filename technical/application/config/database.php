@@ -37,7 +37,7 @@ return [
             'url' => env('DB_URL'),
             'database' => env('APP_ENV') === 'testing'
                 ? ':memory:'
-                : database_path(env('DB_DATABASE', 'database.sqlite')),
+                : database_path((string) env('DB_DATABASE', 'database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,
