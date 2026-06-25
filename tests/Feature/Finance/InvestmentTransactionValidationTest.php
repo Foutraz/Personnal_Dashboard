@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Finance;
 
+use Functional\Finance\Models\Position;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -22,6 +23,32 @@ class InvestmentTransactionValidationTest extends TestCase
                     'operation' => 'create',
                     'attributes' => [
                         'position_id' => 'missing-position-id',
+                        'type' => 'buy',
+                        'quantity' => 1,
+                        'unit_price' => 10,
+                        'executed_at' => '2026-06-01',
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['mutate.0.attributes.position_id']);
+    }
+
+    #[Test]
+    public function it_rejects_a_transaction_referencing_another_users_position(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $foreignPosition = Position::factory()->create(['user_id' => $other->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/investment-transactions/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'create',
+                    'attributes' => [
+                        'position_id' => $foreignPosition->id,
                         'type' => 'buy',
                         'quantity' => 1,
                         'unit_price' => 10,
