@@ -32,7 +32,7 @@ class RecurringExpenseFactory extends Factory
         return [
             'user_id' => User::factory(),
             'label' => faker()->words(2),
-            'amount' => faker()->float(2, 10, 1500),
+            'amount' => faker()->float(10, 1500, 2),
             'currency' => 'EUR',
             'category' => faker()->randomElement(ExpenseCategory::cases()),
             'frequency' => $frequency,
