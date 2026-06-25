@@ -1,0 +1,25 @@
+{
+    "name": "functional/finance",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Finance\\": "src/",
+            "Functional\\Finance\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Finance\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Finance\\Providers\\FinanceServiceProvider"
+            ]
+        }
+    }
+}
