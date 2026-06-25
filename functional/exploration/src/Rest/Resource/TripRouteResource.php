@@ -60,21 +60,6 @@ class TripRouteResource extends Resource
     }
 
     /**
-     * The additional validation rules required when creating the resource.
-     *
-     * @return array<string, array<int, mixed>>
-     */
-    public function createRules(RestRequest $request): array
-    {
-        return [
-            'name' => ['required'],
-            'sport_type' => ['required'],
-            'distance' => ['required'],
-            'started_at' => ['required'],
-        ];
-    }
-
-    /**
      * The exposed relations that could be provided.
      *
      * @return array<int, mixed>
