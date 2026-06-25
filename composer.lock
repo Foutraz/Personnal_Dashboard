@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a04192d4db122db5f531a00ea6d4ab98",
+    "content-hash": "7145fbe5c38ff0761f1f2d2e39e1cd03",
     "packages": [
         {
             "name": "brick/math",
@@ -699,6 +699,36 @@
                 }
             ],
             "time": "2025-12-03T09:33:47+00:00"
+        },
+        {
+            "name": "functional/finance",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/finance",
+                "reference": "e03322f4d843e537c2be56dfd664ed4042965d3e"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Finance\\Providers\\FinanceServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Finance\\": "src/",
+                    "Functional\\Finance\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Finance\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "functional/sport",

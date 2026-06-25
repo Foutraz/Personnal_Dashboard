@@ -12,6 +12,7 @@
         "php": "^8.4",
         "ext-pdo": "*",
         "foutraz/strava": "*",
+        "functional/finance": "*",
         "functional/sport": "*",
         "functional/todo": "*",
         "functional/users": "*",
