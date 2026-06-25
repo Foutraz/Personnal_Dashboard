@@ -16,6 +16,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 /**
  * @method static UserFactory factory($count = null, $state = [])
+ *
  * @property string $id
  * @property string $email
  */
@@ -23,7 +24,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
-    use Notifiable, HasRoles, HasControl, Authorizable, HasUlids, HasFactory, SoftDeletes;
+    use Authorizable, HasControl, HasFactory, HasRoles, HasUlids, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -64,6 +65,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->getKey();
     }
 
+    /**
+     * Get the custom claims to add to the JWT.
+     *
+     * @return array<string, mixed>
+     */
     public function getJWTCustomClaims(): array
     {
         return [];

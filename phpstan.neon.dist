@@ -1,0 +1,18 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+parameters:
+    level: 7
+    paths:
+        - technical
+        - functional
+    excludePaths:
+        - technical/*/vendor
+        - functional/*/vendor
+    configDirectories:
+        - config
+        - technical/*/config
+        - functional/*/config
+    stubFiles:
+        - phpstan/faker.stub
+        - phpstan/macros.stub
+    ignoreErrors: []

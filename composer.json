@@ -26,6 +26,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.27",
         "laravel/sail": "^1.52",
@@ -46,6 +47,9 @@
         }
     },
     "scripts": {
+        "stan": [
+            "@php vendor/bin/phpstan analyse --memory-limit=512M"
+        ],
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",

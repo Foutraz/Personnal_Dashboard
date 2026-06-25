@@ -18,7 +18,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array|string>
+     * @return array<string, ValidationRule|array<int, mixed>|string>
      */
     public function rules(): array
     {
@@ -29,6 +29,11 @@ class LoginRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get the custom validation messages for the request.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [

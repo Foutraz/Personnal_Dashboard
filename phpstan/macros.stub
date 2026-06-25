@@ -1,0 +1,11 @@
+<?php
+
+namespace Illuminate\Contracts\Database\Eloquent;
+
+/**
+ * @method \Illuminate\Contracts\Database\Eloquent\Builder controlled()
+ * @method \Illuminate\Contracts\Database\Eloquent\Builder uncontrolled()
+ */
+interface Builder
+{
+}
