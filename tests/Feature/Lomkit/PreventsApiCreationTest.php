@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Lomkit;
 
+use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
+use Technical\Integrations\Models\IntegrationConnection;
 use Tests\TestCase;
 
 class PreventsApiCreationTest extends TestCase
@@ -22,6 +24,7 @@ class PreventsApiCreationTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+        $response->assertJsonValidationErrors('mutate');
     }
 
     #[Test]
@@ -40,5 +43,26 @@ class PreventsApiCreationTest extends TestCase
     public function it_rejects_creating_a_user_through_the_api(): void
     {
         $this->assertCreateRejected('/api/users/mutate');
+    }
+
+    #[Test]
+    public function it_still_allows_updating_a_guarded_resource(): void
+    {
+        $user = User::factory()->create();
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+            'name' => 'Original',
+        ]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/sport-activities/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $activity->id, 'attributes' => ['name' => 'Renamed']],
+            ],
+        ]);
+
+        $response->assertSuccessful();
+        $this->assertDatabaseHas('sport_activities', ['id' => $activity->id, 'name' => 'Renamed']);
     }
 }
