@@ -36,7 +36,9 @@ class StravaCallbackTest extends TestCase
 
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user, 'web')->get('/sport/strava/callback?code=valid-code');
+        $response = $this->actingAs($user, 'web')
+            ->withSession(['strava_state' => 'valid-state'])
+            ->get('/sport/strava/callback?code=valid-code&state=valid-state');
 
         $response->assertRedirect(route('sport'));
 
@@ -60,6 +62,58 @@ class StravaCallbackTest extends TestCase
 
         $response->assertServerError();
         $this->assertDatabaseCount('integration_connections', 0);
+    }
+
+    #[Test]
+    public function it_rejects_a_callback_with_a_missing_state(): void
+    {
+        $this->bindManagerReturning([
+            'access_token' => 'fresh-access-token',
+            'refresh_token' => 'fresh-refresh-token',
+            'expires_at' => now()->addHours(6)->timestamp,
+            'expires_in' => 21600,
+            'token_type' => 'Bearer',
+            'athlete' => ['id' => 99887766],
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'web')->get('/sport/strava/callback?code=valid-code&state=valid-state');
+
+        $response->assertServerError();
+        $this->assertDatabaseCount('integration_connections', 0);
+    }
+
+    #[Test]
+    public function it_rejects_a_callback_with_a_mismatched_state(): void
+    {
+        $this->bindManagerReturning([
+            'access_token' => 'fresh-access-token',
+            'refresh_token' => 'fresh-refresh-token',
+            'expires_at' => now()->addHours(6)->timestamp,
+            'expires_in' => 21600,
+            'token_type' => 'Bearer',
+            'athlete' => ['id' => 99887766],
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'web')
+            ->withSession(['strava_state' => 'expected-state'])
+            ->get('/sport/strava/callback?code=valid-code&state=forged-state');
+
+        $response->assertServerError();
+        $this->assertDatabaseCount('integration_connections', 0);
+    }
+
+    #[Test]
+    public function it_forces_the_approval_prompt_when_redirecting_to_strava(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'web')->get('/sport/strava/connect');
+
+        $response->assertRedirectContains('approval_prompt=force');
     }
 
     /**
