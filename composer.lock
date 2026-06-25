@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0d53e18b9785412515b918959bb425e4",
+    "content-hash": "a8f450e91f51d19401691f67aee18c58",
     "packages": [
         {
             "name": "brick/math",
@@ -756,6 +756,36 @@
                     "Functional\\Goals\\": "src/",
                     "Functional\\Goals\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Goals\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/recurring-expenses",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/recurring-expenses",
+                "reference": "b2d37847f3d5df0d0423ae1dae2253b3af94a53a"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\RecurringExpenses\\Providers\\RecurringExpensesServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\RecurringExpenses\\": "src/",
+                    "Functional\\RecurringExpenses\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\RecurringExpenses\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
