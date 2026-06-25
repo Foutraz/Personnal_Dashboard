@@ -2,8 +2,11 @@
 
 namespace Functional\Todo\Rest\Resource;
 
+use Functional\Todo\Enums\TaskPriority;
+use Functional\Todo\Enums\TaskStatus;
 use Functional\Todo\Models\Task;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -42,6 +45,38 @@ class TaskResource extends Resource
             'position',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'title' => ['string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'priority' => [Rule::enum(TaskPriority::class)],
+            'status' => [Rule::enum(TaskStatus::class)],
+            'due_at' => ['nullable', 'date'],
+            'completed_at' => ['nullable', 'date'],
+            'position' => ['integer', 'min:0'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'title' => ['required'],
+            'priority' => ['required'],
+            'status' => ['required'],
         ];
     }
 

@@ -2,8 +2,12 @@
 
 namespace Functional\Goals\Rest\Resource;
 
+use Functional\Goals\Enums\GoalMetric;
+use Functional\Goals\Enums\GoalStatus;
+use Functional\Goals\Enums\GoalType;
 use Functional\Goals\Models\Goal;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -47,6 +51,43 @@ class GoalResource extends Resource
             'progress_percentage',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'title' => ['string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'type' => [Rule::enum(GoalType::class)],
+            'metric' => [Rule::enum(GoalMetric::class)],
+            'target_value' => ['numeric', 'min:0'],
+            'manual_current_value' => ['nullable', 'numeric'],
+            'unit' => ['nullable', 'string', 'max:50'],
+            'starts_at' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'date'],
+            'status' => [Rule::enum(GoalStatus::class)],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'title' => ['required'],
+            'type' => ['required'],
+            'metric' => ['required'],
+            'target_value' => ['required'],
+            'status' => ['required'],
         ];
     }
 

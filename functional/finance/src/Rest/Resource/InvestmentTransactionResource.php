@@ -2,8 +2,10 @@
 
 namespace Functional\Finance\Rest\Resource;
 
+use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\InvestmentTransaction;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -41,6 +43,39 @@ class InvestmentTransactionResource extends Resource
             'note',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'position_id' => ['string', 'exists:positions,id'],
+            'type' => [Rule::enum(TransactionType::class)],
+            'quantity' => ['numeric', 'min:0'],
+            'unit_price' => ['numeric', 'min:0'],
+            'executed_at' => ['date'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'position_id' => ['required'],
+            'type' => ['required'],
+            'quantity' => ['required'],
+            'unit_price' => ['required'],
+            'executed_at' => ['required'],
         ];
     }
 
