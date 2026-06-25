@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a3af08786d621fdb05c772322d2e313c",
+    "content-hash": "416ac80c33d8e2b0494e12ef578ace53",
     "packages": [
         {
             "name": "brick/math",
@@ -6309,6 +6309,36 @@
             "autoload": {
                 "psr-4": {
                     "Technical\\Authentication\\": "src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "technical/integrations",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./technical/integrations",
+                "reference": "7180a641452e4e16e4781a550ed2a6dcfbb8289d"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Technical\\Integrations\\Providers\\IntegrationsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Technical\\Integrations\\": "src/",
+                    "Technical\\Integrations\\Database\\Seeders\\": "database/Seeders/",
+                    "Technical\\Integrations\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {

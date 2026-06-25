@@ -1,0 +1,25 @@
+{
+    "name": "technical/integrations",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Technical\\Integrations\\": "src/",
+            "Technical\\Integrations\\Database\\Seeders\\": "database/Seeders/",
+            "Technical\\Integrations\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Technical\\Integrations\\Providers\\IntegrationsServiceProvider"
+            ]
+        }
+    }
+}
