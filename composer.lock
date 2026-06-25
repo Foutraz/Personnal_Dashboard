@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d6428dc10d8bea746cd725cc7d81e3da",
+    "content-hash": "a04192d4db122db5f531a00ea6d4ab98",
     "packages": [
         {
             "name": "brick/math",
@@ -724,6 +724,36 @@
                     "Functional\\Sport\\": "src/",
                     "Functional\\Sport\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Sport\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/todo",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/todo",
+                "reference": "069506f898704e95b31cacfadacbcf7cee2a6dba"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Todo\\Providers\\TodoServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Todo\\": "src/",
+                    "Functional\\Todo\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Todo\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
