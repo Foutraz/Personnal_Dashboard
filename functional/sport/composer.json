@@ -1,0 +1,25 @@
+{
+    "name": "functional/sport",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Sport\\": "src/",
+            "Functional\\Sport\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Sport\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Sport\\Providers\\SportServiceProvider"
+            ]
+        }
+    }
+}
