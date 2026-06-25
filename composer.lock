@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c79438c6e2b904852fb7899022bf2d50",
+    "content-hash": "d6428dc10d8bea746cd725cc7d81e3da",
     "packages": [
         {
             "name": "brick/math",
@@ -575,6 +575,61 @@
             "time": "2026-06-11T17:54:14+00:00"
         },
         {
+            "name": "foutraz/strava",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_Strava",
+                "reference": "f48ad49dd828581a3e2b69694926c433eab89603"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\Strava\\Providers\\StravaServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\Strava\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\Strava\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Strava SDK for PHP / Laravel",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "fruitcake/php-cors",
             "version": "v1.4.0",
             "source": {
@@ -644,6 +699,36 @@
                 }
             ],
             "time": "2025-12-03T09:33:47+00:00"
+        },
+        {
+            "name": "functional/sport",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/sport",
+                "reference": "6239ab0053a874e75d2f319a0e376f27cba06718"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Sport\\Providers\\SportServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Sport\\": "src/",
+                    "Functional\\Sport\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Sport\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "functional/users",
@@ -6905,10 +6990,11 @@
             "dist": {
                 "type": "path",
                 "url": "./technical/web-authentication",
-                "reference": "e843197f50ee0f8419bc76ff0cdcb4e44fd7df15"
+                "reference": "9f19eb324665ac7869d703f62c4454f5f028bae8"
             },
             "require": {
                 "laravel/socialite": "^5.0",
+                "livewire/livewire": "^3.0",
                 "xefi/laravel-osdd": "*"
             },
             "type": "layer",

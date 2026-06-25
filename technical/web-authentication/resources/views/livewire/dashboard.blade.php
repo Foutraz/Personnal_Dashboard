@@ -33,6 +33,7 @@
                     :description="$module['description']"
                     :accent="$module['accent']"
                     :available="$module['available']"
+                    :href="$module['href'] ?? null"
                     :delay="$index * 60"
                 >
                     <x-slot:icon>
