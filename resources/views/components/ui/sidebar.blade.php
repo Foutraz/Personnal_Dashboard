@@ -7,7 +7,7 @@
         ['label' => 'Échéances', 'available' => false, 'icon' => 'M7 3v3m10-3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z'],
         ['label' => 'Planning', 'available' => false, 'icon' => 'M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
         ['label' => 'To-Do', 'route' => 'todo', 'available' => true, 'icon' => 'M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
-        ['label' => 'Objectifs', 'available' => false, 'icon' => 'M12 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 0a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 6v0M12 3v3'],
+        ['label' => 'Objectifs', 'route' => 'goals', 'available' => true, 'icon' => 'M12 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 0a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 6v0M12 3v3'],
         ['label' => 'Cartes', 'available' => false, 'icon' => 'M9 6 3 4v14l6 2 6-2 6 2V6l-6-2-6 2Zm0 0v14m6-12v14'],
     ];
 @endphp

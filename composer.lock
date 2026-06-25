@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7145fbe5c38ff0761f1f2d2e39e1cd03",
+    "content-hash": "0d53e18b9785412515b918959bb425e4",
     "packages": [
         {
             "name": "brick/math",
@@ -724,6 +724,38 @@
                     "Functional\\Finance\\": "src/",
                     "Functional\\Finance\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Finance\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/goals",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/goals",
+                "reference": "7795a24346fc95c49cef66a456e61b134ec707dd"
+            },
+            "require": {
+                "functional/finance": "*",
+                "functional/sport": "*",
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Goals\\Providers\\GoalsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Goals\\": "src/",
+                    "Functional\\Goals\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Goals\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
