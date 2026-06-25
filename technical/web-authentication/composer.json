@@ -5,7 +5,8 @@
     "version": "1.0.0",
     "require": {
         "xefi/laravel-osdd": "*",
-        "laravel/socialite": "^5.0"
+        "laravel/socialite": "^5.0",
+        "livewire/livewire": "^3.0"
     },
     "autoload": {
         "psr-4": {

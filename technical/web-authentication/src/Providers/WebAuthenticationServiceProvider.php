@@ -3,7 +3,9 @@
 namespace Technical\WebAuthentication\Providers;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Livewire\Livewire;
 use Technical\Osdd\Providers\OsddServiceProvider;
+use Technical\WebAuthentication\Livewire\Dashboard;
 
 class WebAuthenticationServiceProvider extends OsddServiceProvider
 {
@@ -26,5 +28,7 @@ class WebAuthenticationServiceProvider extends OsddServiceProvider
     {
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'web-authentication');
+
+        Livewire::component('dashboard', Dashboard::class);
     }
 }

@@ -30,7 +30,7 @@ class GoogleCallbackTest extends TestCase
 
         $response = $this->get('/auth/google/callback');
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('users', [
             'email' => 'social@example.com',
             'google_id' => 'google-12345',

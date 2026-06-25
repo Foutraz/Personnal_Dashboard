@@ -26,7 +26,7 @@ class LoginTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/dashboard');
         $this->assertTrue(Auth::guard('web')->check());
         $this->assertSame($user->id, Auth::guard('web')->id());
     }
