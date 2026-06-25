@@ -13,6 +13,7 @@
         "ext-pdo": "*",
         "functional/users": "*",
         "laravel/framework": "^12.0",
+        "laravel/socialite": "^5.0",
         "laravel/tinker": "^2.10.1",
         "lomkit/laravel-access-control": "^0.3.2",
         "lomkit/laravel-rest-api": "^2.18",
@@ -23,7 +24,8 @@
         "technical/osdd": "*",
         "tymon/jwt-auth": "^2.3",
         "xefi/laravel-osdd": "^1.2",
-        "technical/authentication": "*"
+        "technical/authentication": "*",
+        "technical/web-authentication": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

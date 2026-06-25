@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Lomkit\Access\Controls\HasControl;
 use Lomkit\Rest\Concerns\Authorizable;
 use Spatie\Permission\Traits\HasRoles;
@@ -18,7 +19,10 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
  * @method static UserFactory factory($count = null, $state = [])
  *
  * @property string $id
+ * @property string $name
  * @property string $email
+ * @property string|null $google_id
+ * @property Carbon|null $email_verified_at
  */
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements JWTSubject
@@ -34,6 +38,7 @@ class User extends Authenticatable implements JWTSubject
     protected $fillable = [
         'name',
         'email',
+        'google_id',
         'password',
     ];
 
