@@ -76,24 +76,6 @@ class SportActivityResource extends Resource
     }
 
     /**
-     * The additional validation rules required when creating the resource.
-     *
-     * @return array<string, array<int, mixed>>
-     */
-    public function createRules(RestRequest $request): array
-    {
-        return [
-            'strava_id' => ['required'],
-            'name' => ['required'],
-            'sport_type' => ['required'],
-            'distance' => ['required'],
-            'moving_time' => ['required'],
-            'elapsed_time' => ['required'],
-            'started_at' => ['required'],
-        ];
-    }
-
-    /**
      * The exposed relations that could be provided.
      *
      * @return array<int, mixed>

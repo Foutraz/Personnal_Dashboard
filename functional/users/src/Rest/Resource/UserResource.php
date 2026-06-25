@@ -4,7 +4,6 @@ namespace Functional\Users\Rest\Resource;
 
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -41,19 +40,6 @@ class UserResource extends Resource
         return [
             'name' => ['string', 'max:255'],
             'email' => ['string', 'email', 'max:255'],
-        ];
-    }
-
-    /**
-     * The additional validation rules required when creating the resource.
-     *
-     * @return array<string, array<int, mixed>>
-     */
-    public function createRules(RestRequest $request): array
-    {
-        return [
-            'name' => ['required'],
-            'email' => ['required', Rule::unique('users', 'email')],
         ];
     }
 

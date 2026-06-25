@@ -4,10 +4,13 @@ namespace Functional\Exploration\Rest\Controller;
 
 use Functional\Exploration\Rest\Resource\TripRouteResource;
 use Lomkit\Rest\Http\Resource;
+use Technical\Osdd\Rest\Controllers\Concerns\RejectsApiCreation;
 use Technical\Osdd\Rest\Controllers\Controller;
 
 class TripRoutesController extends Controller
 {
+    use RejectsApiCreation;
+
     /**
      * The resource the controller corresponds to.
      *
