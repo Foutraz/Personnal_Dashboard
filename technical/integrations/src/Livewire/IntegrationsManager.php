@@ -13,6 +13,11 @@ use Technical\Integrations\Models\IntegrationConnection;
 class IntegrationsManager extends Component
 {
     /**
+     * The transient confirmation message shown after a disconnect.
+     */
+    public string $status = '';
+
+    /**
      * Disconnect the given provider by deleting the authenticated user's connection.
      */
     public function disconnect(string $provider): void
@@ -30,7 +35,7 @@ class IntegrationsManager extends Component
             ->each
             ->delete();
 
-        session()->flash('integrations.status', __(':provider a été déconnecté.', ['provider' => $integrationProvider->label()]));
+        $this->status = __(':provider a été déconnecté.', ['provider' => $integrationProvider->label()]);
     }
 
     /**

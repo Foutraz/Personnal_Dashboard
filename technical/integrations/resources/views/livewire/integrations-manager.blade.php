@@ -11,9 +11,9 @@
         </p>
     </section>
 
-    @if (session('integrations.status'))
+    @if ($status)
         <div class="mt-6 rounded-xl border border-lime/30 bg-lime-soft px-4 py-3 text-sm text-lime reveal">
-            {{ session('integrations.status') }}
+            {{ $status }}
         </div>
     @endif
 
