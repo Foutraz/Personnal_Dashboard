@@ -12,6 +12,7 @@
         "php": "^8.4",
         "ext-pdo": "*",
         "foutraz/strava": "*",
+        "functional/exploration": "*",
         "functional/finance": "*",
         "functional/goals": "*",
         "functional/recurring-expenses": "*",

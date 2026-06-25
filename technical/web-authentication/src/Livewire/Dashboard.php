@@ -24,7 +24,7 @@ class Dashboard extends Component
             ['key' => 'planning', 'title' => 'Planning', 'description' => 'Agrégez Outlook et Google Calendar.', 'accent' => 'violet', 'available' => false, 'icon' => 'M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'],
             ['key' => 'todo', 'title' => 'To-Do', 'description' => 'Tâches, priorités et rappels intelligents.', 'accent' => 'lime', 'available' => true, 'href' => route('todo'), 'icon' => 'M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],
             ['key' => 'goals', 'title' => 'Objectifs', 'description' => 'Jauges de progression alimentées par vos modules.', 'accent' => 'cyan', 'available' => true, 'href' => route('goals'), 'icon' => 'M12 12a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 0a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 6v0M12 3v3'],
-            ['key' => 'maps', 'title' => 'Cartes', 'description' => 'Heatmap de couverture et exploration de trajets.', 'accent' => 'violet', 'available' => false, 'icon' => 'M9 6 3 4v14l6 2 6-2 6 2V6l-6-2-6 2Zm0 0v14m6-12v14'],
+            ['key' => 'maps', 'title' => 'Cartes', 'description' => 'Heatmap de couverture et exploration de trajets.', 'accent' => 'violet', 'available' => true, 'href' => route('exploration'), 'icon' => 'M9 6 3 4v14l6 2 6-2 6 2V6l-6-2-6 2Zm0 0v14m6-12v14'],
         ];
     }
 

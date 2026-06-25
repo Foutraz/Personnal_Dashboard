@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "apexcharts": "^5.15.2",
+        "leaflet": "^1.9.4",
         "motion": "^12.42.0"
     }
 }
