@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a8f450e91f51d19401691f67aee18c58",
+    "content-hash": "1710f5e12de82384be7839add7b6c716",
     "packages": [
         {
             "name": "brick/math",
@@ -699,6 +699,37 @@
                 }
             ],
             "time": "2025-12-03T09:33:47+00:00"
+        },
+        {
+            "name": "functional/exploration",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/exploration",
+                "reference": "e53745bff9f9dc4c8d7558341471c55e1e306a6b"
+            },
+            "require": {
+                "functional/sport": "*",
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Exploration\\Providers\\ExplorationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Exploration\\": "src/",
+                    "Functional\\Exploration\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Exploration\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "functional/finance",

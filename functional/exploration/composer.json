@@ -1,0 +1,26 @@
+{
+    "name": "functional/exploration",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*",
+        "functional/sport": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Exploration\\": "src/",
+            "Functional\\Exploration\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Exploration\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Exploration\\Providers\\ExplorationServiceProvider"
+            ]
+        }
+    }
+}
