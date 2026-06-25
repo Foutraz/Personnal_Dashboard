@@ -2,8 +2,11 @@
 
 namespace Functional\RecurringExpenses\Rest\Resource;
 
+use Functional\RecurringExpenses\Enums\ExpenseCategory;
+use Functional\RecurringExpenses\Enums\ExpenseFrequency;
 use Functional\RecurringExpenses\Models\RecurringExpense;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -46,6 +49,44 @@ class RecurringExpenseResource extends Resource
             'note',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'label' => ['string', 'max:255'],
+            'amount' => ['numeric', 'min:0'],
+            'currency' => ['string', 'size:3'],
+            'category' => [Rule::enum(ExpenseCategory::class)],
+            'frequency' => [Rule::enum(ExpenseFrequency::class)],
+            'due_day' => ['nullable', 'integer', 'between:1,31'],
+            'starts_at' => ['nullable', 'date'],
+            'ends_at' => ['nullable', 'date'],
+            'next_due_at' => ['date'],
+            'active' => ['boolean'],
+            'note' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'label' => ['required'],
+            'amount' => ['required'],
+            'category' => ['required'],
+            'frequency' => ['required'],
+            'next_due_at' => ['required'],
         ];
     }
 

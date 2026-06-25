@@ -2,8 +2,10 @@
 
 namespace Functional\Finance\Rest\Resource;
 
+use Functional\Finance\Enums\AssetType;
 use Functional\Finance\Models\Position;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -42,6 +44,38 @@ class PositionResource extends Resource
             'currency',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'asset_symbol' => ['string', 'max:255'],
+            'asset_name' => ['string', 'max:255'],
+            'asset_type' => [Rule::enum(AssetType::class)],
+            'quantity' => ['numeric', 'min:0'],
+            'average_buy_price' => ['numeric', 'min:0'],
+            'current_price' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['string', 'size:3'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'asset_symbol' => ['required'],
+            'asset_name' => ['required'],
+            'asset_type' => ['required'],
         ];
     }
 

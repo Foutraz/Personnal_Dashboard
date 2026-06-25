@@ -2,8 +2,10 @@
 
 namespace Functional\Exploration\Rest\Resource;
 
+use Functional\Sport\Enums\SportType;
 use Functional\Sport\Models\SportActivity;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
 
@@ -38,6 +40,37 @@ class TripRouteResource extends Resource
             'distance',
             'map_polyline',
             'started_at',
+        ];
+    }
+
+    /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'name' => ['string', 'max:255'],
+            'sport_type' => [Rule::enum(SportType::class)],
+            'distance' => ['numeric', 'min:0'],
+            'map_polyline' => ['nullable', 'string'],
+            'started_at' => ['date'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'name' => ['required'],
+            'sport_type' => ['required'],
+            'distance' => ['required'],
+            'started_at' => ['required'],
         ];
     }
 

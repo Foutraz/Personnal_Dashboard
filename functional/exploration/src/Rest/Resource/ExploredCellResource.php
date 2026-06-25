@@ -43,6 +43,39 @@ class ExploredCellResource extends Resource
     }
 
     /**
+     * The validation rules shared by every mutate operation.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return [
+            'cell_key' => ['string', 'max:255'],
+            'lat' => ['numeric', 'between:-90,90'],
+            'lng' => ['numeric', 'between:-180,180'],
+            'visit_count' => ['integer', 'min:1'],
+            'first_seen_at' => ['date'],
+            'last_seen_at' => ['date'],
+        ];
+    }
+
+    /**
+     * The additional validation rules required when creating the resource.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function createRules(RestRequest $request): array
+    {
+        return [
+            'cell_key' => ['required'],
+            'lat' => ['required'],
+            'lng' => ['required'],
+            'first_seen_at' => ['required'],
+            'last_seen_at' => ['required'],
+        ];
+    }
+
+    /**
      * The exposed relations that could be provided.
      *
      * @return array<int, mixed>
