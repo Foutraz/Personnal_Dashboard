@@ -1,0 +1,28 @@
+{
+    "name": "functional/planning",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*",
+        "foutraz/google-calendar": "*",
+        "foutraz/outlook": "*",
+        "functional/recurring-expenses": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Planning\\": "src/",
+            "Functional\\Planning\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Planning\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Planning\\Providers\\PlanningServiceProvider"
+            ]
+        }
+    }
+}

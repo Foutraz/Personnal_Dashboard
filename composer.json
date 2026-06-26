@@ -11,12 +11,15 @@
     "require": {
         "php": "^8.4",
         "ext-pdo": "*",
+        "foutraz/google-calendar": "*",
+        "foutraz/outlook": "*",
         "foutraz/strava": "*",
         "foutraz/weather": "*",
         "functional/exploration": "*",
         "functional/moto": "*",
         "functional/finance": "*",
         "functional/goals": "*",
+        "functional/planning": "*",
         "functional/recurring-expenses": "*",
         "functional/sport": "*",
         "functional/todo": "*",
@@ -130,6 +133,24 @@
             "options": {
                 "versions": {
                     "foutraz/weather": "1.0.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../SDK_GoogleCalendar",
+            "options": {
+                "versions": {
+                    "foutraz/google-calendar": "1.0.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../SDK_Outlook",
+            "options": {
+                "versions": {
+                    "foutraz/outlook": "1.0.0"
                 }
             }
         },
