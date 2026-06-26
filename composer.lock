@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "676a70524a9088e9b7c091ce7c3509f2",
+    "content-hash": "952d0772a416abae9903ab9c5c9f4085",
     "packages": [
         {
             "name": "brick/math",
@@ -626,6 +626,7 @@
             ],
             "description": "Google Calendar API v3 SDK for PHP / Laravel",
             "transport-options": {
+                "symlink": false,
                 "relative": true
             }
         },
@@ -681,6 +682,7 @@
             ],
             "description": "Microsoft Graph (Outlook) calendar SDK for PHP / Laravel",
             "transport-options": {
+                "symlink": false,
                 "relative": true
             }
         },
@@ -736,6 +738,7 @@
             ],
             "description": "Strava SDK for PHP / Laravel",
             "transport-options": {
+                "symlink": false,
                 "relative": true
             }
         },
@@ -791,6 +794,7 @@
             ],
             "description": "OpenWeatherMap SDK for PHP / Laravel",
             "transport-options": {
+                "symlink": false,
                 "relative": true
             }
         },
