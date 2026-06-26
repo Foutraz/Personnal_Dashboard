@@ -20,6 +20,7 @@ services:
         volumes:
             - '.:/var/www/html'
             - '../SDK_Strava:/var/www/SDK_Strava'
+            - './docker/supervisor/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf'
         networks:
             - sail
         depends_on:
