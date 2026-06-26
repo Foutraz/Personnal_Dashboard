@@ -33,7 +33,7 @@ class StravaConnectionController
     {
         $request->session()->put('strava_state', $state = bin2hex(random_bytes(16)));
 
-        return redirect()->away($this->manager->auth()->authorizeUrl($this->scopes).'&state='.$state);
+        return redirect()->away($this->manager->auth()->authorizeUrl($this->scopes, 'force').'&state='.$state);
     }
 
     /**
@@ -44,6 +44,12 @@ class StravaConnectionController
     public function callback(Request $request, FindOrCreateConnection $finder): RedirectResponse
     {
         if ($request->has('error') || ! $request->filled('code')) {
+            throw new StravaCallbackDeniedException;
+        }
+
+        $expectedState = $request->session()->pull('strava_state');
+
+        if ($expectedState === null || ! hash_equals((string) $expectedState, (string) $request->query('state'))) {
             throw new StravaCallbackDeniedException;
         }
 
