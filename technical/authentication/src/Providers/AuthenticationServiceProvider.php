@@ -9,12 +9,13 @@ class AuthenticationServiceProvider extends OsddServiceProvider
 {
     /**
      * Register any application services.
+     *
      * @throws BindingResolutionException
      */
     public function register(): void
     {
         $this->mergeConfigWithPriorityFrom(
-            __DIR__ . '/../../config/jwt.php', 'jwt'
+            __DIR__.'/../../config/jwt.php', 'jwt'
         );
     }
 
@@ -23,6 +24,10 @@ class AuthenticationServiceProvider extends OsddServiceProvider
      */
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
+        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+
+        if ($this->app->runningInConsole()) {
+            $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+        }
     }
 }

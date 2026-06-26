@@ -78,4 +78,59 @@ class TasksApiScopeTest extends TestCase
             'deleted_at' => null,
         ]);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_task(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $task = Task::factory()->create(['user_id' => $other->id, 'title' => 'Original']);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $task->id,
+                    'attributes' => ['title' => 'Hijacked'],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'title' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_and_delete_their_task(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()->create(['user_id' => $user->id, 'title' => 'Original']);
+
+        $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $task->id,
+                    'attributes' => ['title' => 'Updated'],
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'title' => 'Updated',
+        ]);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/tasks', [
+            'resources' => [$task->id],
+        ])->assertOk();
+
+        $this->assertSoftDeleted('tasks', ['id' => $task->id]);
+    }
 }

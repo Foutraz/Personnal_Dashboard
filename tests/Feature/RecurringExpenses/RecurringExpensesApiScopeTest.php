@@ -81,4 +81,48 @@ class RecurringExpensesApiScopeTest extends TestCase
             'deleted_at' => null,
         ]);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_expense(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $expense = RecurringExpense::factory()->create(['user_id' => $other->id, 'label' => 'Original']);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/recurring-expenses/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $expense->id, 'attributes' => ['label' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('recurring_expenses', [
+            'id' => $expense->id,
+            'label' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_and_delete_their_expense(): void
+    {
+        $user = User::factory()->create();
+
+        $expense = RecurringExpense::factory()->create(['user_id' => $user->id, 'label' => 'Original']);
+
+        $this->actingAs($user, 'api')->postJson('/api/recurring-expenses/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $expense->id, 'attributes' => ['label' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('recurring_expenses', ['id' => $expense->id, 'label' => 'Updated']);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/recurring-expenses', [
+            'resources' => [$expense->id],
+        ])->assertOk();
+
+        $this->assertSoftDeleted('recurring_expenses', ['id' => $expense->id]);
+    }
 }

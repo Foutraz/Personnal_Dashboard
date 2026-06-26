@@ -129,4 +129,48 @@ class GoalsApiScopeTest extends TestCase
         $this->assertSame(500.0, (float) $payload['current_value']);
         $this->assertSame(50.0, (float) $payload['progress_percentage']);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_goal(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $goal = Goal::factory()->manual()->create(['user_id' => $other->id, 'title' => 'Original']);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/goals/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $goal->id, 'attributes' => ['title' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('goals', [
+            'id' => $goal->id,
+            'title' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_and_delete_their_goal(): void
+    {
+        $user = User::factory()->create();
+
+        $goal = Goal::factory()->manual()->create(['user_id' => $user->id, 'title' => 'Original']);
+
+        $this->actingAs($user, 'api')->postJson('/api/goals/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $goal->id, 'attributes' => ['title' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('goals', ['id' => $goal->id, 'title' => 'Updated']);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/goals', [
+            'resources' => [$goal->id],
+        ])->assertOk();
+
+        $this->assertSoftDeleted('goals', ['id' => $goal->id]);
+    }
 }

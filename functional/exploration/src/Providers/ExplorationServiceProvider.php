@@ -6,9 +6,12 @@ use Functional\Exploration\Console\RebuildCoverage;
 use Functional\Exploration\Database\Seeders\ExplorationSeeder;
 use Functional\Exploration\Listeners\DeleteUserExploredCells;
 use Functional\Exploration\Livewire\ExplorationDashboard;
+use Functional\Exploration\Models\ExploredCell;
 use Functional\Exploration\Rest\Controls\ExploredCellControl;
+use Functional\Exploration\Rest\Policies\ExploredCellPolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -48,6 +51,8 @@ class ExplorationServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'exploration');
 
         (new Access)->addControl(new ExploredCellControl);
+
+        Gate::policy(ExploredCell::class, ExploredCellPolicy::class);
 
         $this->loadListenEvent();
 

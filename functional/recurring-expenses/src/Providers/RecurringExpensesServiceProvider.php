@@ -10,9 +10,11 @@ use Functional\RecurringExpenses\Listeners\DeleteUserRecurringExpenses;
 use Functional\RecurringExpenses\Livewire\ExpensesDashboard;
 use Functional\RecurringExpenses\Models\RecurringExpense;
 use Functional\RecurringExpenses\Rest\Controls\RecurringExpenseControl;
+use Functional\RecurringExpenses\Rest\Policies\RecurringExpensePolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -52,6 +54,8 @@ class RecurringExpensesServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'expenses');
 
         (new Access)->addControl(new RecurringExpenseControl);
+
+        Gate::policy(RecurringExpense::class, RecurringExpensePolicy::class);
 
         $this->loadListenEvent();
 

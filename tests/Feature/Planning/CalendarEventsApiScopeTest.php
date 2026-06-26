@@ -43,4 +43,52 @@ class CalendarEventsApiScopeTest extends TestCase
         $this->assertCount(2, $response->json('data'));
         $this->assertSame($ownEvents->pluck('id')->sort()->values()->all(), $returnedIds);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_event(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $connection = IntegrationConnection::factory()->for($other)->create();
+        $event = CalendarEvent::factory()->create([
+            'user_id' => $other->id,
+            'integration_connection_id' => $connection->id,
+            'title' => 'Original',
+        ]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/calendar-events/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $event->id, 'attributes' => ['title' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('calendar_events', [
+            'id' => $event->id,
+            'title' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_their_event(): void
+    {
+        $user = User::factory()->create();
+
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $event = CalendarEvent::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+            'title' => 'Original',
+        ]);
+
+        $this->actingAs($user, 'api')->postJson('/api/calendar-events/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $event->id, 'attributes' => ['title' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('calendar_events', ['id' => $event->id, 'title' => 'Updated']);
+    }
 }

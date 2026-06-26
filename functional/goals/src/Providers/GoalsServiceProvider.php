@@ -8,9 +8,11 @@ use Functional\Goals\Listeners\DeleteUserGoals;
 use Functional\Goals\Livewire\GoalsDashboard;
 use Functional\Goals\Models\Goal;
 use Functional\Goals\Rest\Controls\GoalControl;
+use Functional\Goals\Rest\Policies\GoalPolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -52,6 +54,8 @@ class GoalsServiceProvider extends OsddServiceProvider
         Blade::anonymousComponentNamespace('goals::components', 'goals');
 
         (new Access)->addControl(new GoalControl);
+
+        Gate::policy(Goal::class, GoalPolicy::class);
 
         $this->loadListenEvent();
 

@@ -32,4 +32,42 @@ class ExploredCellsApiScopeTest extends TestCase
         $this->assertCount(2, $response->json('data'));
         $this->assertSame($ownCells->pluck('id')->sort()->values()->all(), $returnedIds);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_explored_cell(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $cell = ExploredCell::factory()->create(['user_id' => $other->id, 'visit_count' => 1]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/explored-cells/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $cell->id, 'attributes' => ['visit_count' => 99]],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('explored_cells', [
+            'id' => $cell->id,
+            'visit_count' => 1,
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_their_explored_cell(): void
+    {
+        $user = User::factory()->create();
+
+        $cell = ExploredCell::factory()->create(['user_id' => $user->id, 'visit_count' => 1]);
+
+        $this->actingAs($user, 'api')->postJson('/api/explored-cells/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $cell->id, 'attributes' => ['visit_count' => 5]],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('explored_cells', ['id' => $cell->id, 'visit_count' => 5]);
+    }
 }

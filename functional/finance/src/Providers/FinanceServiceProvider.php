@@ -15,8 +15,11 @@ use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Finance\Rest\Controls\InvestmentTransactionControl;
 use Functional\Finance\Rest\Controls\PositionControl;
+use Functional\Finance\Rest\Policies\InvestmentTransactionPolicy;
+use Functional\Finance\Rest\Policies\PositionPolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -57,6 +60,9 @@ class FinanceServiceProvider extends OsddServiceProvider
 
         (new Access)->addControl(new PositionControl);
         (new Access)->addControl(new InvestmentTransactionControl);
+
+        Gate::policy(Position::class, PositionPolicy::class);
+        Gate::policy(InvestmentTransaction::class, InvestmentTransactionPolicy::class);
 
         $this->loadListenEvent();
 
