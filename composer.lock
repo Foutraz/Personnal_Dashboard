@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a0ac691e84f56e3aa74a76588a2f933e",
+    "content-hash": "676a70524a9088e9b7c091ce7c3509f2",
     "packages": [
         {
             "name": "brick/math",
@@ -575,6 +575,116 @@
             "time": "2026-06-11T17:54:14+00:00"
         },
         {
+            "name": "foutraz/google-calendar",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_GoogleCalendar",
+                "reference": "6504ceef7c88c14e56da27ef9ee5940880568cc1"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\GoogleCalendar\\Providers\\GoogleCalendarServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\GoogleCalendar\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\GoogleCalendar\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Google Calendar API v3 SDK for PHP / Laravel",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "foutraz/outlook",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_Outlook",
+                "reference": "d5ec5ce88833a58967c9127a5e24aa305a978d6b"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\Outlook\\Providers\\OutlookServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\Outlook\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\Outlook\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Microsoft Graph (Outlook) calendar SDK for PHP / Laravel",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "foutraz/strava",
             "version": "1.0.0",
             "dist": {
@@ -872,6 +982,39 @@
                     "Functional\\Moto\\": "src/",
                     "Functional\\Moto\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Moto\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/planning",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/planning",
+                "reference": "e32c701c43f438d5eba1fafc026c03bd3bd5cea2"
+            },
+            "require": {
+                "foutraz/google-calendar": "*",
+                "foutraz/outlook": "*",
+                "functional/recurring-expenses": "*",
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Planning\\Providers\\PlanningServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Planning\\": "src/",
+                    "Functional\\Planning\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Planning\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
