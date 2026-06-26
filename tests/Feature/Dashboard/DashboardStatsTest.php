@@ -23,7 +23,7 @@ class DashboardStatsTest extends TestCase
 
         Livewire::actingAs($user, 'web')
             ->test(Dashboard::class)
-            ->assertViewHas('stats', fn (array $stats): bool => $stats['modules_available'] === 6 && $stats['modules_total'] === 8);
+            ->assertViewHas('stats', fn (array $stats): bool => $stats['modules_available'] === 7 && $stats['modules_total'] === 8);
     }
 
     #[Test]

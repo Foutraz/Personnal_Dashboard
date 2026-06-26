@@ -12,7 +12,9 @@
         "php": "^8.4",
         "ext-pdo": "*",
         "foutraz/strava": "*",
+        "foutraz/weather": "*",
         "functional/exploration": "*",
+        "functional/moto": "*",
         "functional/finance": "*",
         "functional/goals": "*",
         "functional/recurring-expenses": "*",
@@ -119,6 +121,15 @@
             "options": {
                 "versions": {
                     "foutraz/strava": "1.0.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../SDK_Weather",
+            "options": {
+                "versions": {
+                    "foutraz/weather": "1.0.0"
                 }
             }
         },

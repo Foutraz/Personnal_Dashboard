@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1710f5e12de82384be7839add7b6c716",
+    "content-hash": "a0ac691e84f56e3aa74a76588a2f933e",
     "packages": [
         {
             "name": "brick/math",
@@ -630,6 +630,61 @@
             }
         },
         {
+            "name": "foutraz/weather",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_Weather",
+                "reference": "9f6263514cfe71aadaf5c16dd678f1bf152de1fb"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\Weather\\Providers\\WeatherServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\Weather\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\Weather\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "OpenWeatherMap SDK for PHP / Laravel",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "fruitcake/php-cors",
             "version": "v1.4.0",
             "source": {
@@ -787,6 +842,36 @@
                     "Functional\\Goals\\": "src/",
                     "Functional\\Goals\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Goals\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/moto",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/moto",
+                "reference": "76326582e0469daafa6b66bd396ceb2208fbbd67"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Moto\\Providers\\MotoServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Moto\\": "src/",
+                    "Functional\\Moto\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Moto\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
