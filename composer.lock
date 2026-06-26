@@ -690,7 +690,7 @@
             "dist": {
                 "type": "path",
                 "url": "../SDK_Strava",
-                "reference": "f48ad49dd828581a3e2b69694926c433eab89603"
+                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
