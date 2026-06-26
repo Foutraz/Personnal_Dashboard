@@ -9,6 +9,14 @@ use Lomkit\Rest\Http\Resource as RestResource;
 abstract class Resource extends RestResource
 {
     /**
+     * Enable policy authorization so the controls enforce per-user ownership.
+     */
+    public function isAuthorizingEnabled(): bool
+    {
+        return true;
+    }
+
+    /**
      * Build a "search" query for fetching resource.
      */
     public function searchQuery(RestRequest $request, Builder $query): Builder

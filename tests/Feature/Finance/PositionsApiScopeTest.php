@@ -79,4 +79,48 @@ class PositionsApiScopeTest extends TestCase
             'deleted_at' => null,
         ]);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_position(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $position = Position::factory()->create(['user_id' => $other->id, 'asset_name' => 'Original']);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/positions/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $position->id, 'attributes' => ['asset_name' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('positions', [
+            'id' => $position->id,
+            'asset_name' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_and_delete_their_position(): void
+    {
+        $user = User::factory()->create();
+
+        $position = Position::factory()->create(['user_id' => $user->id, 'asset_name' => 'Original']);
+
+        $this->actingAs($user, 'api')->postJson('/api/positions/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $position->id, 'attributes' => ['asset_name' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('positions', ['id' => $position->id, 'asset_name' => 'Updated']);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/positions', [
+            'resources' => [$position->id],
+        ])->assertOk();
+
+        $this->assertSoftDeleted('positions', ['id' => $position->id]);
+    }
 }

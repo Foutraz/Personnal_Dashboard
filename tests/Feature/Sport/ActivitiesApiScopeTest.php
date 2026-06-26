@@ -43,4 +43,52 @@ class ActivitiesApiScopeTest extends TestCase
         $this->assertCount(2, $response->json('data'));
         $this->assertSame($ownActivities->pluck('id')->sort()->values()->all(), $returnedIds);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_activity(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $connection = IntegrationConnection::factory()->for($other)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $other->id,
+            'integration_connection_id' => $connection->id,
+            'name' => 'Original',
+        ]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/sport-activities/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $activity->id, 'attributes' => ['name' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('sport_activities', [
+            'id' => $activity->id,
+            'name' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_their_activity(): void
+    {
+        $user = User::factory()->create();
+
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+            'name' => 'Original',
+        ]);
+
+        $this->actingAs($user, 'api')->postJson('/api/sport-activities/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $activity->id, 'attributes' => ['name' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('sport_activities', ['id' => $activity->id, 'name' => 'Updated']);
+    }
 }

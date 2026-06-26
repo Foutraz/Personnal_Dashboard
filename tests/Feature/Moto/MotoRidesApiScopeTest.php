@@ -77,4 +77,48 @@ class MotoRidesApiScopeTest extends TestCase
             'deleted_at' => null,
         ]);
     }
+
+    #[Test]
+    public function it_forbids_updating_another_users_ride(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $ride = MotoRide::factory()->create(['user_id' => $other->id, 'title' => 'Original']);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/moto-rides/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $ride->id, 'attributes' => ['title' => 'Hijacked']],
+            ],
+        ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('moto_rides', [
+            'id' => $ride->id,
+            'title' => 'Original',
+        ]);
+    }
+
+    #[Test]
+    public function it_allows_the_owner_to_update_and_delete_their_ride(): void
+    {
+        $user = User::factory()->create();
+
+        $ride = MotoRide::factory()->create(['user_id' => $user->id, 'title' => 'Original']);
+
+        $this->actingAs($user, 'api')->postJson('/api/moto-rides/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $ride->id, 'attributes' => ['title' => 'Updated']],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('moto_rides', ['id' => $ride->id, 'title' => 'Updated']);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/moto-rides', [
+            'resources' => [$ride->id],
+        ])->assertOk();
+
+        $this->assertSoftDeleted('moto_rides', ['id' => $ride->id]);
+    }
 }

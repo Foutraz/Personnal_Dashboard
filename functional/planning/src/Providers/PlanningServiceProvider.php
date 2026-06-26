@@ -8,9 +8,12 @@ use Functional\Planning\Database\Seeders\PlanningSeeder;
 use Functional\Planning\Listeners\DeleteConnectionCalendarEvents;
 use Functional\Planning\Listeners\DeleteUserCalendarEvents;
 use Functional\Planning\Livewire\PlanningDashboard;
+use Functional\Planning\Models\CalendarEvent;
 use Functional\Planning\Rest\Controls\CalendarEventControl;
+use Functional\Planning\Rest\Policies\CalendarEventPolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Integrations\Models\IntegrationConnection;
@@ -68,6 +71,8 @@ class PlanningServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'planning');
 
         (new Access)->addControl(new CalendarEventControl);
+
+        Gate::policy(CalendarEvent::class, CalendarEventPolicy::class);
 
         $this->loadListenEvent();
 

@@ -9,8 +9,10 @@ use Functional\Moto\Listeners\DeleteUserMotoRides;
 use Functional\Moto\Livewire\MotoDashboard;
 use Functional\Moto\Models\MotoRide;
 use Functional\Moto\Rest\Controls\MotoRideControl;
+use Functional\Moto\Rest\Policies\MotoRidePolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -55,6 +57,8 @@ class MotoServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'moto');
 
         (new Access)->addControl(new MotoRideControl);
+
+        Gate::policy(MotoRide::class, MotoRidePolicy::class);
 
         $this->loadListenEvent();
 

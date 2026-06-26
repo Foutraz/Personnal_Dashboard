@@ -10,8 +10,11 @@ use Functional\Sport\Livewire\ConnectStrava;
 use Functional\Sport\Livewire\PerformanceAnalysis;
 use Functional\Sport\Livewire\SportDashboard;
 use Functional\Sport\Livewire\SportStatistics;
+use Functional\Sport\Models\SportActivity;
 use Functional\Sport\Rest\Controls\SportActivityControl;
+use Functional\Sport\Rest\Policies\SportActivityPolicy;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Integrations\Models\IntegrationConnection;
@@ -49,6 +52,8 @@ class SportServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'sport');
 
         (new Access)->addControl(new SportActivityControl);
+
+        Gate::policy(SportActivity::class, SportActivityPolicy::class);
 
         IntegrationConnection::deleting(fn (IntegrationConnection $connection) => app(DeleteConnectionSportActivities::class)->handle($connection));
 

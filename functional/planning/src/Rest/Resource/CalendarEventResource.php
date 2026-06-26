@@ -19,14 +19,6 @@ class CalendarEventResource extends Resource
     public static $model = CalendarEvent::class;
 
     /**
-     * Disable policy authorization as per-user scoping is enforced by the control.
-     */
-    public function isAuthorizingEnabled(): bool
-    {
-        return false;
-    }
-
-    /**
      * The exposed fields that could be provided.
      *
      * @return array<int, string>

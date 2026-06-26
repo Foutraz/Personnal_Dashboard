@@ -11,10 +11,12 @@ use Functional\Todo\Livewire\TodoBoard;
 use Functional\Todo\Livewire\TodoStatistics;
 use Functional\Todo\Models\Task;
 use Functional\Todo\Rest\Controls\TaskControl;
+use Functional\Todo\Rest\Policies\TaskPolicy;
 use Functional\Users\Events\UserDeleting;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -54,6 +56,8 @@ class TodoServiceProvider extends OsddServiceProvider
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'todo');
 
         (new Access)->addControl(new TaskControl);
+
+        Gate::policy(Task::class, TaskPolicy::class);
 
         $this->loadListenEvent();
 
