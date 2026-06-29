@@ -27,5 +27,6 @@ class MotoDashboardContributionTest extends TestCase
         $this->assertTrue($summary->available);
         $this->assertSame('80', $summary->metricValue);
         $this->assertSame('km', $summary->metricUnit);
+        $this->assertSame('2 sorties', $summary->secondaryLines[0]);
     }
 }

@@ -27,5 +27,6 @@ class ExplorationDashboardContributionTest extends TestCase
         $this->assertTrue($summary->available);
         $this->assertSame('4', $summary->metricValue);
         $this->assertSame('cellules', $summary->metricUnit);
+        $this->assertSame('4 cellules explorées', $summary->secondaryLines[0]);
     }
 }

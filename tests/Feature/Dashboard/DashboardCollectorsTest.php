@@ -9,6 +9,7 @@ use Technical\Osdd\Dto\DashboardSummary;
 use Technical\Osdd\Dto\NavigationItem;
 use Technical\WebAuthentication\Services\DashboardSummaryCollector;
 use Technical\WebAuthentication\Services\NavigationItemCollector;
+use Tests\Feature\Dashboard\Fixtures\EarlierFakeDashboardContribution;
 use Tests\Feature\Dashboard\Fixtures\FakeDashboardContribution;
 use Tests\TestCase;
 
@@ -41,12 +42,19 @@ class DashboardCollectorsTest extends TestCase
     public function it_orders_navigation_items_by_their_order(): void
     {
         $this->app->tag(FakeDashboardContribution::class, ['dashboard.navigation']);
+        $this->app->tag(EarlierFakeDashboardContribution::class, ['dashboard.navigation']);
 
         $items = $this->app->make(NavigationItemCollector::class)->all();
-        $orders = $items->map(fn (NavigationItem $item): int => $item->order)->all();
+        $orders = $items->map(fn (NavigationItem $item): int => $item->order)->values()->all();
         $sorted = $orders;
         sort($sorted);
 
         $this->assertSame($sorted, $orders);
+        $fakeOrders = $items
+            ->filter(fn (NavigationItem $item): bool => in_array($item->label, ['Fake', 'Earlier Fake'], true))
+            ->map(fn (NavigationItem $item): int => $item->order)
+            ->values()
+            ->all();
+        $this->assertSame([1, 5], $fakeOrders);
     }
 }
