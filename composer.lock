@@ -748,7 +748,7 @@
             "dist": {
                 "type": "path",
                 "url": "../SDK_Weather",
-                "reference": "9f6263514cfe71aadaf5c16dd678f1bf152de1fb"
+                "reference": "303b025fef5edfe92e398de9953484d3a4d9ad3b"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
