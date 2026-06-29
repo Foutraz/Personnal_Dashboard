@@ -4,6 +4,7 @@ namespace Functional\Moto\Providers;
 
 use Foutraz\Weather\WeatherManager;
 use Functional\Moto\Actions\AssignRideOwner;
+use Functional\Moto\Dashboard\MotoDashboardContribution;
 use Functional\Moto\Database\Seeders\MotoSeeder;
 use Functional\Moto\Listeners\DeleteUserMotoRides;
 use Functional\Moto\Livewire\MotoDashboard;
@@ -45,6 +46,8 @@ class MotoServiceProvider extends OsddServiceProvider
             (string) config('weather.endpoint'),
             (string) config('weather.api_key'),
         ));
+
+        $this->app->tag(MotoDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**
