@@ -26,7 +26,6 @@
     x-reveal:{{ $delay }}
     {{ $attributes->class(['group glass glass-hover relative flex flex-col overflow-hidden cursor-pointer']) }}
 >
-    {{-- Accent bar — structural colour anchor at the left edge --}}
     <div class="absolute inset-y-0 left-0 w-0.5 {{ $a['bar'] }} opacity-40 transition-opacity duration-300 group-hover:opacity-100"></div>
 
     <div class="flex flex-col p-6">
