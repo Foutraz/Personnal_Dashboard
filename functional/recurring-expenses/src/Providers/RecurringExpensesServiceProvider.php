@@ -4,6 +4,7 @@ namespace Functional\RecurringExpenses\Providers;
 
 use Functional\RecurringExpenses\Actions\AssignExpenseOwner;
 use Functional\RecurringExpenses\Console\SendDueExpenseReminders;
+use Functional\RecurringExpenses\Dashboard\RecurringExpensesDashboardContribution;
 use Functional\RecurringExpenses\Database\Seeders\RecurringExpensesSeeder;
 use Functional\RecurringExpenses\Listeners\DeleteExpenseReminders;
 use Functional\RecurringExpenses\Listeners\DeleteUserRecurringExpenses;
@@ -42,6 +43,8 @@ class RecurringExpensesServiceProvider extends OsddServiceProvider
         parent::register();
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/recurring-expenses.php', 'recurring-expenses');
+
+        $this->app->tag(RecurringExpensesDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**
