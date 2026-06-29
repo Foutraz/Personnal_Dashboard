@@ -147,4 +147,103 @@ class MotoDashboardComponentTest extends TestCase
 
         $this->assertDatabaseHas('moto_rides', ['id' => $ride->id, 'deleted_at' => null]);
     }
+
+    /**
+     * Bind a weather manager replaying the queued responses for geocoding flows.
+     *
+     * @param  array<int, Response>  $responses
+     */
+    private function bindWeatherResponses(array $responses): void
+    {
+        Config::set('weather.api_key', 'test-key');
+
+        $handler = HandlerStack::create(new MockHandler($responses));
+        $client = new Client(['handler' => $handler, 'http_errors' => false]);
+
+        $this->app->instance(WeatherManager::class, new WeatherManager('https://api.openweathermap.org', 'test-key', $client));
+    }
+
+    #[Test]
+    public function it_changes_the_location_when_a_city_is_chosen(): void
+    {
+        Config::set('weather.api_key', null);
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('citySearch', 'Lyon')
+            ->call('chooseCity', 45.7589, 4.8414, 'Lyon, Auvergne-Rhône-Alpes, FR')
+            ->assertSet('lat', 45.7589)
+            ->assertSet('lon', 4.8414)
+            ->assertSet('locationLabel', 'Lyon, Auvergne-Rhône-Alpes, FR')
+            ->assertSet('citySearch', '')
+            ->assertSet('cityResults', []);
+    }
+
+    #[Test]
+    public function it_labels_the_device_location_with_a_fallback_when_unconfigured(): void
+    {
+        Config::set('weather.api_key', null);
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->call('applyDeviceLocation', 45.7589, 4.8414)
+            ->assertSet('lat', 45.7589)
+            ->assertSet('locationLabel', 'Ma position');
+    }
+
+    #[Test]
+    public function it_populates_city_results_from_a_search(): void
+    {
+        $this->bindWeatherResponses([
+            new Response(200, [], (string) json_encode([
+                'dt' => 1_700_000_000,
+                'main' => ['temp' => 21.0, 'feels_like' => 21.0, 'humidity' => 55, 'pressure' => 1015],
+                'wind' => ['speed' => 2.0, 'gust' => 3.0],
+                'clouds' => ['all' => 10],
+                'visibility' => 10000,
+                'weather' => [['main' => 'Clear', 'description' => 'clear sky']],
+                'coord' => ['lat' => 48.85, 'lon' => 2.35],
+            ])),
+            new Response(200, [], (string) json_encode([
+                'city' => ['coord' => ['lat' => 48.85, 'lon' => 2.35]],
+                'list' => [[
+                    'dt' => 1_700_000_000,
+                    'main' => ['temp' => 21.0, 'feels_like' => 21.0],
+                    'wind' => ['speed' => 2.0],
+                    'pop' => 0.0,
+                    'clouds' => ['all' => 5],
+                    'visibility' => 10000,
+                    'weather' => [['main' => 'Clear', 'description' => 'clear sky']],
+                ]],
+            ])),
+            new Response(200, [], (string) json_encode([
+                ['name' => 'Lyon', 'state' => 'Auvergne-Rhône-Alpes', 'country' => 'FR', 'lat' => 45.7589, 'lon' => 4.8414],
+            ])),
+        ]);
+
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('citySearch', 'Lyon')
+            ->call('searchCity')
+            ->assertSet('cityResults', [
+                ['lat' => 45.7589, 'lon' => 4.8414, 'label' => 'Lyon, Auvergne-Rhône-Alpes, FR'],
+            ]);
+    }
+
+    #[Test]
+    public function it_clears_city_results_for_a_too_short_query(): void
+    {
+        Config::set('weather.api_key', null);
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('citySearch', 'L')
+            ->call('searchCity')
+            ->assertSet('cityResults', []);
+    }
 }

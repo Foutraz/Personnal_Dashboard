@@ -4,6 +4,7 @@ namespace Functional\Moto\Livewire;
 
 use Foutraz\Weather\Dto\CurrentWeather;
 use Foutraz\Weather\Dto\Forecast;
+use Foutraz\Weather\Dto\Place;
 use Functional\Moto\Models\MotoRide;
 use Functional\Moto\Services\FavorableSlotFinder;
 use Functional\Moto\Services\MotoFriendlyScore;
@@ -34,6 +35,18 @@ class MotoDashboard extends Component
      * The human-readable label of the displayed location.
      */
     public string $locationLabel = '';
+
+    /**
+     * The current city search query.
+     */
+    public string $citySearch = '';
+
+    /**
+     * The geocoded city matches for the current query.
+     *
+     * @var array<int, array{lat: float, lon: float, label: string}>
+     */
+    public array $cityResults = [];
 
     /**
      * The title of the ride being logged.
@@ -79,6 +92,48 @@ class MotoDashboard extends Component
         $this->lat = $lat;
         $this->lon = $lon;
         $this->locationLabel = $label;
+    }
+
+    /**
+     * Populate the city results from the current search query.
+     */
+    public function searchCity(WeatherForecastService $weatherForecastService): void
+    {
+        if (mb_strlen(trim($this->citySearch)) < 2 || ! $weatherForecastService->isConfigured()) {
+            $this->cityResults = [];
+
+            return;
+        }
+
+        $this->cityResults = array_map(
+            static fn (Place $place): array => [
+                'lat' => $place->lat,
+                'lon' => $place->lon,
+                'label' => $place->label(),
+            ],
+            $weatherForecastService->searchCity(trim($this->citySearch)),
+        );
+    }
+
+    /**
+     * Switch the displayed location to the chosen city and clear the search.
+     */
+    public function chooseCity(float $lat, float $lon, string $label): void
+    {
+        $this->setLocation($lat, $lon, $label);
+        $this->reset('citySearch', 'cityResults');
+    }
+
+    /**
+     * Apply the browser geolocation, labelling it via reverse geocoding when possible.
+     */
+    public function applyDeviceLocation(float $lat, float $lon, WeatherForecastService $weatherForecastService): void
+    {
+        $place = $weatherForecastService->isConfigured()
+            ? $weatherForecastService->reverseGeocode($lat, $lon)
+            : null;
+
+        $this->setLocation($lat, $lon, $place?->label() ?? 'Ma position');
     }
 
     /**
