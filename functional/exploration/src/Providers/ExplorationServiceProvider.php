@@ -3,6 +3,7 @@
 namespace Functional\Exploration\Providers;
 
 use Functional\Exploration\Console\RebuildCoverage;
+use Functional\Exploration\Dashboard\ExplorationDashboardContribution;
 use Functional\Exploration\Database\Seeders\ExplorationSeeder;
 use Functional\Exploration\Listeners\DeleteUserExploredCells;
 use Functional\Exploration\Livewire\ExplorationDashboard;
@@ -39,6 +40,8 @@ class ExplorationServiceProvider extends OsddServiceProvider
         parent::register();
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/exploration.php', 'exploration');
+
+        $this->app->tag(ExplorationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**
