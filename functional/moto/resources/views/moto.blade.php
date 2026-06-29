@@ -23,6 +23,56 @@
         </div>
     </section>
 
+    <div x-data x-init="navigator.geolocation && navigator.geolocation.getCurrentPosition(
+        (position) => $wire.applyDeviceLocation(position.coords.latitude, position.coords.longitude),
+        () => {},
+        { enableHighAccuracy: false, timeout: 8000 },
+    )"></div>
+
+    @if ($configured)
+        <section class="reveal mt-6" style="animation-delay: 0.04s;">
+            <x-ui.glass-card>
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-cyan/40 bg-cyan-soft text-cyan">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-6-5.686-6-10a6 6 0 1 1 12 0c0 4.314-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>
+                        </span>
+                        <div>
+                            <p class="text-[0.65rem] uppercase tracking-[0.25em] text-faint">Localisation</p>
+                            <h3 class="font-display text-base font-semibold">{{ $locationLabel }}</h3>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full sm:w-80">
+                        <input
+                            type="search"
+                            wire:model.live="citySearch"
+                            wire:keydown.enter.prevent="searchCity"
+                            placeholder="Rechercher une ville…"
+                            class="w-full rounded-xl border border-hairline bg-surface/50 px-4 py-2.5 text-sm text-ink placeholder:text-faint focus:border-cyan/50 focus:outline-none"
+                        />
+
+                        @if (! empty($cityResults))
+                            <ul class="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-hairline bg-surface shadow-xl">
+                                @foreach ($cityResults as $result)
+                                    <li>
+                                        <button
+                                            type="button"
+                                            wire:click="chooseCity({{ $result['lat'] }}, {{ $result['lon'] }}, @js($result['label']))"
+                                            class="block w-full px-4 py-2.5 text-left text-sm text-muted transition hover:bg-cyan-soft hover:text-cyan"
+                                        >
+                                            {{ $result['label'] }}
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                </div>
+            </x-ui.glass-card>
+        </section>
+    @endif
+
     @unless ($configured)
         <section class="reveal mt-8" style="animation-delay: 0.05s;">
             <x-ui.glass-card>
