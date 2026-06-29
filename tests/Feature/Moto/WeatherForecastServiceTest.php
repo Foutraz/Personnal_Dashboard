@@ -100,4 +100,50 @@ class WeatherForecastServiceTest extends TestCase
 
         $service->forecast(48.85, 2.35);
     }
+
+    #[Test]
+    public function it_searches_cities_by_name(): void
+    {
+        Config::set('weather.api_key', 'test-key');
+
+        $service = $this->serviceWith([
+            new Response(200, [], (string) json_encode([
+                ['name' => 'Lyon', 'state' => 'Auvergne-Rhône-Alpes', 'country' => 'FR', 'lat' => 45.7589, 'lon' => 4.8414],
+            ])),
+        ]);
+
+        $places = $service->searchCity('Lyon');
+
+        $this->assertCount(1, $places);
+        $this->assertSame('Lyon, Auvergne-Rhône-Alpes, FR', $places[0]->label());
+    }
+
+    #[Test]
+    public function it_reverse_geocodes_coordinates(): void
+    {
+        Config::set('weather.api_key', 'test-key');
+
+        $service = $this->serviceWith([
+            new Response(200, [], (string) json_encode([
+                ['name' => 'Paris', 'state' => 'Île-de-France', 'country' => 'FR', 'lat' => 48.8566, 'lon' => 2.3522],
+            ])),
+        ]);
+
+        $place = $service->reverseGeocode(48.8566, 2.3522);
+
+        $this->assertNotNull($place);
+        $this->assertSame('Paris, Île-de-France, FR', $place->label());
+    }
+
+    #[Test]
+    public function it_throws_when_searching_without_an_api_key(): void
+    {
+        Config::set('weather.api_key', null);
+
+        $service = $this->serviceWith([]);
+
+        $this->expectException(WeatherApiKeyMissingException::class);
+
+        $service->searchCity('Lyon');
+    }
 }

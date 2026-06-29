@@ -4,6 +4,7 @@ namespace Functional\Moto\Services;
 
 use Foutraz\Weather\Dto\CurrentWeather;
 use Foutraz\Weather\Dto\Forecast;
+use Foutraz\Weather\Dto\Place;
 use Foutraz\Weather\WeatherManager;
 use Functional\Moto\Exceptions\WeatherApiKeyMissingException;
 use Illuminate\Support\Facades\Cache;
@@ -49,6 +50,36 @@ class WeatherForecastService
             $this->cacheKey('forecast', $lat, $lon),
             (int) config('moto.forecast.cache_ttl'),
             fn (): Forecast => $this->weatherManager->forecast()->at($lat, $lon),
+        );
+    }
+
+    /**
+     * Search geocoded cities matching the given name.
+     *
+     * @return array<int, Place>
+     *
+     * @throws WeatherApiKeyMissingException
+     */
+    public function searchCity(string $query): array
+    {
+        $this->guardConfigured();
+
+        return $this->weatherManager->geocoding()->search($query);
+    }
+
+    /**
+     * Resolve the closest place for the given coordinates using a short cache.
+     *
+     * @throws WeatherApiKeyMissingException
+     */
+    public function reverseGeocode(float $lat, float $lon): ?Place
+    {
+        $this->guardConfigured();
+
+        return Cache::remember(
+            $this->cacheKey('reverse', $lat, $lon),
+            (int) config('moto.forecast.cache_ttl'),
+            fn (): ?Place => $this->weatherManager->geocoding()->reverse($lat, $lon),
         );
     }
 
