@@ -4,6 +4,7 @@ namespace Functional\Todo\Providers;
 
 use Functional\Todo\Actions\AssignTaskOwner;
 use Functional\Todo\Console\SendDueTaskReminders;
+use Functional\Todo\Dashboard\TodoDashboardContribution;
 use Functional\Todo\Database\Seeders\TodoSeeder;
 use Functional\Todo\Listeners\DeleteTaskReminders;
 use Functional\Todo\Listeners\DeleteUserTasks;
@@ -44,6 +45,8 @@ class TodoServiceProvider extends OsddServiceProvider
         parent::register();
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/todo.php', 'todo');
+
+        $this->app->tag(TodoDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**
