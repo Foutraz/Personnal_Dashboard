@@ -53,7 +53,7 @@
                         @if (! $card['available'])
                             <x-ui.neon-button variant="ghost" :disabled="true">Indisponible</x-ui.neon-button>
                         @elseif ($card['connected'])
-                            <form method="POST" action="{{ route($card['sync_route']) }}">
+                            <form method="POST" action="{{ $card['sync_url'] }}">
                                 @csrf
                                 <x-ui.neon-button type="submit" variant="cyan">
                                     <svg class="h-4 w-4 transition-transform duration-500 group-hover:rotate-180" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5 9a7 7 0 0 1 12-2m2 8a7 7 0 0 1-12 2"/></svg>
@@ -69,7 +69,7 @@
                                 Déconnecter
                             </x-ui.neon-button>
                         @else
-                            <x-ui.neon-button :href="route($card['connect_route'])" variant="lime">
+                            <x-ui.neon-button :href="$card['connect_url']" variant="lime">
                                 Connecter
                                 <svg class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m0 0-6-6m6 6-6 6"/></svg>
                             </x-ui.neon-button>

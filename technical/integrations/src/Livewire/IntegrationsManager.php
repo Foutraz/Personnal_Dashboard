@@ -41,7 +41,7 @@ class IntegrationsManager extends Component
     /**
      * Merge the provider catalogue with the authenticated user's connection state.
      *
-     * @return array<int, array{provider: string, label: string, description: string, accent: string, icon: string, available: bool, connect_route: ?string, sync_route: ?string, connected: bool}>
+     * @return array<int, array{provider: string, label: string, description: string, accent: string, icon: string, available: bool, connect_url: ?string, sync_url: ?string, connected: bool}>
      */
     public function cards(): array
     {
@@ -59,8 +59,8 @@ class IntegrationsManager extends Component
                 'accent' => $card['accent'],
                 'icon' => $card['icon'],
                 'available' => $card['available'],
-                'connect_route' => $card['connect_route'],
-                'sync_route' => $card['sync_route'],
+                'connect_url' => $card['connect_route'] !== null ? route($card['connect_route'], $card['connect_params']) : null,
+                'sync_url' => $card['sync_route'] !== null ? route($card['sync_route'], $card['sync_params']) : null,
                 'connected' => in_array($card['provider']->value, $connectedProviders, true),
             ],
             $this->catalogue(),
@@ -70,7 +70,7 @@ class IntegrationsManager extends Component
     /**
      * Describe the external providers exposed on the integrations page.
      *
-     * @return array<int, array{provider: IntegrationProvider, description: string, accent: string, icon: string, available: bool, connect_route: ?string, sync_route: ?string}>
+     * @return array<int, array{provider: IntegrationProvider, description: string, accent: string, icon: string, available: bool, connect_route: ?string, connect_params: array<string, string>, sync_route: ?string, sync_params: array<string, string>}>
      */
     private function catalogue(): array
     {
@@ -82,25 +82,31 @@ class IntegrationsManager extends Component
                 'icon' => 'strava',
                 'available' => true,
                 'connect_route' => 'sport.strava.connect',
+                'connect_params' => [],
                 'sync_route' => 'sport.strava.sync',
+                'sync_params' => [],
             ],
             [
                 'provider' => IntegrationProvider::GoogleCalendar,
                 'description' => 'Agrégez vos événements Google Calendar dans le planning.',
                 'accent' => 'violet',
                 'icon' => 'M7 3v3m10-3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z',
-                'available' => false,
-                'connect_route' => null,
-                'sync_route' => null,
+                'available' => true,
+                'connect_route' => 'planning.connect',
+                'connect_params' => ['provider' => 'google'],
+                'sync_route' => 'planning.sync',
+                'sync_params' => ['provider' => 'google'],
             ],
             [
                 'provider' => IntegrationProvider::OutlookCalendar,
                 'description' => 'Synchronisez votre agenda Outlook dans le planning.',
                 'accent' => 'cyan',
                 'icon' => 'M7 3v3m10-3v3M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z',
-                'available' => false,
-                'connect_route' => null,
-                'sync_route' => null,
+                'available' => true,
+                'connect_route' => 'planning.connect',
+                'connect_params' => ['provider' => 'outlook'],
+                'sync_route' => 'planning.sync',
+                'sync_params' => ['provider' => 'outlook'],
             ],
             [
                 'provider' => IntegrationProvider::LibertyRider,
@@ -109,7 +115,9 @@ class IntegrationsManager extends Component
                 'icon' => 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6l7-3Z',
                 'available' => false,
                 'connect_route' => null,
+                'connect_params' => [],
                 'sync_route' => null,
+                'sync_params' => [],
             ],
         ];
     }
