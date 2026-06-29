@@ -88,4 +88,94 @@ class NextDueDateCalculatorTest extends TestCase
 
         $this->assertSame('2026-06-15', $first->toDateString());
     }
+
+    #[Test]
+    public function it_projects_a_monthly_occurrence_into_a_later_month(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Monthly,
+            CarbonImmutable::parse('2026-06-15'),
+            CarbonImmutable::parse('2026-08-01'),
+            15,
+        );
+
+        $this->assertSame(['2026-08-15'], $this->toDates($occurrences));
+    }
+
+    #[Test]
+    public function it_projects_every_weekly_occurrence_within_a_later_month(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Weekly,
+            CarbonImmutable::parse('2026-06-03'),
+            CarbonImmutable::parse('2026-07-01'),
+        );
+
+        $this->assertSame(
+            ['2026-07-01', '2026-07-08', '2026-07-15', '2026-07-22', '2026-07-29'],
+            $this->toDates($occurrences),
+        );
+    }
+
+    #[Test]
+    public function it_projects_a_quarterly_occurrence_into_a_later_month(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Quarterly,
+            CarbonImmutable::parse('2026-04-01'),
+            CarbonImmutable::parse('2026-07-01'),
+        );
+
+        $this->assertSame(['2026-07-01'], $this->toDates($occurrences));
+    }
+
+    #[Test]
+    public function it_projects_a_yearly_occurrence_into_a_later_year(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Yearly,
+            CarbonImmutable::parse('2026-07-01'),
+            CarbonImmutable::parse('2027-07-01'),
+        );
+
+        $this->assertSame(['2027-07-01'], $this->toDates($occurrences));
+    }
+
+    #[Test]
+    public function it_does_not_project_occurrences_before_the_start_date(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Monthly,
+            CarbonImmutable::parse('2026-06-15'),
+            CarbonImmutable::parse('2026-05-01'),
+            15,
+        );
+
+        $this->assertSame([], $this->toDates($occurrences));
+    }
+
+    #[Test]
+    public function it_does_not_project_occurrences_after_the_end_date(): void
+    {
+        $occurrences = $this->calculator->occurrencesInMonth(
+            ExpenseFrequency::Monthly,
+            CarbonImmutable::parse('2026-06-15'),
+            CarbonImmutable::parse('2026-08-01'),
+            15,
+            CarbonImmutable::parse('2026-07-31'),
+        );
+
+        $this->assertSame([], $this->toDates($occurrences));
+    }
+
+    /**
+     * Reduce a list of occurrences to their date strings for readable assertions.
+     *
+     * @param  array<int, CarbonImmutable>  $occurrences
+     * @return array<int, string>
+     */
+    private function toDates(array $occurrences): array
+    {
+        return array_map(fn (CarbonImmutable $occurrence): string => $occurrence->toDateString(), $occurrences);
+    }
 }

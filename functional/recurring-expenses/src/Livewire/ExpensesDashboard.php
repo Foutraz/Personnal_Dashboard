@@ -170,13 +170,25 @@ class ExpensesDashboard extends Component
      * @param  Collection<int, RecurringExpense>  $expenses
      * @return array{weeks: array<int, array<int, array{day: int|null, expenses: array<int, RecurringExpense>}>>, label: string}
      */
-    private function calendar(Collection $expenses): array
+    private function calendar(Collection $expenses, NextDueDateCalculator $calculator): array
     {
         $month = Carbon::parse($this->calendarMonth)->startOfMonth();
 
-        $byDay = $expenses
-            ->filter(fn (RecurringExpense $expense): bool => $expense->next_due_at->isSameMonth($month))
-            ->groupBy(fn (RecurringExpense $expense): int => $expense->next_due_at->day);
+        $byDay = [];
+
+        foreach ($expenses as $expense) {
+            $occurrences = $calculator->occurrencesInMonth(
+                $expense->frequency,
+                $expense->starts_at ?? $expense->next_due_at,
+                $month,
+                $expense->due_day,
+                $expense->ends_at,
+            );
+
+            foreach ($occurrences as $occurrence) {
+                $byDay[$occurrence->day][] = $expense;
+            }
+        }
 
         $leadingBlanks = (int) $month->dayOfWeekIso - 1;
         $daysInMonth = $month->daysInMonth;
@@ -190,7 +202,7 @@ class ExpensesDashboard extends Component
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $cells[] = [
                 'day' => $day,
-                'expenses' => $byDay->get($day, collect())->all(),
+                'expenses' => $byDay[$day] ?? [],
             ];
         }
 
@@ -209,7 +221,7 @@ class ExpensesDashboard extends Component
      */
     #[Layout('layouts.app')]
     #[Title('Échéances')]
-    public function render(MonthlyExpenseSummary $summary, UpcomingExpensesQuery $upcoming): View
+    public function render(MonthlyExpenseSummary $summary, UpcomingExpensesQuery $upcoming, NextDueDateCalculator $calculator): View
     {
         $expenses = $this->expenses();
         $activeExpenses = $expenses->filter(fn (RecurringExpense $expense): bool => $expense->active)->values();
@@ -219,7 +231,7 @@ class ExpensesDashboard extends Component
 
         return view('expenses::expenses', [
             'expenses' => $expenses,
-            'calendar' => $this->calendar($activeExpenses),
+            'calendar' => $this->calendar($activeExpenses, $calculator),
             'upcoming' => $upcoming->forUser((string) Auth::id(), 30),
             'monthlyTotal' => $monthlySummary->monthlyTotal,
             'yearlyTotal' => $monthlySummary->yearlyTotal,

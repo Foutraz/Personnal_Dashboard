@@ -42,6 +42,35 @@ class NextDueDateCalculator
     }
 
     /**
+     * List every occurrence of the frequency that falls within the given month.
+     *
+     * @return array<int, CarbonImmutable>
+     */
+    public function occurrencesInMonth(ExpenseFrequency $frequency, CarbonInterface $startsAt, CarbonInterface $month, ?int $dueDay = null, ?CarbonInterface $endsAt = null): array
+    {
+        $monthStart = CarbonImmutable::instance($month)->startOfMonth();
+        $monthEnd = CarbonImmutable::instance($month)->endOfMonth();
+        $endLimit = $endsAt !== null ? CarbonImmutable::instance($endsAt) : null;
+
+        $occurrence = $this->firstDueDate($frequency, $startsAt, $dueDay);
+        $occurrences = [];
+
+        while ($occurrence->lessThanOrEqualTo($monthEnd)) {
+            if ($occurrence->greaterThanOrEqualTo($monthStart) && ($endLimit === null || $occurrence->lessThanOrEqualTo($endLimit))) {
+                $occurrences[] = $occurrence;
+            }
+
+            $occurrence = CarbonImmutable::instance($frequency->addToDate($occurrence));
+
+            if ($frequency === ExpenseFrequency::Monthly && $dueDay !== null) {
+                $occurrence = $this->applyDueDay($occurrence, $dueDay);
+            }
+        }
+
+        return $occurrences;
+    }
+
+    /**
      * Clamp the requested day-of-month against the number of days in the date's month.
      */
     private function applyDueDay(CarbonImmutable $date, int $dueDay): CarbonImmutable

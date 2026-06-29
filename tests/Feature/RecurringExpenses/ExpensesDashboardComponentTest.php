@@ -8,6 +8,7 @@ use Functional\RecurringExpenses\Livewire\ExpensesDashboard;
 use Functional\RecurringExpenses\Models\RecurringExpense;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -67,6 +68,76 @@ class ExpensesDashboardComponentTest extends TestCase
             ->test(ExpensesDashboard::class)
             ->assertSee('Assurance auto')
             ->assertSee('Calendrier des échéances');
+    }
+
+    #[Test]
+    public function it_projects_a_monthly_expense_onto_the_following_months_calendar(): void
+    {
+        $this->travelTo(Carbon::parse('2026-06-29'));
+
+        $user = User::factory()->create();
+        RecurringExpense::factory()->create([
+            'user_id' => $user->id,
+            'label' => 'Loyer',
+            'frequency' => ExpenseFrequency::Monthly,
+            'due_day' => 15,
+            'starts_at' => '2026-06-15',
+            'next_due_at' => '2026-06-15',
+            'active' => true,
+        ]);
+
+        $component = Livewire::actingAs($user, 'web')
+            ->test(ExpensesDashboard::class)
+            ->call('nextMonth')
+            ->call('nextMonth');
+
+        $this->assertContains('Loyer', $this->calendarLabelsForDay($component->viewData('calendar'), 15));
+    }
+
+    #[Test]
+    public function it_projects_every_weekly_occurrence_onto_the_following_months_calendar(): void
+    {
+        $this->travelTo(Carbon::parse('2026-06-29'));
+
+        $user = User::factory()->create();
+        RecurringExpense::factory()->create([
+            'user_id' => $user->id,
+            'label' => 'Abonnement',
+            'frequency' => ExpenseFrequency::Weekly,
+            'due_day' => null,
+            'starts_at' => '2026-06-03',
+            'next_due_at' => '2026-07-01',
+            'active' => true,
+        ]);
+
+        $component = Livewire::actingAs($user, 'web')
+            ->test(ExpensesDashboard::class)
+            ->call('nextMonth');
+
+        $calendar = $component->viewData('calendar');
+
+        foreach ([1, 8, 15, 22, 29] as $day) {
+            $this->assertContains('Abonnement', $this->calendarLabelsForDay($calendar, $day));
+        }
+    }
+
+    /**
+     * Collect the expense labels rendered on the given day of the calendar grid.
+     *
+     * @param  array{weeks: array<int, array<int, array{day: int|null, expenses: array<int, RecurringExpense>}>>}  $calendar
+     * @return array<int, string>
+     */
+    private function calendarLabelsForDay(array $calendar, int $day): array
+    {
+        foreach ($calendar['weeks'] as $week) {
+            foreach ($week as $cell) {
+                if ($cell['day'] === $day) {
+                    return array_map(fn (RecurringExpense $expense): string => $expense->label, $cell['expenses']);
+                }
+            }
+        }
+
+        return [];
     }
 
     #[Test]
