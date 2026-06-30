@@ -30,7 +30,7 @@ class MarketPriceService
         return Cache::remember(
             'finance:marketdata:'.$vsCurrency.':'.implode(',', $sortedIds),
             (int) config('finance.marketdata.cache_ttl', 900),
-            fn (): array => $this->manager->prices()->prices($coingeckoIds, $vsCurrency),
+            fn (): array => $this->manager->prices()->prices($sortedIds, $vsCurrency),
         );
     }
 }
