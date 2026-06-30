@@ -176,7 +176,7 @@
             "type": "path",
             "url": "../SDK_GoCardlessBank",
             "options": {
-                "symlink": true,
+                "symlink": false,
                 "versions": {
                     "foutraz/gocardless-bank": "1.0.0"
                 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1fada8f1784ecddab0ec5ba3ce24f01c",
+    "content-hash": "cdbc6f1421140c46bed3ed0118ad77db",
     "packages": [
         {
             "name": "brick/math",
@@ -580,7 +580,7 @@
             "dist": {
                 "type": "path",
                 "url": "../SDK_GoCardlessBank",
-                "reference": "ccd2ae00e8cfed89b3b20649f9d4b891d29b63dc"
+                "reference": "819167974d826574ec05c348514a0df53a597b4e"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -626,7 +626,7 @@
             ],
             "description": "GoCardless Bank Account Data SDK for PHP / Laravel",
             "transport-options": {
-                "symlink": true,
+                "symlink": false,
                 "relative": true
             }
         },
