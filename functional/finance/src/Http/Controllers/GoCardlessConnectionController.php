@@ -52,7 +52,7 @@ class GoCardlessConnectionController
         $ref = $request->query('ref');
         $sessionRef = $request->session()->pull('gocardless_requisition');
 
-        if ($ref === null || $sessionRef === null || ! hash_equals((string) $sessionRef, (string) $ref)) {
+        if ($request->has('error') || $ref === null || $sessionRef === null || ! hash_equals((string) $sessionRef, (string) $ref)) {
             throw new GoCardlessCallbackDeniedException;
         }
 
