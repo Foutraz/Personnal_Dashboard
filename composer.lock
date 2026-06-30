@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "26269dc4c6ac70c48cb7f4cf3ee36090",
+    "content-hash": "1fada8f1784ecddab0ec5ba3ce24f01c",
     "packages": [
         {
             "name": "brick/math",
@@ -573,6 +573,62 @@
                 "source": "https://github.com/googleapis/php-jwt/tree/v7.1.0"
             },
             "time": "2026-06-11T17:54:14+00:00"
+        },
+        {
+            "name": "foutraz/gocardless-bank",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_GoCardlessBank",
+                "reference": "ccd2ae00e8cfed89b3b20649f9d4b891d29b63dc"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\GoCardlessBank\\Providers\\GoCardlessBankServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\GoCardlessBank\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\GoCardlessBank\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "GoCardless Bank Account Data SDK for PHP / Laravel",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "foutraz/google-calendar",
