@@ -5,6 +5,7 @@ namespace Functional\Finance\Providers;
 use Foutraz\GoCardlessBank\GoCardlessManager;
 use Functional\Finance\Actions\AssignPositionOwner;
 use Functional\Finance\Actions\AssignTransactionOwner;
+use Functional\Finance\Dashboard\BankDashboardSummary;
 use Functional\Finance\Dashboard\FinanceDashboardContribution;
 use Functional\Finance\Database\Seeders\FinanceSeeder;
 use Functional\Finance\Jobs\SyncBankAccountsJob;
@@ -55,6 +56,7 @@ class FinanceServiceProvider extends OsddServiceProvider
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/finance.php', 'finance');
 
         $this->app->tag(FinanceDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
+        $this->app->tag(BankDashboardSummary::class, ['dashboard.summaries', 'dashboard.navigation']);
 
         $this->app->bind(GoCardlessManager::class, fn (): GoCardlessManager => new GoCardlessManager(
             (string) config('finance.gocardless.endpoint'),
