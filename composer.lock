@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "96fefc656466d3be13484421c89844a2",
+    "content-hash": "e087999d73764dc14cd7b0bb84600b1a",
     "packages": [
         {
             "name": "brick/math",
@@ -577,10 +577,16 @@
         {
             "name": "foutraz/gocardless-bank",
             "version": "1.0.0",
-            "dist": {
-                "type": "path",
-                "url": "../SDK_GoCardlessBank",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Foutraz/SDK_GoCardlessBank.git",
                 "reference": "819167974d826574ec05c348514a0df53a597b4e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_GoCardlessBank/zipball/819167974d826574ec05c348514a0df53a597b4e",
+                "reference": "819167974d826574ec05c348514a0df53a597b4e",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -625,10 +631,11 @@
                 }
             ],
             "description": "GoCardless Bank Account Data SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/Foutraz/SDK_GoCardlessBank/tree/1.0.0",
+                "issues": "https://github.com/Foutraz/SDK_GoCardlessBank/issues"
+            },
+            "time": "2026-06-30T10:59:08+00:00"
         },
         {
             "name": "foutraz/google-calendar",
@@ -689,10 +696,16 @@
         {
             "name": "foutraz/market-data",
             "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Foutraz/SDK_MarketData.git",
+                "reference": "5fe6dc8d5c311203645482e38a10e9e37413032c"
+            },
             "dist": {
-                "type": "path",
-                "url": "../SDK_MarketData",
-                "reference": "9302c08213cbe06a8980f865207c2240ac30219b"
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_MarketData/zipball/5fe6dc8d5c311203645482e38a10e9e37413032c",
+                "reference": "5fe6dc8d5c311203645482e38a10e9e37413032c",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -737,10 +750,11 @@
                 }
             ],
             "description": "CoinGecko Market Data SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/Foutraz/SDK_MarketData/tree/1.0.0",
+                "issues": "https://github.com/Foutraz/SDK_MarketData/issues"
+            },
+            "time": "2026-06-30T11:54:59+00:00"
         },
         {
             "name": "foutraz/outlook",
@@ -913,10 +927,16 @@
         {
             "name": "foutraz/withings",
             "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Foutraz/SDK_Withings.git",
+                "reference": "12a81af4df2226d6239e0ed6db1c86bb87f2fbcc"
+            },
             "dist": {
-                "type": "path",
-                "url": "../SDK_Withings",
-                "reference": "e03ca40e28187c3fb9de09730362bc7b08f06f36"
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Withings/zipball/12a81af4df2226d6239e0ed6db1c86bb87f2fbcc",
+                "reference": "12a81af4df2226d6239e0ed6db1c86bb87f2fbcc",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -961,10 +981,11 @@
                 }
             ],
             "description": "Withings SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "support": {
+                "source": "https://github.com/Foutraz/SDK_Withings/tree/1.0.0",
+                "issues": "https://github.com/Foutraz/SDK_Withings/issues"
+            },
+            "time": "2026-06-30T06:54:08+00:00"
         },
         {
             "name": "fruitcake/php-cors",
