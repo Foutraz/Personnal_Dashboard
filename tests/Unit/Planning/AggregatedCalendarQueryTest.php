@@ -6,7 +6,6 @@ use Functional\Planning\Models\CalendarEvent;
 use Functional\Planning\Services\AggregatedCalendarQuery;
 use Functional\Planning\Services\Dto\CalendarItemSource;
 use Functional\RecurringExpenses\Models\RecurringExpense;
-use Functional\RecurringExpenses\Services\UpcomingExpensesQuery;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -45,9 +44,8 @@ class AggregatedCalendarQueryTest extends TestCase
             'next_due_at' => Carbon::now()->addDays(5),
         ]);
 
-        $query = new AggregatedCalendarQuery(new UpcomingExpensesQuery);
-
-        $items = $query->forUser((string) $user->id, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
+        $items = $this->app->make(AggregatedCalendarQuery::class)
+            ->forUser($user, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
 
         $this->assertCount(2, $items);
         $this->assertSame('In range event', $items->first()->title);
@@ -74,9 +72,8 @@ class AggregatedCalendarQueryTest extends TestCase
             'next_due_at' => Carbon::now()->addDays(2),
         ]);
 
-        $query = new AggregatedCalendarQuery(new UpcomingExpensesQuery);
-
-        $items = $query->forUser((string) $user->id, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
+        $items = $this->app->make(AggregatedCalendarQuery::class)
+            ->forUser($user, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
 
         $this->assertSame('Earlier', $items->first()->title);
         $this->assertSame('Later', $items->last()->title);

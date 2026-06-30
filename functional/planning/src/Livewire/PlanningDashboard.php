@@ -162,10 +162,10 @@ class PlanningDashboard extends Component
     public function render(AggregatedCalendarQuery $aggregated): View
     {
         $period = $this->period();
-        $userId = (string) Auth::id();
+        $user = Auth::user();
 
-        $items = $aggregated->forUser($userId, $period['from'], $period['to']);
-        $upcoming = $aggregated->forUser($userId, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
+        $items = $aggregated->forUser($user, $period['from'], $period['to']);
+        $upcoming = $aggregated->forUser($user, Carbon::now()->startOfDay(), Carbon::now()->addDays(14)->endOfDay());
 
         $google = $this->connectionFor(IntegrationProvider::GoogleCalendar);
         $outlook = $this->connectionFor(IntegrationProvider::OutlookCalendar);

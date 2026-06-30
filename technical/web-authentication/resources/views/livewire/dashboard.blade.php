@@ -13,6 +13,20 @@
         </div>
     </section>
 
+    @if ($agenda->isNotEmpty())
+        <section class="mt-10">
+            <div class="mb-5 flex items-center justify-between">
+                <h3 class="font-display text-lg font-semibold tracking-tight">Aujourd'hui / À venir</h3>
+                <span class="text-xs text-faint">{{ $agenda->count() }} éléments</span>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($agenda as $item)
+                    <x-ui.agenda-item :item="$item" />
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     <section class="mt-10">
         <div class="mb-5 flex items-center justify-between">
             <h3 class="font-display text-lg font-semibold tracking-tight">Modules</h3>

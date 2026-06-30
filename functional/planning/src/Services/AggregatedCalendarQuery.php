@@ -2,82 +2,42 @@
 
 namespace Functional\Planning\Services;
 
-use Functional\Planning\Models\CalendarEvent;
+use Carbon\CarbonPeriod;
 use Functional\Planning\Services\Dto\CalendarItem;
 use Functional\Planning\Services\Dto\CalendarItemSource;
-use Functional\RecurringExpenses\Models\RecurringExpense;
-use Functional\RecurringExpenses\Services\UpcomingExpensesQuery;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Technical\Integrations\Enums\IntegrationProvider;
+use Technical\Osdd\Contracts\ProvidesAgendaItems;
+use Technical\Osdd\Dto\AgendaItem;
 
 class AggregatedCalendarQuery
 {
-    public function __construct(private UpcomingExpensesQuery $upcomingExpenses) {}
-
     /**
-     * Merge the user's calendar events and recurring expense due dates within the given range.
+     * Merge the user's calendar commitments (events, tasks, expenses) within the range.
      *
      * @return Collection<int, CalendarItem>
      */
-    public function forUser(string $userId, Carbon $from, Carbon $to): Collection
+    public function forUser(Authenticatable $user, Carbon $from, Carbon $to): Collection
     {
-        $events = $this->events($userId, $from, $to);
-        $expenses = $this->expenses($userId, $from, $to);
+        /** @var iterable<int, ProvidesAgendaItems> $providers */
+        $providers = app()->tagged('dashboard.agenda');
 
-        return $events
-            ->merge($expenses)
-            ->sortBy(fn (CalendarItem $item): int => $item->startsAt->getTimestamp())
-            ->values();
-    }
-
-    /**
-     * Map the user's stored calendar events to normalized items within the range.
-     *
-     * @return Collection<int, CalendarItem>
-     */
-    private function events(string $userId, Carbon $from, Carbon $to): Collection
-    {
-        return CalendarEvent::query()
-            ->where('user_id', $userId)
-            ->whereBetween('starts_at', [$from, $to])
-            ->orderBy('starts_at')
-            ->get()
-            ->map(fn (CalendarEvent $event): CalendarItem => new CalendarItem(
-                $event->id,
-                $event->provider === IntegrationProvider::GoogleCalendar ? CalendarItemSource::Google : CalendarItemSource::Outlook,
-                $event->title,
-                $event->starts_at,
-                $event->ends_at,
-                $event->all_day,
-                $event->location,
-                $event->external_link,
-                null,
-            ));
-    }
-
-    /**
-     * Map the user's recurring expense due dates to normalized items within the range.
-     *
-     * @return Collection<int, CalendarItem>
-     */
-    private function expenses(string $userId, Carbon $from, Carbon $to): Collection
-    {
-        $withinDays = (int) max(1, $from->diffInDays($to));
-
-        return $this->upcomingExpenses->forUser($userId, $withinDays)
-            ->filter(fn (RecurringExpense $expense): bool => $expense->next_due_at->betweenIncluded($from, $to))
-            ->map(fn (RecurringExpense $expense): CalendarItem => new CalendarItem(
-                $expense->id,
-                CalendarItemSource::Expense,
-                $expense->label,
-                $expense->next_due_at,
-                null,
-                true,
-                null,
-                null,
-                (string) $expense->amount,
+        return collect($providers)
+            ->flatMap(fn (ProvidesAgendaItems $provider): Collection => $provider->agendaItems($user, CarbonPeriod::create($from, $to)))
+            ->reject(fn (AgendaItem $item): bool => $item->source === 'moto')
+            ->map(fn (AgendaItem $item): CalendarItem => new CalendarItem(
+                $item->id,
+                CalendarItemSource::from($item->source),
+                $item->title,
+                $item->startsAt,
+                $item->endsAt,
+                $item->allDay,
+                $item->location,
+                $item->link,
+                $item->amount,
             ))
+            ->sortBy(fn (CalendarItem $item): int => $item->startsAt->getTimestamp())
             ->values();
     }
 }

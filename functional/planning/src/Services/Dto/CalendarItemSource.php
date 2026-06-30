@@ -7,6 +7,7 @@ enum CalendarItemSource: string
     case Google = 'google';
     case Outlook = 'outlook';
     case Expense = 'expense';
+    case Task = 'task';
 
     /**
      * Get the human-readable label of the source.
@@ -17,6 +18,7 @@ enum CalendarItemSource: string
             self::Google => 'Google Calendar',
             self::Outlook => 'Outlook',
             self::Expense => 'Échéances',
+            self::Task => 'Tâches',
         };
     }
 
@@ -29,6 +31,7 @@ enum CalendarItemSource: string
             self::Google => 'cyan',
             self::Outlook => 'violet',
             self::Expense => 'lime',
+            self::Task => 'lime',
         };
     }
 }
