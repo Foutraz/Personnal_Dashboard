@@ -824,12 +824,12 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:Foutraz/SDK_Strava.git",
-                "reference": "b4857f6123d548be4431bf5528278841dfad5778"
+                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Foutraz/SDK_Strava/zipball/b4857f6123d548be4431bf5528278841dfad5778",
-                "reference": "b4857f6123d548be4431bf5528278841dfad5778",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Strava/zipball/7fdbe041aa548f1d59a298fd0fce0eeddef30e23",
+                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23",
                 "shasum": ""
             },
             "require": {
@@ -875,7 +875,7 @@
                 }
             ],
             "description": "Strava SDK for PHP / Laravel",
-            "time": "2026-06-25T22:37:24+00:00"
+            "time": "2026-06-26T10:44:26+00:00"
         },
         {
             "name": "foutraz/weather",
