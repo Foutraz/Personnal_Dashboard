@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "51ba1dc00708158bce7b16f6a03c3d1e",
+    "content-hash": "26269dc4c6ac70c48cb7f4cf3ee36090",
     "packages": [
         {
             "name": "brick/math",
@@ -1012,6 +1012,36 @@
                     "Functional\\Goals\\": "src/",
                     "Functional\\Goals\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Goals\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/health",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/health",
+                "reference": "d133f059b0aa923f2434bfc5b9d8af2e904cfdc5"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Health\\Providers\\HealthServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Health\\": "src/",
+                    "Functional\\Health\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Health\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
