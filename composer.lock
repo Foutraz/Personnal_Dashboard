@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "952d0772a416abae9903ab9c5c9f4085",
+    "content-hash": "04e5ba8e81768a7a1c8e35fd93a8dddc",
     "packages": [
         {
             "name": "brick/math",
@@ -7336,6 +7336,35 @@
                     "Technical\\Integrations\\Database\\Factories\\": "database/Factories/"
                 }
             },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "technical/notifications",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./technical/notifications",
+                "reference": "69ce0547fdc286d3264947bc770d32c1a1d3ce2c"
+            },
+            "require": {
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Technical\\Notifications\\Providers\\NotificationsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Technical\\Notifications\\": "src/"
+                }
+            },
+            "description": "Unified notification center technical layer",
             "transport-options": {
                 "relative": true
             }

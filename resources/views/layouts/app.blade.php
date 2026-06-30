@@ -46,6 +46,7 @@
                     </div>
 
                     <div class="flex items-center gap-3" x-data="{ menu: false }">
+                        <livewire:notification-center />
                         <span class="hidden items-center gap-2 rounded-full border border-hairline px-3 py-1.5 text-xs text-muted sm:inline-flex">
                             <span class="h-2 w-2 rounded-full bg-lime" style="animation: pulse-ring 2.4s infinite;"></span>
                             Online
