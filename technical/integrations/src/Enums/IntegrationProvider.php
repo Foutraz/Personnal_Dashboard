@@ -9,6 +9,7 @@ enum IntegrationProvider: string
     case OutlookCalendar = 'outlook_calendar';
     case GoogleCalendar = 'google_calendar';
     case Withings = 'withings';
+    case GoCardless = 'gocardless';
 
     /**
      * Get the human-readable label of the provider.
@@ -21,6 +22,7 @@ enum IntegrationProvider: string
             self::OutlookCalendar => 'Outlook Calendar',
             self::GoogleCalendar => 'Google Calendar',
             self::Withings => 'Withings',
+            self::GoCardless => 'GoCardless',
         };
     }
 }
