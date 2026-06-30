@@ -15,6 +15,7 @@
         "foutraz/outlook": "*",
         "foutraz/strava": "*",
         "foutraz/weather": "*",
+        "foutraz/withings": "*",
         "functional/exploration": "*",
         "functional/moto": "*",
         "functional/finance": "*",
@@ -126,6 +127,16 @@
                 "symlink": false,
                 "versions": {
                     "foutraz/strava": "1.0.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../SDK_Withings",
+            "options": {
+                "symlink": false,
+                "versions": {
+                    "foutraz/withings": "1.0.0"
                 }
             }
         },

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "04e5ba8e81768a7a1c8e35fd93a8dddc",
+    "content-hash": "51ba1dc00708158bce7b16f6a03c3d1e",
     "packages": [
         {
             "name": "brick/math",
@@ -793,6 +793,62 @@
                 }
             ],
             "description": "OpenWeatherMap SDK for PHP / Laravel",
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
+            "name": "foutraz/withings",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "../SDK_Withings",
+                "reference": "4bfbfdf344a0349b8d44970e705ae051a34cbab1"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Foutraz\\Withings\\Providers\\WithingsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Foutraz\\Withings\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Foutraz\\Withings\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "vendor/bin/phpunit"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Quentin MARI",
+                    "email": "quentin.mari0409@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Withings SDK for PHP / Laravel",
             "transport-options": {
                 "symlink": false,
                 "relative": true
