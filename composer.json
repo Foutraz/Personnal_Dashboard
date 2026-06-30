@@ -35,6 +35,7 @@
         "technical/application": "*",
         "technical/authentication": "*",
         "technical/integrations": "*",
+        "technical/notifications": "*",
         "technical/osdd": "*",
         "technical/web-authentication": "*",
         "tymon/jwt-auth": "^2.3",

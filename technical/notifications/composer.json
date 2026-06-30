@@ -1,0 +1,23 @@
+{
+    "name": "technical/notifications",
+    "description": "Unified notification center technical layer",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Technical\\Notifications\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Technical\\Notifications\\Providers\\NotificationsServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
