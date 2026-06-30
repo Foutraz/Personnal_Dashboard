@@ -4,6 +4,7 @@ namespace Functional\Planning\Providers;
 
 use Foutraz\GoogleCalendar\GoogleCalendarManager;
 use Foutraz\Outlook\OutlookManager;
+use Functional\Planning\Dashboard\PlanningAgendaProvider;
 use Functional\Planning\Dashboard\PlanningDashboardContribution;
 use Functional\Planning\Database\Seeders\PlanningSeeder;
 use Functional\Planning\Listeners\DeleteConnectionCalendarEvents;
@@ -62,6 +63,7 @@ class PlanningServiceProvider extends OsddServiceProvider
         ));
 
         $this->app->tag(PlanningDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
+        $this->app->tag(PlanningAgendaProvider::class, ['dashboard.agenda']);
     }
 
     /**
