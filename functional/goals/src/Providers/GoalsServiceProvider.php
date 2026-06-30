@@ -3,6 +3,7 @@
 namespace Functional\Goals\Providers;
 
 use Functional\Goals\Actions\AssignGoalOwner;
+use Functional\Goals\Dashboard\GoalsDashboardContribution;
 use Functional\Goals\Database\Seeders\GoalsSeeder;
 use Functional\Goals\Listeners\DeleteUserGoals;
 use Functional\Goals\Livewire\GoalsDashboard;
@@ -40,6 +41,8 @@ class GoalsServiceProvider extends OsddServiceProvider
         parent::register();
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/goals.php', 'goals');
+
+        $this->app->tag(GoalsDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**

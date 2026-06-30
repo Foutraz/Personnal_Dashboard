@@ -4,6 +4,7 @@ namespace Functional\Finance\Providers;
 
 use Functional\Finance\Actions\AssignPositionOwner;
 use Functional\Finance\Actions\AssignTransactionOwner;
+use Functional\Finance\Dashboard\FinanceDashboardContribution;
 use Functional\Finance\Database\Seeders\FinanceSeeder;
 use Functional\Finance\Listeners\DeletePositionTransactions;
 use Functional\Finance\Listeners\DeleteUserFinanceData;
@@ -47,6 +48,8 @@ class FinanceServiceProvider extends OsddServiceProvider
         parent::register();
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/finance.php', 'finance');
+
+        $this->app->tag(FinanceDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**

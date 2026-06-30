@@ -3,6 +3,7 @@
 namespace Functional\Sport\Providers;
 
 use Foutraz\Strava\StravaManager;
+use Functional\Sport\Dashboard\SportDashboardContribution;
 use Functional\Sport\Database\Seeders\SportSeeder;
 use Functional\Sport\Listeners\DeleteConnectionSportActivities;
 use Functional\Sport\Livewire\ActivitiesHistory;
@@ -30,6 +31,8 @@ class SportServiceProvider extends OsddServiceProvider
     public function register(): void
     {
         parent::register();
+
+        $this->app->tag(SportDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/sport.php', 'sport');
 
