@@ -2,7 +2,6 @@
 
 namespace Functional\Health\Jobs;
 
-use Functional\Health\Actions\BuildUserWithingsManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -40,20 +39,15 @@ class SyncWithingsUserJob implements ShouldQueue
     }
 
     /**
-     * Store the external user id then dispatch the measurements sync.
+     * Dispatch the measurements sync for the connection when it still exists.
      */
-    public function handle(BuildUserWithingsManager $buildManager): void
+    public function handle(): void
     {
         $connection = IntegrationConnection::query()->find($this->connectionId);
 
         if ($connection === null) {
             return;
         }
-
-        $connection->forceFill([
-            'external_id' => $connection->external_id,
-            'meta' => $connection->meta ?? [],
-        ])->save();
 
         SyncWithingsMeasurementsJob::dispatch($connection->id);
     }
