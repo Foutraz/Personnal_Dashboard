@@ -3,8 +3,8 @@
 namespace Functional\Finance\Database\Factories;
 
 use Functional\Finance\Models\BankAccount;
-use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Technical\Integrations\Enums\IntegrationProvider;
 use Technical\Integrations\Models\IntegrationConnection;
 
 /**
@@ -26,11 +26,11 @@ class BankAccountFactory extends Factory
      */
     public function definition(): array
     {
-        $user = User::factory();
+        $connection = IntegrationConnection::factory()->create(['provider' => IntegrationProvider::GoCardless]);
 
         return [
-            'integration_connection_id' => IntegrationConnection::factory()->for($user),
-            'user_id' => $user,
+            'integration_connection_id' => $connection->id,
+            'user_id' => $connection->user_id,
             'external_id' => (string) faker()->unique()->number(100000, 999999),
             'institution_id' => 'INST_'.faker()->uppercase()->words(1),
             'name' => faker()->words(2),

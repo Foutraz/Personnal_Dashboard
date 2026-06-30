@@ -4,7 +4,6 @@ namespace Functional\Finance\Database\Factories;
 
 use Functional\Finance\Models\BankAccount;
 use Functional\Finance\Models\BankTransaction;
-use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,15 +25,17 @@ class BankTransactionFactory extends Factory
      */
     public function definition(): array
     {
+        $account = BankAccount::factory()->create();
+
         return [
-            'bank_account_id' => BankAccount::factory(),
-            'user_id' => User::factory(),
+            'bank_account_id' => $account->id,
+            'user_id' => $account->user_id,
             'external_id' => (string) faker()->unique()->number(100000, 999999),
             'amount' => faker()->float(-500, 500, 2),
             'currency' => 'EUR',
             'booked_at' => faker()->dateTime('-1 year', 'now'),
             'description' => faker()->words(4),
-            'counterparty' => faker()->company(),
+            'counterparty' => faker()->words(2),
             'raw' => [],
         ];
     }
