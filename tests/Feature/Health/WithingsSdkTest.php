@@ -5,6 +5,7 @@ namespace Tests\Feature\Health;
 use DateTimeImmutable;
 use Foutraz\Withings\Dto\Measurement;
 use Foutraz\Withings\Dto\TokenResponse;
+use Foutraz\Withings\Exceptions\ActionFailed;
 use Foutraz\Withings\WithingsManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
@@ -91,6 +92,35 @@ class WithingsSdkTest extends TestCase
         $this->assertSame(111, $measurements[0]->externalId);
         $this->assertSame(1, $measurements[0]->type);
         $this->assertEqualsWithDelta(70.5, $measurements[0]->value, 0.001);
+        $this->assertSame(-3, $measurements[0]->unit);
         $this->assertInstanceOf(DateTimeImmutable::class, $measurements[0]->measuredAt);
+    }
+
+    #[Test]
+    public function it_throws_action_failed_when_withings_status_is_non_zero(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, [], (string) json_encode([
+                'status' => 503,
+                'error' => 'Invalid params',
+            ])),
+        ]);
+
+        $handlerStack = HandlerStack::create($mock);
+        $guzzleClient = new Client(['handler' => $handlerStack, 'http_errors' => false]);
+
+        $manager = new WithingsManager(
+            endpoint: 'https://wbsapi.withings.net',
+            apiToken: 'token',
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            redirectUri: 'https://example.com/callback',
+            client: $guzzleClient,
+        );
+
+        $this->expectException(ActionFailed::class);
+        $this->expectExceptionMessage('Invalid params');
+
+        $manager->measurements()->getmeas(42);
     }
 }

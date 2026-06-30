@@ -804,11 +804,11 @@
             "dist": {
                 "type": "path",
                 "url": "../SDK_Withings",
-                "reference": "4bfbfdf344a0349b8d44970e705ae051a34cbab1"
+                "reference": "e03ca40e28187c3fb9de09730362bc7b08f06f36"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
-                "illuminate/support": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
                 "php": "^8.4"
             },
             "require-dev": {
