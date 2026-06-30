@@ -12,11 +12,11 @@
         "php": "^8.4",
         "ext-pdo": "*",
         "foutraz/gocardless-bank": "^1.0",
-        "foutraz/google-calendar": "*",
+        "foutraz/google-calendar": "^1.0",
         "foutraz/market-data": "^1.0",
-        "foutraz/outlook": "*",
-        "foutraz/strava": "*",
-        "foutraz/weather": "*",
+        "foutraz/outlook": "^1.0",
+        "foutraz/strava": "^1.0",
+        "foutraz/weather": "^1.0",
         "foutraz/withings": "^1.0",
         "functional/exploration": "*",
         "functional/finance": "*",
@@ -124,48 +124,24 @@
     "prefer-stable": true,
     "repositories": [
         {
-            "type": "path",
-            "url": "../SDK_Strava",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "foutraz/strava": "1.0.0"
-                }
-            }
+            "type": "vcs",
+            "url": "https://github.com/Foutraz/SDK_Strava.git"
         },
         {
             "type": "vcs",
             "url": "https://github.com/Foutraz/SDK_Withings.git"
         },
         {
-            "type": "path",
-            "url": "../SDK_Weather",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "foutraz/weather": "1.0.0"
-                }
-            }
+            "type": "vcs",
+            "url": "https://github.com/Foutraz/SDK_Weather.git"
         },
         {
-            "type": "path",
-            "url": "../SDK_GoogleCalendar",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "foutraz/google-calendar": "1.0.0"
-                }
-            }
+            "type": "vcs",
+            "url": "https://github.com/Foutraz/SDK_GoogleCalendar.git"
         },
         {
-            "type": "path",
-            "url": "../SDK_Outlook",
-            "options": {
-                "symlink": false,
-                "versions": {
-                    "foutraz/outlook": "1.0.0"
-                }
-            }
+            "type": "vcs",
+            "url": "https://github.com/Foutraz/SDK_Outlook.git"
         },
         {
             "type": "vcs",

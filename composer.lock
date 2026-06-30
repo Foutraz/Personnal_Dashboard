@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e087999d73764dc14cd7b0bb84600b1a",
+    "content-hash": "439a7f7a05fe2b222c4e3b57c9623296",
     "packages": [
         {
             "name": "brick/math",
@@ -640,10 +640,16 @@
         {
             "name": "foutraz/google-calendar",
             "version": "1.0.0",
-            "dist": {
-                "type": "path",
-                "url": "../SDK_GoogleCalendar",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:Foutraz/SDK_GoogleCalendar.git",
                 "reference": "6504ceef7c88c14e56da27ef9ee5940880568cc1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_GoogleCalendar/zipball/6504ceef7c88c14e56da27ef9ee5940880568cc1",
+                "reference": "6504ceef7c88c14e56da27ef9ee5940880568cc1",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -688,10 +694,7 @@
                 }
             ],
             "description": "Google Calendar API v3 SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "time": "2026-06-25T16:22:49+00:00"
         },
         {
             "name": "foutraz/market-data",
@@ -759,10 +762,16 @@
         {
             "name": "foutraz/outlook",
             "version": "1.0.0",
-            "dist": {
-                "type": "path",
-                "url": "../SDK_Outlook",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:Foutraz/SDK_Outlook.git",
                 "reference": "d5ec5ce88833a58967c9127a5e24aa305a978d6b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Outlook/zipball/d5ec5ce88833a58967c9127a5e24aa305a978d6b",
+                "reference": "d5ec5ce88833a58967c9127a5e24aa305a978d6b",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -807,18 +816,21 @@
                 }
             ],
             "description": "Microsoft Graph (Outlook) calendar SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "time": "2026-06-25T16:22:58+00:00"
         },
         {
             "name": "foutraz/strava",
             "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:Foutraz/SDK_Strava.git",
+                "reference": "b4857f6123d548be4431bf5528278841dfad5778"
+            },
             "dist": {
-                "type": "path",
-                "url": "../SDK_Strava",
-                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23"
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Strava/zipball/b4857f6123d548be4431bf5528278841dfad5778",
+                "reference": "b4857f6123d548be4431bf5528278841dfad5778",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -863,18 +875,21 @@
                 }
             ],
             "description": "Strava SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "time": "2026-06-25T22:37:24+00:00"
         },
         {
             "name": "foutraz/weather",
             "version": "1.0.0",
-            "dist": {
-                "type": "path",
-                "url": "../SDK_Weather",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:Foutraz/SDK_Weather.git",
                 "reference": "303b025fef5edfe92e398de9953484d3a4d9ad3b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Weather/zipball/303b025fef5edfe92e398de9953484d3a4d9ad3b",
+                "reference": "303b025fef5edfe92e398de9953484d3a4d9ad3b",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
@@ -919,10 +934,7 @@
                 }
             ],
             "description": "OpenWeatherMap SDK for PHP / Laravel",
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            }
+            "time": "2026-06-29T21:36:58+00:00"
         },
         {
             "name": "foutraz/withings",
