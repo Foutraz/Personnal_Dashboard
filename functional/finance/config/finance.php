@@ -11,7 +11,7 @@ return [
         'default_years' => env('FINANCE_DCA_YEARS', 10),
     ],
     'marketdata' => [
-        'endpoint' => env('COINGECKO_ENDPOINT', 'https://api.coingecko.com'),
+        'endpoint' => env('COINGECKO_BASE_URL', 'https://api.coingecko.com'),
         'api_key' => env('COINGECKO_API_KEY'),
         'cache_ttl' => env('FINANCE_MARKETDATA_CACHE_TTL', 900),
         'coingecko_ids' => [
