@@ -1,4 +1,4 @@
-<div x-data="{ open: false }" class="relative">
+<div x-data="{ open: false }" class="relative" wire:poll.30s>
     <button
         @click="open = ! open"
         class="relative grid h-10 w-10 place-items-center rounded-full border border-hairline text-muted transition hover:border-cyan/40 hover:text-ink"
