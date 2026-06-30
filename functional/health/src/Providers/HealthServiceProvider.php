@@ -3,10 +3,13 @@
 namespace Functional\Health\Providers;
 
 use Foutraz\Withings\WithingsManager;
+use Functional\Health\Dashboard\HealthDashboardContribution;
 use Functional\Health\Database\Seeders\HealthSeeder;
 use Functional\Health\Jobs\SyncWithingsMeasurementsJob;
+use Functional\Health\Livewire\HealthDashboard;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Livewire\Livewire;
 use Technical\Integrations\Enums\IntegrationProvider;
 use Technical\Integrations\Models\IntegrationConnection;
 use Technical\Osdd\Providers\OsddServiceProvider;
@@ -21,6 +24,8 @@ class HealthServiceProvider extends OsddServiceProvider
     public function register(): void
     {
         parent::register();
+
+        $this->app->tag(HealthDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
 
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/health.php', 'health');
 
@@ -40,6 +45,8 @@ class HealthServiceProvider extends OsddServiceProvider
     {
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'health');
+
+        Livewire::component('health-dashboard', HealthDashboard::class);
 
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
