@@ -33,5 +33,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="OPENWEATHER_API_KEY" value=""/>
+        <env name="COINGECKO_API_KEY" value=""/>
+        <env name="GOCARDLESS_SECRET_ID" value=""/>
+        <env name="GOCARDLESS_SECRET_KEY" value=""/>
     </php>
 </phpunit>
