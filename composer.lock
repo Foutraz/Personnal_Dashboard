@@ -692,7 +692,7 @@
             "dist": {
                 "type": "path",
                 "url": "../SDK_MarketData",
-                "reference": "f59aaf5b6e32304aa140a4236f59d50383f5bcf5"
+                "reference": "9302c08213cbe06a8980f865207c2240ac30219b"
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.0",
