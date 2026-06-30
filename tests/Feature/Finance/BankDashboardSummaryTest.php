@@ -31,7 +31,6 @@ class BankDashboardSummaryTest extends TestCase
             'balance' => '250.00',
         ]);
 
-        // Another user's account should not affect the result.
         $otherUser = User::factory()->create();
         $otherConnection = IntegrationConnection::factory()->for($otherUser)->create(['provider' => IntegrationProvider::GoCardless]);
         BankAccount::factory()->create([
