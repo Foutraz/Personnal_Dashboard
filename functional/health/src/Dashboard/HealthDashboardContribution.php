@@ -34,6 +34,7 @@ final class HealthDashboardContribution implements ProvidesDashboardSummary, Pro
 
         $measurementCount = BodyMeasurement::query()
             ->where('user_id', $user->getAuthIdentifier())
+            ->where('type', MeasurementType::Weight)
             ->count();
 
         return new DashboardSummary(
@@ -47,7 +48,7 @@ final class HealthDashboardContribution implements ProvidesDashboardSummary, Pro
             metricValue: $latestWeight !== null ? number_format($latestWeight->value, 1, ',', ' ') : '—',
             metricUnit: 'kg',
             secondaryLines: [
-                $measurementCount.' mesure'.($measurementCount !== 1 ? 's' : ''),
+                $measurementCount.' pesée'.($measurementCount !== 1 ? 's' : ''),
             ],
             callToAction: $connected ? null : 'Connecter Withings',
         );

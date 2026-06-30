@@ -18,7 +18,7 @@ class HealthDashboard extends Component
     /**
      * Resolve the authenticated user's Withings connection.
      */
-    public function connection(): ?IntegrationConnection
+    private function connection(): ?IntegrationConnection
     {
         return IntegrationConnection::query()
             ->where('user_id', Auth::id())
@@ -29,7 +29,7 @@ class HealthDashboard extends Component
     /**
      * Resolve the latest weight measurement for the authenticated user.
      */
-    public function latestWeight(): ?BodyMeasurement
+    private function latestWeight(): ?BodyMeasurement
     {
         return BodyMeasurement::query()
             ->where('user_id', Auth::id())
@@ -41,7 +41,7 @@ class HealthDashboard extends Component
     /**
      * Determine the timestamp of the most recent synced measurement.
      */
-    public function lastSyncedAt(IntegrationConnection $connection): ?Carbon
+    private function lastSyncedAt(IntegrationConnection $connection): ?Carbon
     {
         return BodyMeasurement::query()
             ->where('integration_connection_id', $connection->id)
