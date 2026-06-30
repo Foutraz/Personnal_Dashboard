@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.4",
         "ext-pdo": "*",
+        "foutraz/gocardless-bank": "*",
         "foutraz/google-calendar": "*",
         "foutraz/outlook": "*",
         "foutraz/strava": "*",
@@ -168,6 +169,16 @@
                 "symlink": false,
                 "versions": {
                     "foutraz/outlook": "1.0.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../SDK_GoCardlessBank",
+            "options": {
+                "symlink": false,
+                "versions": {
+                    "foutraz/gocardless-bank": "1.0.0"
                 }
             }
         },

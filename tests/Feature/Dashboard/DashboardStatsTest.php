@@ -28,7 +28,7 @@ class DashboardStatsTest extends TestCase
                 $sorted = $orders;
                 sort($sorted);
 
-                return $summaries->count() === 9 && $orders === $sorted;
+                return $summaries->count() === 10 && $orders === $sorted;
             });
     }
 

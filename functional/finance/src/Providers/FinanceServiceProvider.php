@@ -2,10 +2,13 @@
 
 namespace Functional\Finance\Providers;
 
+use Foutraz\GoCardlessBank\GoCardlessManager;
 use Functional\Finance\Actions\AssignPositionOwner;
 use Functional\Finance\Actions\AssignTransactionOwner;
+use Functional\Finance\Dashboard\BankDashboardSummary;
 use Functional\Finance\Dashboard\FinanceDashboardContribution;
 use Functional\Finance\Database\Seeders\FinanceSeeder;
+use Functional\Finance\Jobs\SyncBankAccountsJob;
 use Functional\Finance\Listeners\DeletePositionTransactions;
 use Functional\Finance\Listeners\DeleteUserFinanceData;
 use Functional\Finance\Livewire\DcaSimulatorPanel;
@@ -19,10 +22,13 @@ use Functional\Finance\Rest\Controls\PositionControl;
 use Functional\Finance\Rest\Policies\InvestmentTransactionPolicy;
 use Functional\Finance\Rest\Policies\PositionPolicy;
 use Functional\Users\Events\UserDeleting;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Lomkit\Access\Access;
+use Technical\Integrations\Enums\IntegrationProvider;
+use Technical\Integrations\Models\IntegrationConnection;
 use Technical\Osdd\Providers\OsddServiceProvider;
 
 class FinanceServiceProvider extends OsddServiceProvider
@@ -50,6 +56,14 @@ class FinanceServiceProvider extends OsddServiceProvider
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/finance.php', 'finance');
 
         $this->app->tag(FinanceDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
+        $this->app->tag(BankDashboardSummary::class, ['dashboard.summaries', 'dashboard.navigation']);
+
+        $this->app->bind(GoCardlessManager::class, fn (): GoCardlessManager => new GoCardlessManager(
+            (string) config('finance.gocardless.endpoint'),
+            (string) config('finance.gocardless.secret_id'),
+            (string) config('finance.gocardless.secret_key'),
+            (string) config('finance.gocardless.redirect_uri'),
+        ));
     }
 
     /**
@@ -81,6 +95,14 @@ class FinanceServiceProvider extends OsddServiceProvider
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
             $this->loadSeeders([FinanceSeeder::class]);
+
+            $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+                $schedule->call(function (): void {
+                    IntegrationConnection::query()
+                        ->where('provider', IntegrationProvider::GoCardless)
+                        ->each(fn (IntegrationConnection $connection) => SyncBankAccountsJob::dispatch($connection->id));
+                })->daily();
+            });
         }
     }
 }
