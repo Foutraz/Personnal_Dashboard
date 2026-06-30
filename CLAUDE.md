@@ -4,9 +4,8 @@
 
 - Always work in the background.
 - Always work like another process in running on the current work tree.
-- Always work on a new branch.
 - Always ask for the branch name before creating a new branch if it's not precise in the prompt.
-- Never push on develop or main branch.
+- Never push or commit on main branch.
 - Always use separate commits, with a one-sentence message at most in English.
 - Push after every commit.
 - Add gitmoji to the commit message.
