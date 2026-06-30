@@ -3,8 +3,10 @@
 namespace Functional\Finance\Providers;
 
 use Foutraz\GoCardlessBank\GoCardlessManager;
+use Foutraz\MarketData\MarketDataManager;
 use Functional\Finance\Actions\AssignPositionOwner;
 use Functional\Finance\Actions\AssignTransactionOwner;
+use Functional\Finance\Console\RefreshMarketPrices;
 use Functional\Finance\Dashboard\BankDashboardSummary;
 use Functional\Finance\Dashboard\FinanceDashboardContribution;
 use Functional\Finance\Database\Seeders\FinanceSeeder;
@@ -64,6 +66,11 @@ class FinanceServiceProvider extends OsddServiceProvider
             (string) config('finance.gocardless.secret_key'),
             (string) config('finance.gocardless.redirect_uri'),
         ));
+
+        $this->app->singleton(MarketDataManager::class, fn (): MarketDataManager => new MarketDataManager(
+            (string) config('finance.marketdata.endpoint', 'https://api.coingecko.com'),
+            (string) config('finance.marketdata.api_key', ''),
+        ));
     }
 
     /**
@@ -95,6 +102,7 @@ class FinanceServiceProvider extends OsddServiceProvider
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
             $this->loadSeeders([FinanceSeeder::class]);
+            $this->commands([RefreshMarketPrices::class]);
 
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
                 $schedule->call(function (): void {
@@ -102,6 +110,8 @@ class FinanceServiceProvider extends OsddServiceProvider
                         ->where('provider', IntegrationProvider::GoCardless)
                         ->each(fn (IntegrationConnection $connection) => SyncBankAccountsJob::dispatch($connection->id));
                 })->daily();
+
+                $schedule->command(RefreshMarketPrices::class)->hourly();
             });
         }
     }
