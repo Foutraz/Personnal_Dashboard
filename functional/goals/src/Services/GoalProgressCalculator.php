@@ -2,6 +2,7 @@
 
 namespace Functional\Goals\Services;
 
+use Functional\Exploration\Models\ExploredCell;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Finance\Services\CapitalCalculator;
@@ -10,8 +11,12 @@ use Functional\Goals\Enums\GoalMetric;
 use Functional\Goals\Exceptions\UnsupportedGoalMetricException;
 use Functional\Goals\Models\Goal;
 use Functional\Goals\Services\Dto\GoalProgress;
+use Functional\Moto\Models\MotoRide;
+use Functional\Moto\Services\RidingStatsCalculator;
 use Functional\Sport\Models\SportActivity;
 use Functional\Sport\Services\SportStatisticsCalculator;
+use Functional\Todo\Models\Task;
+use Functional\Todo\Services\TaskCompletionCalculator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -25,6 +30,8 @@ class GoalProgressCalculator
         private SportStatisticsCalculator $sportStatistics,
         private PerformanceCalculator $performance,
         private CapitalCalculator $capital,
+        private TaskCompletionCalculator $taskCompletion,
+        private RidingStatsCalculator $ridingStats,
     ) {}
 
     /**
@@ -54,6 +61,10 @@ class GoalProgressCalculator
             GoalMetric::FinanceInvestedCapital => $this->capital->netInvested($this->financeTransactions($goal)),
             GoalMetric::FinancePortfolioValue => $this->performance->globalPerformance($this->financePositions($goal))->currentValue,
             GoalMetric::Manual => (float) ($goal->manual_current_value ?? 0),
+            GoalMetric::MotoDistance => $this->ridingStats->totalDistance($this->motoRides($goal)),
+            GoalMetric::MotoRideCount => (float) $this->ridingStats->rideCount($this->motoRides($goal)),
+            GoalMetric::ExplorationCells => (float) $this->exploredCellsCount($goal),
+            GoalMetric::TodoCompletionRate => $this->taskCompletion->completionRate($this->tasks($goal)),
         };
     }
 
@@ -95,6 +106,42 @@ class GoalProgressCalculator
             ->when($goal->starts_at, fn (Builder $query, Carbon $startsAt): Builder => $query->where('executed_at', '>=', $startsAt))
             ->when($goal->deadline, fn (Builder $query, Carbon $deadline): Builder => $query->where('executed_at', '<=', $deadline))
             ->get();
+    }
+
+    /**
+     * Load the user's moto rides bounded by the goal window.
+     *
+     * @return Collection<int, MotoRide>
+     */
+    private function motoRides(Goal $goal): Collection
+    {
+        return MotoRide::query()
+            ->where('user_id', $goal->user_id)
+            ->when($goal->starts_at, fn (Builder $query, Carbon $startsAt): Builder => $query->where('started_at', '>=', $startsAt))
+            ->when($goal->deadline, fn (Builder $query, Carbon $deadline): Builder => $query->where('started_at', '<=', $deadline))
+            ->get();
+    }
+
+    /**
+     * Count the user's explored cells first seen within the goal window.
+     */
+    private function exploredCellsCount(Goal $goal): int
+    {
+        return ExploredCell::query()
+            ->where('user_id', $goal->user_id)
+            ->when($goal->starts_at, fn (Builder $query, Carbon $startsAt): Builder => $query->where('first_seen_at', '>=', $startsAt))
+            ->when($goal->deadline, fn (Builder $query, Carbon $deadline): Builder => $query->where('first_seen_at', '<=', $deadline))
+            ->count();
+    }
+
+    /**
+     * Load all of the user's tasks for the completion-rate metric.
+     *
+     * @return Collection<int, Task>
+     */
+    private function tasks(Goal $goal): Collection
+    {
+        return Task::query()->where('user_id', $goal->user_id)->get();
     }
 
     /**

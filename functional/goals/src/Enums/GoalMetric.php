@@ -11,6 +11,10 @@ enum GoalMetric: string
     case FinanceInvestedCapital = 'finance_invested_capital';
     case FinancePortfolioValue = 'finance_portfolio_value';
     case Manual = 'manual';
+    case MotoDistance = 'moto_distance';
+    case MotoRideCount = 'moto_ride_count';
+    case ExplorationCells = 'exploration_cells';
+    case TodoCompletionRate = 'todo_completion_rate';
 
     /**
      * Get the human-readable label of the goal metric.
@@ -25,6 +29,10 @@ enum GoalMetric: string
             self::FinanceInvestedCapital => 'Capital investi',
             self::FinancePortfolioValue => 'Valeur du portefeuille',
             self::Manual => 'Suivi manuel',
+            self::MotoDistance => 'Distance moto',
+            self::MotoRideCount => 'Sorties moto',
+            self::ExplorationCells => 'Cellules explorées',
+            self::TodoCompletionRate => 'Taux de complétion',
         };
     }
 
@@ -40,6 +48,10 @@ enum GoalMetric: string
             self::SportMovingTime => 'h',
             self::FinanceInvestedCapital, self::FinancePortfolioValue => '€',
             self::Manual => '',
+            self::MotoDistance => 'km',
+            self::MotoRideCount => 'sorties',
+            self::ExplorationCells => 'cellules',
+            self::TodoCompletionRate => '%',
         };
     }
 
@@ -52,6 +64,9 @@ enum GoalMetric: string
             self::SportDistance, self::SportElevation, self::SportActivityCount, self::SportMovingTime => GoalType::Sport,
             self::FinanceInvestedCapital, self::FinancePortfolioValue => GoalType::Finance,
             self::Manual => GoalType::Personal,
+            self::MotoDistance, self::MotoRideCount => GoalType::Moto,
+            self::ExplorationCells => GoalType::Exploration,
+            self::TodoCompletionRate => GoalType::Productivity,
         };
     }
 
