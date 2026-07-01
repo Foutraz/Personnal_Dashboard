@@ -7,11 +7,9 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Technical\Integrations\Enums\IntegrationProvider;
 use Technical\Integrations\Models\IntegrationConnection;
 use Technical\Osdd\Contracts\ProvidesDashboardSummary;
-use Technical\Osdd\Contracts\ProvidesNavigationItem;
 use Technical\Osdd\Dto\DashboardSummary;
-use Technical\Osdd\Dto\NavigationItem;
 
-final class BankDashboardSummary implements ProvidesDashboardSummary, ProvidesNavigationItem
+final class BankDashboardSummary implements ProvidesDashboardSummary
 {
     private const ICON = 'M3 6h18M3 10h18M5 6V4h14v2M5 20h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z';
 
@@ -47,13 +45,5 @@ final class BankDashboardSummary implements ProvidesDashboardSummary, ProvidesNa
             ],
             callToAction: $connected ? null : 'Connecter ma banque',
         );
-    }
-
-    /**
-     * Expose the bank navigation entry.
-     */
-    public function navigationItem(): NavigationItem
-    {
-        return new NavigationItem(label: 'Banque', route: 'finance', icon: self::ICON, order: 100);
     }
 }

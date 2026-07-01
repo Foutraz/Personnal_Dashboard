@@ -58,7 +58,7 @@ class FinanceServiceProvider extends OsddServiceProvider
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/finance.php', 'finance');
 
         $this->app->tag(FinanceDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
-        $this->app->tag(BankDashboardSummary::class, ['dashboard.summaries', 'dashboard.navigation']);
+        $this->app->tag(BankDashboardSummary::class, ['dashboard.summaries']);
 
         $this->app->bind(GoCardlessManager::class, fn (): GoCardlessManager => new GoCardlessManager(
             (string) config('finance.gocardless.endpoint'),
