@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('measured_at');
             $table->json('raw')->nullable();
             $table->timestamps();
-            $table->unique(['integration_connection_id', 'external_id', 'type']);
+            $table->unique(['integration_connection_id', 'external_id', 'type'], 'body_measurements_dedup_unique');
         });
     }
 
