@@ -10,10 +10,13 @@ use Illuminate\Support\Carbon;
 
 class RunUserGamification
 {
-    public function __construct(private AwardXp $awardXp) {}
+    public function __construct(
+        private AwardXp $awardXp,
+        private UpdateStreaks $updateStreaks,
+    ) {}
 
     /**
-     * Run every tagged xp rule for the user, widening to the full history when the ledger is empty.
+     * Run every tagged xp rule for the user then refresh the streaks, widening to the full history when the ledger is empty.
      */
     public function handle(User $user, ?Carbon $since = null): LevelTransition
     {
@@ -27,6 +30,9 @@ class RunUserGamification
         $awards = $rules->flatMap(fn (XpRule $rule) => $rule->awards($user, $windowStart));
         $ruleKeys = $rules->map(fn (XpRule $rule): string => $rule->key())->values();
 
-        return $this->awardXp->handle($user, $awards, $ruleKeys, $windowStart);
+        $xpTransition = $this->awardXp->handle($user, $awards, $ruleKeys, $windowStart);
+        $streakTransition = $this->updateStreaks->handle($user);
+
+        return new LevelTransition($xpTransition->previousLevel, $streakTransition->currentLevel);
     }
 }
