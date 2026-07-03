@@ -9,6 +9,12 @@ use Functional\Gamification\Console\RecalculateGamification;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
+use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Rest\Controls\PlayerProfileControl;
+use Functional\Gamification\Rest\Controls\XpEntryControl;
+use Functional\Gamification\Rest\Policies\PlayerProfilePolicy;
+use Functional\Gamification\Rest\Policies\XpEntryPolicy;
 use Functional\Gamification\Xp\Rules\ExplorationCellXpRule;
 use Functional\Gamification\Xp\Rules\FinanceMonthlyXpRule;
 use Functional\Gamification\Xp\Rules\HealthMeasurementDayXpRule;
@@ -20,6 +26,8 @@ use Functional\Sport\Events\StravaActivitiesSynced;
 use Functional\Users\Events\UserDeleting;
 use Functional\Users\Models\User;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Gate;
+use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
 
 class GamificationServiceProvider extends OsddServiceProvider
@@ -71,6 +79,14 @@ class GamificationServiceProvider extends OsddServiceProvider
      */
     public function boot(): void
     {
+        $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+
+        (new Access)->addControl(new XpEntryControl);
+        (new Access)->addControl(new PlayerProfileControl);
+
+        Gate::policy(XpEntry::class, XpEntryPolicy::class);
+        Gate::policy(PlayerProfile::class, PlayerProfilePolicy::class);
+
         $this->loadListenEvent();
 
         if ($this->app->runningInConsole()) {
