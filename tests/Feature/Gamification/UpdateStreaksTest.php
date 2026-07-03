@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\UpdateStreaks;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
@@ -110,6 +111,89 @@ class UpdateStreaksTest extends TestCase
 
         $this->assertSame(1, Streak::query()->where('user_id', $user->id)->count());
         $this->assertSame(2, Streak::query()->where('user_id', $user->id)->sole()->current_count);
+    }
+
+    #[Test]
+    public function it_awards_the_milestone_xp_when_a_run_reaches_seven_days(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 6) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $milestone = XpEntry::query()
+            ->where('user_id', $user->id)
+            ->where('rule_key', Streak::MILESTONE_RULE_KEY)
+            ->sole();
+        $this->assertSame(config('gamification.streaks.milestones.7'), $milestone->points);
+        $this->assertSame(GamificationDomain::Sport, $milestone->domain);
+        $this->assertSame(now()->toDateString(), $milestone->occurred_at->toDateString());
+    }
+
+    #[Test]
+    public function it_does_not_duplicate_milestones_across_runs(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 6) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        $action = $this->app->make(UpdateStreaks::class);
+
+        $action->handle($user);
+        $action->handle($user);
+
+        $this->assertSame(1, XpEntry::query()->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+    }
+
+    #[Test]
+    public function it_removes_the_milestone_when_the_run_no_longer_reaches_it(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 6) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        $action = $this->app->make(UpdateStreaks::class);
+        $action->handle($user);
+
+        XpEntry::query()
+            ->where('user_id', $user->id)
+            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
+            ->where('occurred_at', '>=', now()->subDays(3)->startOfDay())
+            ->delete();
+        $action->handle($user);
+
+        $this->assertSame(0, XpEntry::query()->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+    }
+
+    #[Test]
+    public function it_ignores_milestone_entries_when_computing_active_days(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 6) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        $action = $this->app->make(UpdateStreaks::class);
+        $action->handle($user);
+
+        $action->handle($user);
+
+        $this->assertSame(7, Streak::query()->where('user_id', $user->id)->sole()->current_count);
+    }
+
+    #[Test]
+    public function it_refreshes_the_player_profile_with_the_milestone_points(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 6) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $expected = 7 * 10 + config('gamification.streaks.milestones.7');
+        $this->assertSame($expected, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
     }
 
     /**

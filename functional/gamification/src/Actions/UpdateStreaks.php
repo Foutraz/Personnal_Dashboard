@@ -24,6 +24,7 @@ class UpdateStreaks
             $runsByDomain = $this->activeDaysByDomain($user)->map(fn (Collection $days): Collection => $this->runs($days));
 
             $this->syncProjections($user, $runsByDomain);
+            $this->syncMilestones($user, $runsByDomain);
 
             return $this->refreshPlayerProfile->handle($user);
         });
@@ -119,5 +120,48 @@ class UpdateStreaks
                 ['current_count', 'best_count', 'last_activity_date', 'updated_at'],
             );
         }
+    }
+
+    /**
+     * Upsert the reached milestone awards and drop the ones no run reaches anymore.
+     *
+     * @param  Collection<string, Collection<int, array{start: Carbon, length: int}>>  $runsByDomain
+     */
+    private function syncMilestones(User $user, Collection $runsByDomain): void
+    {
+        /** @var array<int, int> $milestones */
+        $milestones = config('gamification.streaks.milestones');
+        $now = now();
+
+        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => $runs->flatMap(
+            fn (array $run): Collection => collect($milestones)
+                ->filter(fn (int $points, int $days): bool => $days <= $run['length'])
+                ->map(fn (int $points, int $days): array => [
+                    'id' => strtolower((string) Str::ulid()),
+                    'user_id' => $user->id,
+                    'domain' => $domain,
+                    'rule_key' => Streak::MILESTONE_RULE_KEY,
+                    'source_type' => Streak::class,
+                    'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
+                    'points' => $points,
+                    'occurred_at' => $run['start']->copy()->addDays($days - 1),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->values()
+        ))->values();
+
+        XpEntry::query()
+            ->where('user_id', $user->id)
+            ->where('rule_key', Streak::MILESTONE_RULE_KEY)
+            ->whereNotIn('source_id', $rows->pluck('source_id'))
+            ->delete();
+
+        $rows->chunk(500)->each(function (Collection $chunk): void {
+            DB::table('xp_entries')->upsert(
+                $chunk->all(),
+                ['user_id', 'rule_key', 'source_type', 'source_id'],
+                ['points', 'occurred_at', 'updated_at'],
+            );
+        });
     }
 }
