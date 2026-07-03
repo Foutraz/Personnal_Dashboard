@@ -1,0 +1,31 @@
+{
+    "name": "functional/gamification",
+    "description": "",
+    "type": "layer",
+    "version": "1.0.0",
+    "require": {
+        "xefi/laravel-osdd": "*",
+        "functional/sport": "*",
+        "functional/finance": "*",
+        "functional/health": "*",
+        "functional/moto": "*",
+        "functional/todo": "*",
+        "functional/exploration": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Functional\\Gamification\\": "src/",
+            "Functional\\Gamification\\Database\\Seeders\\": "database/Seeders/",
+            "Functional\\Gamification\\Database\\Factories\\": "database/Factories/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Functional\\Gamification\\Providers\\GamificationServiceProvider"
+            ]
+        }
+    }
+}

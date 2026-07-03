@@ -4,6 +4,7 @@ namespace Tests\Feature\Sport;
 
 use Foutraz\Strava\StravaManager;
 use Functional\Sport\Actions\BuildUserStravaManager;
+use Functional\Sport\Events\StravaActivitiesSynced;
 use Functional\Sport\Jobs\SyncStravaActivitiesJob;
 use Functional\Sport\Models\SportActivity;
 use GuzzleHttp\Client;
@@ -11,6 +12,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\Integrations\Models\IntegrationConnection;
 use Tests\TestCase;
@@ -39,6 +41,20 @@ class SyncActivitiesJobTest extends TestCase
             'strava_id' => 1001,
             'user_id' => $connection->user_id,
         ]);
+    }
+
+    #[Test]
+    public function it_dispatches_the_synced_event_after_the_run(): void
+    {
+        $connection = IntegrationConnection::factory()->create([
+            'expires_at' => now()->addHour(),
+        ]);
+
+        Event::fake([StravaActivitiesSynced::class]);
+        $this->bindManagerReturningActivities();
+        SyncStravaActivitiesJob::dispatchSync($connection->id);
+
+        Event::assertDispatched(fn (StravaActivitiesSynced $event): bool => $event->userId === $connection->user_id);
     }
 
     /**

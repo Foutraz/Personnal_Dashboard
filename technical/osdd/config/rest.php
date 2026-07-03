@@ -13,17 +13,17 @@ return [
 
     'gates' => [
         'enabled' => true,
-        'key'     => 'gates',
+        'key' => 'gates',
         'message' => [
             'enabled' => false,
         ],
         // Here you can customize the keys for each gate
         'names' => [
-            'authorized_to_view'         => 'authorized_to_view',
-            'authorized_to_create'       => 'authorized_to_create',
-            'authorized_to_update'       => 'authorized_to_update',
-            'authorized_to_delete'       => 'authorized_to_delete',
-            'authorized_to_restore'      => 'authorized_to_restore',
+            'authorized_to_view' => 'authorized_to_view',
+            'authorized_to_create' => 'authorized_to_create',
+            'authorized_to_update' => 'authorized_to_update',
+            'authorized_to_delete' => 'authorized_to_delete',
+            'authorized_to_restore' => 'authorized_to_restore',
             'authorized_to_force_delete' => 'authorized_to_force_delete',
         ],
     ],
@@ -40,7 +40,7 @@ return [
 
     'authorizations' => [
         'enabled' => true,
-        'cache'   => [
+        'cache' => [
             'enabled' => true,
             'default' => 5, // Cache minutes by default
         ],
@@ -76,25 +76,25 @@ return [
 
     'documentation' => [
         'routing' => [
-            'enabled'     => true,
-            'domain'      => null,
-            'path'        => '/api-documentation',
+            'enabled' => true,
+            'domain' => null,
+            'path' => '/api-documentation',
             'middlewares' => [
                 'api',
             ],
         ],
         'info' => [
-            'title'          => config('app.name'),
-            'summary'        => 'This is my project\'s documentation',
-            'description'    => 'Find out all about my project\'s API',
+            'title' => config('app.name'),
+            'summary' => 'This is my project\'s documentation',
+            'description' => 'Find out all about my project\'s API',
             'termsOfService' => null, // (Optional) Url to terms of services
-            'contact'        => [
-                'name'  => 'Quentin Mari',
+            'contact' => [
+                'name' => 'Quentin Mari',
                 'email' => 'quentin.mari0409@gmail.com',
             ],
             'license' => [
-                'url'        => null,
-                'name'       => 'MIT',
+                'url' => null,
+                'name' => 'MIT',
                 'identifier' => 'MIT',
             ],
             'version' => '1.0.0',
@@ -102,7 +102,7 @@ return [
         // See https://spec.openapis.org/oas/v3.1.0#server-object
         'servers' => [
             [
-                'url'         => '/', // Relative to current
+                'url' => '/', // Relative to current
                 'description' => 'The current server',
             ],
             //  [
@@ -134,12 +134,12 @@ return [
         ],
         // See https://spec.openapis.org/oas/v3.1.0#security-scheme-object
         'securitySchemes' => [
-            "http_bearer" => [
-                "description" => "HTTP authentication with bearer token",
-                "type" => "http",
-                "scheme" => "bearer",
-                "bearerFormat" => "JWT"
-            ]
+            'http_bearer' => [
+                'description' => 'HTTP authentication with bearer token',
+                'type' => 'http',
+                'scheme' => 'bearer',
+                'bearerFormat' => 'JWT',
+            ],
         ],
     ],
 ];

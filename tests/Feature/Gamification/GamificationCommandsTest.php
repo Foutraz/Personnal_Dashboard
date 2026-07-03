@@ -1,0 +1,97 @@
+<?php
+
+namespace Tests\Feature\Gamification;
+
+use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\XpEntry;
+use Functional\Sport\Models\SportActivity;
+use Functional\Todo\Models\Task;
+use Functional\Users\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class GamificationCommandsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    #[Test]
+    public function it_backfills_every_user_over_the_full_history(): void
+    {
+        Queue::fake();
+        $users = User::factory()->count(2)->create();
+
+        $this->artisan('gamification:backfill')->assertExitCode(0);
+
+        Queue::assertPushed(ProcessUserGamificationJob::class, 2);
+        Queue::assertPushed(fn (ProcessUserGamificationJob $job): bool => $job->userId === $users->first()->id && $job->since === null);
+    }
+
+    #[Test]
+    public function it_backfills_a_single_user_when_targeted(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        User::factory()->create();
+
+        $this->artisan('gamification:backfill', ['user' => $user->id])->assertExitCode(0);
+
+        Queue::assertPushed(ProcessUserGamificationJob::class, 1);
+    }
+
+    #[Test]
+    public function it_recalculates_the_ledger_from_scratch(): void
+    {
+        $user = User::factory()->create();
+        $activity = SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        XpEntry::factory()->create(['user_id' => $user->id, 'rule_key' => 'sport_activity', 'source_type' => SportActivity::class, 'source_id' => $activity->id, 'points' => 999]);
+        XpEntry::factory()->create(['user_id' => $user->id, 'rule_key' => 'stale_rule', 'points' => 500]);
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $entries = XpEntry::query()->where('user_id', $user->id)->get();
+        $this->assertCount(1, $entries);
+        $this->assertSame(21, $entries->first()->points);
+        $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_drops_the_awards_of_a_deleted_source_on_the_next_recalculation(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        $task = Task::factory()->completed()->create(['user_id' => $user->id, 'completed_at' => now()->subDay()]);
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(24, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+
+        $task->delete();
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'todo_task_completed')->count());
+        $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_skips_a_user_whose_gamification_lock_is_already_held(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        $stale = XpEntry::factory()->create(['user_id' => $user->id, 'rule_key' => 'stale_rule', 'points' => 500]);
+
+        $lock = Cache::lock(ProcessUserGamificationJob::overlapKey($user->id), 30);
+        $this->assertTrue($lock->get());
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $lock->release();
+
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->where('id', $stale->id)->count());
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->count());
+    }
+}
