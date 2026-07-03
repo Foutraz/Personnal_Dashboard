@@ -79,6 +79,24 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_lowers_the_total_when_a_source_disappears_on_a_full_recalculation(): void
+    {
+        $user = User::factory()->create();
+        $activity = SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+
+        $activity->delete();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'sport_activity')->count());
+        $this->assertSame(0, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
     public function it_quietly_skips_a_deleted_user(): void
     {
         ProcessUserGamificationJob::dispatchSync('01hzzzzzzzzzzzzzzzzzzzzzzz');

@@ -21,9 +21,10 @@ class RunUserGamification
             $since = null;
         }
 
-        $awards = collect(app()->tagged('gamification.xp_rules'))
-            ->flatMap(fn (XpRule $rule) => $rule->awards($user, $since));
+        $rules = collect(app()->tagged('gamification.xp_rules'));
+        $awards = $rules->flatMap(fn (XpRule $rule) => $rule->awards($user, $since));
+        $ruleKeys = $rules->map(fn (XpRule $rule): string => $rule->key())->values();
 
-        return $this->awardXp->handle($user, $awards);
+        return $this->awardXp->handle($user, $awards, $ruleKeys, $since?->copy()->startOfDay());
     }
 }
