@@ -34,4 +34,11 @@ return [
             'investment_contribution_month' => 10,
         ],
     ],
+    'streaks' => [
+        'milestones' => [
+            7 => 25,
+            30 => 100,
+            100 => 400,
+        ],
+    ],
 ];

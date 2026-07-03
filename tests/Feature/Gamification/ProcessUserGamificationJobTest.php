@@ -6,8 +6,10 @@ use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
+use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
@@ -201,5 +203,18 @@ class ProcessUserGamificationJobTest extends TestCase
         ProcessUserGamificationJob::dispatchSync('01hzzzzzzzzzzzzzzzzzzzzzzz');
 
         $this->assertSame(0, XpEntry::query()->count());
+    }
+
+    #[Test]
+    public function it_updates_the_streak_projections_after_the_ledger(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'started_at' => now()->subDay()]);
+        SportActivity::factory()->create(['user_id' => $user->id, 'started_at' => now()]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $streak = Streak::query()->where('user_id', $user->id)->where('domain', GamificationDomain::Sport->value)->sole();
+        $this->assertSame(2, $streak->current_count);
     }
 }

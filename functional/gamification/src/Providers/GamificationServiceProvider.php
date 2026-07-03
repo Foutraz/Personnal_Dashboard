@@ -13,10 +13,13 @@ use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
 use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Rest\Controls\PlayerProfileControl;
+use Functional\Gamification\Rest\Controls\StreakControl;
 use Functional\Gamification\Rest\Controls\XpEntryControl;
 use Functional\Gamification\Rest\Policies\PlayerProfilePolicy;
+use Functional\Gamification\Rest\Policies\StreakPolicy;
 use Functional\Gamification\Rest\Policies\XpEntryPolicy;
 use Functional\Gamification\Xp\Rules\ExplorationCellXpRule;
 use Functional\Gamification\Xp\Rules\FinanceMonthlyXpRule;
@@ -96,9 +99,11 @@ class GamificationServiceProvider extends OsddServiceProvider
 
         (new Access)->addControl(new XpEntryControl);
         (new Access)->addControl(new PlayerProfileControl);
+        (new Access)->addControl(new StreakControl);
 
         Gate::policy(XpEntry::class, XpEntryPolicy::class);
         Gate::policy(PlayerProfile::class, PlayerProfilePolicy::class);
+        Gate::policy(Streak::class, StreakPolicy::class);
 
         $this->loadListenEvent();
 

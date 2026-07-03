@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Dashboard;
 
 use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
@@ -33,6 +34,22 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
         /** @var User $user */
         $monthlyXp = $this->xpLedger->gainedSince($user, now()->startOfMonth());
 
+        $hottest = Streak::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->where('current_count', '>', 0)
+            ->orderByDesc('current_count')
+            ->first();
+
+        $secondaryLines = [
+            number_format($totalXp, 0, ',', ' ').' XP au total',
+            number_format($remaining, 0, ',', ' ').' XP avant le niveau '.($level + 1),
+            number_format($monthlyXp, 0, ',', ' ').' XP ce mois-ci',
+        ];
+
+        if ($hottest !== null) {
+            $secondaryLines[] = 'Série '.$hottest->domain->label().' : '.$hottest->current_count.' j';
+        }
+
         return new DashboardSummary(
             key: 'gamification',
             title: 'Joueur',
@@ -43,11 +60,7 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             available: true,
             metricValue: number_format($level, 0, ',', ' '),
             metricUnit: 'niv.',
-            secondaryLines: [
-                number_format($totalXp, 0, ',', ' ').' XP au total',
-                number_format($remaining, 0, ',', ' ').' XP avant le niveau '.($level + 1),
-                number_format($monthlyXp, 0, ',', ' ').' XP ce mois-ci',
-            ],
+            secondaryLines: $secondaryLines,
         );
     }
 
