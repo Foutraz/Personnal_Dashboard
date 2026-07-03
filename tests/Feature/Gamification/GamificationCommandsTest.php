@@ -9,6 +9,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -74,5 +75,23 @@ class GamificationCommandsTest extends TestCase
 
         $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'todo_task_completed')->count());
         $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_skips_a_user_whose_gamification_lock_is_already_held(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        $stale = XpEntry::factory()->create(['user_id' => $user->id, 'rule_key' => 'stale_rule', 'points' => 500]);
+
+        $lock = Cache::lock(ProcessUserGamificationJob::overlapKey($user->id), 30);
+        $this->assertTrue($lock->get());
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $lock->release();
+
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->where('id', $stale->id)->count());
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->count());
     }
 }

@@ -18,17 +18,17 @@ class RefreshPlayerProfile
     public function handle(User $user): LevelTransition
     {
         $totalXp = (int) XpEntry::query()->where('user_id', $user->id)->sum('points');
-        $profile = PlayerProfile::query()->firstOrNew(['user_id' => $user->id]);
-        $previousLevel = $profile->exists ? $profile->level : 1;
+        $profile = PlayerProfile::query()->where('user_id', $user->id)->first();
+        $previousLevel = $profile === null ? 1 : $profile->level;
         $level = $this->levelCurve->levelForXp($totalXp);
 
-        $profile->fill(['total_xp' => $totalXp, 'level' => $level]);
+        $attributes = ['total_xp' => $totalXp, 'level' => $level];
 
         if ($level !== $previousLevel) {
-            $profile->level_reached_at = now();
+            $attributes['level_reached_at'] = now();
         }
 
-        $profile->save();
+        PlayerProfile::query()->updateOrCreate(['user_id' => $user->id], $attributes);
 
         return new LevelTransition($previousLevel, $level);
     }

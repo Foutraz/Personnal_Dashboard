@@ -3,9 +3,11 @@
 namespace Functional\Gamification\Console;
 
 use Functional\Gamification\Actions\RunUserGamification;
+use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class RecalculateGamification extends Command
@@ -25,7 +27,7 @@ class RecalculateGamification extends Command
     protected $description = 'Purge and replay the gamification ledger, applying the current scoring rules to the full history.';
 
     /**
-     * Purge each targeted ledger inside a transaction and replay the rules inline, bypassing any queue lock.
+     * Purge each targeted ledger inside a transaction and replay the rules under the job's shared per-user lock.
      */
     public function handle(RunUserGamification $runUserGamification): int
     {
@@ -38,11 +40,19 @@ class RecalculateGamification extends Command
         foreach ($users as $user) {
             $this->line("Recalculating gamification ledger for user [{$user->id}].");
 
-            DB::transaction(function () use ($user, $runUserGamification): void {
-                XpEntry::query()->where('user_id', $user->id)->delete();
+            $recalculated = Cache::lock(ProcessUserGamificationJob::overlapKey($user->id), 600)->get(function () use ($user, $runUserGamification): bool {
+                DB::transaction(function () use ($user, $runUserGamification): void {
+                    XpEntry::query()->where('user_id', $user->id)->delete();
 
-                $runUserGamification->handle($user);
+                    $runUserGamification->handle($user);
+                });
+
+                return true;
             });
+
+            if ($recalculated !== true) {
+                $this->warn("Gamification ledger for user [{$user->id}] is locked; skipped.");
+            }
         }
 
         $this->comment('Gamification ledger recalculated.');

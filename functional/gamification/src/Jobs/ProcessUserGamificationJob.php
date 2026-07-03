@@ -34,13 +34,21 @@ class ProcessUserGamificationJob implements ShouldQueue
     ) {}
 
     /**
+     * Build the shared cache lock key guarding a user's gamification recomputation.
+     */
+    public static function overlapKey(string $userId): string
+    {
+        return 'laravel-queue-overlap:'.$userId;
+    }
+
+    /**
      * Get the middleware the job should pass through.
      *
      * @return array<int, object>
      */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping($this->userId))->releaseAfter(60)->expireAfter(600)];
+        return [(new WithoutOverlapping($this->userId))->shared()->releaseAfter(60)->expireAfter(600)];
     }
 
     /**
