@@ -79,6 +79,28 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_daily_todo_cap_when_an_earlier_task_reorders_the_day(): void
+    {
+        $user = User::factory()->create();
+        $day = now()->subDays(2)->startOfDay();
+
+        for ($hour = 1; $hour <= 10; $hour++) {
+            Task::factory()->completed()->create(['user_id' => $user->id, 'completed_at' => $day->copy()->addHours($hour)]);
+        }
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(30, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+
+        Task::factory()->completed()->create(['user_id' => $user->id, 'completed_at' => $day->copy()->addMinutes(1)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(10, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'todo_task_completed')->count());
+        $this->assertSame(30, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
     public function it_removes_a_finance_month_award_when_the_month_falls_below_the_threshold(): void
     {
         $user = User::factory()->create();
