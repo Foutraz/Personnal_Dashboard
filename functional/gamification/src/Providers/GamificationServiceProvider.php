@@ -6,9 +6,11 @@ use Functional\Exploration\Events\CoverageRebuilt;
 use Functional\Finance\Events\BankTransactionsSynced;
 use Functional\Gamification\Console\BackfillGamification;
 use Functional\Gamification\Console\RecalculateGamification;
+use Functional\Gamification\Dashboard\GamificationDashboardContribution;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
+use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Rest\Controls\PlayerProfileControl;
@@ -26,7 +28,9 @@ use Functional\Sport\Events\StravaActivitiesSynced;
 use Functional\Users\Events\UserDeleting;
 use Functional\Users\Models\User;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Lomkit\Access\Access;
 use Technical\Osdd\Providers\OsddServiceProvider;
 
@@ -72,6 +76,8 @@ class GamificationServiceProvider extends OsddServiceProvider
             TodoTaskCompletedXpRule::class,
             ExplorationCellXpRule::class,
         ], 'gamification.xp_rules');
+
+        $this->app->tag(GamificationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
     /**
@@ -79,7 +85,13 @@ class GamificationServiceProvider extends OsddServiceProvider
      */
     public function boot(): void
     {
+        $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
+        $this->loadViewsFrom(__DIR__.'/../../resources/views', 'gamification');
+
+        Blade::anonymousComponentNamespace('gamification::components', 'gamification');
+
+        Livewire::component('gamification-player-profile', PlayerProfilePage::class);
 
         (new Access)->addControl(new XpEntryControl);
         (new Access)->addControl(new PlayerProfileControl);
