@@ -4,6 +4,7 @@ namespace Functional\Gamification\Livewire;
 
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
@@ -47,6 +48,10 @@ class PlayerProfilePage extends Component
             'domains' => GamificationDomain::cases(),
             'chartLabels' => array_keys($series),
             'chartValues' => array_values($series),
+            'streaks' => Streak::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('current_count')
+                ->get(),
         ]);
     }
 }

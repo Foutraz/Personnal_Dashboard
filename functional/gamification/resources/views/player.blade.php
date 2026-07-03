@@ -55,6 +55,53 @@
         />
     </section>
 
+    @php
+        $accents = [
+            'cyan' => ['text' => 'text-cyan', 'bg' => 'bg-cyan-soft'],
+            'violet' => ['text' => 'text-violet', 'bg' => 'bg-violet-soft'],
+            'lime' => ['text' => 'text-lime', 'bg' => 'bg-lime-soft'],
+        ];
+    @endphp
+
+    @if ($streaks->isNotEmpty())
+        <section class="mt-8" style="animation-delay: 0.15s;">
+            <h3 class="font-display text-lg font-semibold tracking-tight">Séries</h3>
+            <p class="mt-0.5 text-sm text-muted">Vos jours consécutifs d'activité par domaine.</p>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($streaks as $streak)
+                    @php
+                        $accent = $accents[$streak->domain->color()] ?? $accents['cyan'];
+                        $alive = $streak->last_activity_date !== null && $streak->last_activity_date->gte(now()->subDay()->startOfDay());
+                    @endphp
+                    <x-ui.glass-card hover padding="p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl {{ $accent['bg'] }} {{ $accent['text'] }}">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                        <path d="{{ $streak->domain->icon() }}" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <p class="text-[0.7rem] font-medium uppercase tracking-[0.22em] text-faint">{{ $streak->domain->label() }}</p>
+                                    <p class="font-display text-xl font-bold {{ $alive ? $accent['text'] : 'text-muted' }}">
+                                        {{ $streak->current_count }} <span class="text-sm font-normal text-muted">j</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                @if ($alive)
+                                    <span class="text-lg" title="Série en cours">🔥</span>
+                                @endif
+                                <p class="text-xs text-faint">Record : {{ $streak->best_count }}</p>
+                            </div>
+                        </div>
+                    </x-ui.glass-card>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     <x-ui.glass-card class="mt-8">
         <h3 class="font-display text-lg font-semibold tracking-tight">XP par jour</h3>
         <p class="mt-0.5 text-sm text-muted">Vos gains d'expérience sur les 30 derniers jours.</p>
@@ -81,14 +128,6 @@
 
     <section class="mt-8">
         <h3 class="font-display text-lg font-semibold tracking-tight">XP par domaine</h3>
-
-        @php
-            $accents = [
-                'cyan' => ['text' => 'text-cyan', 'bg' => 'bg-cyan-soft'],
-                'violet' => ['text' => 'text-violet', 'bg' => 'bg-violet-soft'],
-                'lime' => ['text' => 'text-lime', 'bg' => 'bg-lime-soft'],
-            ];
-        @endphp
 
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($domains as $domain)
