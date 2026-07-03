@@ -79,6 +79,25 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_removes_a_finance_month_award_when_the_month_falls_below_the_threshold(): void
+    {
+        $user = User::factory()->create();
+        $month = now()->subMonth()->startOfMonth();
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 500, 'booked_at' => $month->copy()->addDays(3)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(20, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => -1500, 'booked_at' => $month->copy()->addDays(6)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'finance_month')->count());
+        $this->assertSame(0, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
     public function it_lowers_the_total_when_a_source_disappears_on_a_full_recalculation(): void
     {
         $user = User::factory()->create();
