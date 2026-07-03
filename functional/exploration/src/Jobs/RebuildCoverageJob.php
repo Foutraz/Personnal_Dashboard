@@ -3,6 +3,7 @@
 namespace Functional\Exploration\Jobs;
 
 use Functional\Exploration\Actions\RebuildUserCoverage;
+use Functional\Exploration\Events\CoverageRebuilt;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,5 +45,7 @@ class RebuildCoverageJob implements ShouldQueue
     public function handle(RebuildUserCoverage $rebuild): void
     {
         $rebuild->handle($this->userId);
+
+        CoverageRebuilt::dispatch($this->userId);
     }
 }

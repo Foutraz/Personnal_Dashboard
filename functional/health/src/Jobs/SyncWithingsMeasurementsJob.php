@@ -5,6 +5,7 @@ namespace Functional\Health\Jobs;
 use Functional\Health\Actions\BuildUserWithingsManager;
 use Functional\Health\Actions\UpsertBodyMeasurement;
 use Functional\Health\Enums\MeasurementType;
+use Functional\Health\Events\WithingsMeasurementsSynced;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -72,5 +73,7 @@ class SyncWithingsMeasurementsJob implements ShouldQueue
                 unit: (string) $measurement->unit,
             );
         }
+
+        WithingsMeasurementsSynced::dispatch($connection->user_id);
     }
 }

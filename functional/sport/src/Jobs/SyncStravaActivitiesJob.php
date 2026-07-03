@@ -5,6 +5,7 @@ namespace Functional\Sport\Jobs;
 use Foutraz\Strava\Dto\Activity;
 use Functional\Sport\Actions\BuildUserStravaManager;
 use Functional\Sport\Actions\UpsertStravaActivity;
+use Functional\Sport\Events\StravaActivitiesSynced;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -61,5 +62,7 @@ class SyncStravaActivitiesJob implements ShouldQueue
             /** @var Activity $activity */
             $upsert($connection, $activity);
         }
+
+        StravaActivitiesSynced::dispatch($connection->user_id);
     }
 }

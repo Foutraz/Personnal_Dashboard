@@ -4,6 +4,7 @@ namespace Tests\Feature\Health;
 
 use Foutraz\Withings\WithingsManager;
 use Functional\Health\Actions\BuildUserWithingsManager;
+use Functional\Health\Events\WithingsMeasurementsSynced;
 use Functional\Health\Jobs\SyncWithingsMeasurementsJob;
 use Functional\Health\Models\BodyMeasurement;
 use GuzzleHttp\Client;
@@ -11,6 +12,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\Integrations\Enums\IntegrationProvider;
 use Technical\Integrations\Models\IntegrationConnection;
@@ -42,6 +44,22 @@ class SyncWithingsMeasurementsJobTest extends TestCase
             'external_id' => '111',
             'user_id' => $connection->user_id,
         ]);
+    }
+
+    #[Test]
+    public function it_dispatches_the_synced_event_after_the_run(): void
+    {
+        $connection = IntegrationConnection::factory()->create([
+            'provider' => IntegrationProvider::Withings,
+            'expires_at' => now()->addHour(),
+            'external_id' => '42',
+        ]);
+
+        Event::fake([WithingsMeasurementsSynced::class]);
+        $this->bindManagerReturningMeasurements();
+        SyncWithingsMeasurementsJob::dispatchSync($connection->id);
+
+        Event::assertDispatched(fn (WithingsMeasurementsSynced $event): bool => $event->userId === $connection->user_id);
     }
 
     /**

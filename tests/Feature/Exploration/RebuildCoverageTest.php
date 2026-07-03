@@ -3,10 +3,13 @@
 namespace Tests\Feature\Exploration;
 
 use Functional\Exploration\Actions\RebuildUserCoverage;
+use Functional\Exploration\Events\CoverageRebuilt;
+use Functional\Exploration\Jobs\RebuildCoverageJob;
 use Functional\Exploration\Models\ExploredCell;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\Integrations\Models\IntegrationConnection;
 use Tests\TestCase;
@@ -49,6 +52,17 @@ class RebuildCoverageTest extends TestCase
         app(RebuildUserCoverage::class)->handle($user->id);
 
         $this->assertSame(3, ExploredCell::query()->where('user_id', $user->id)->count());
+    }
+
+    #[Test]
+    public function it_dispatches_the_rebuilt_event_after_the_job_run(): void
+    {
+        $user = User::factory()->create();
+
+        Event::fake([CoverageRebuilt::class]);
+        RebuildCoverageJob::dispatchSync($user->id);
+
+        Event::assertDispatched(fn (CoverageRebuilt $event): bool => $event->userId === $user->id);
     }
 
     #[Test]

@@ -4,6 +4,7 @@ namespace Functional\Finance\Jobs;
 
 use Functional\Finance\Actions\BuildUserGoCardlessManager;
 use Functional\Finance\Actions\UpsertBankTransaction;
+use Functional\Finance\Events\BankTransactionsSynced;
 use Functional\Finance\Models\BankAccount;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -73,5 +74,7 @@ class SyncBankTransactionsJob implements ShouldQueue
                 counterparty: $transaction->counterparty,
             );
         }
+
+        BankTransactionsSynced::dispatch($account->user_id);
     }
 }
