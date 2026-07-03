@@ -19,10 +19,6 @@ class OsddServiceProvider extends LayerServiceProvider
     }
 
     /**
-     * @param  string  $path
-     * @param  string  $configKey
-     * @return void
-     *
      * @throws BindingResolutionException
      */
     protected function mergeConfigWithPriorityFrom(string $path, string $configKey): void

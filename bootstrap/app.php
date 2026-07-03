@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {
-                return null;
+                return;
             }
 
             return route('login');
@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
-            return null;
+
         });
 
     })
