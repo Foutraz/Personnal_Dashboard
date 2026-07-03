@@ -180,6 +180,22 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_purges_a_decommissioned_rule_entry_within_the_window(): void
+    {
+        $user = User::factory()->create();
+        XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'rule_key' => 'retired_rule',
+            'points' => 50,
+            'occurred_at' => now()->subDay(),
+        ]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'retired_rule')->count());
+    }
+
+    #[Test]
     public function it_quietly_skips_a_deleted_user(): void
     {
         ProcessUserGamificationJob::dispatchSync('01hzzzzzzzzzzzzzzzzzzzzzzz');

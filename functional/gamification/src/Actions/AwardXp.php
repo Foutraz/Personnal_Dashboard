@@ -53,7 +53,7 @@ class AwardXp
     }
 
     /**
-     * Delete the recalculated rule entries falling inside the recomputed window before they are reinserted.
+     * Delete every ledger entry falling inside the recomputed window, including retired rule keys, before the current awards are reinserted.
      *
      * @param  Collection<int, string>  $ruleKeys
      */
@@ -65,7 +65,6 @@ class AwardXp
 
         XpEntry::query()
             ->where('user_id', $user->id)
-            ->whereIn('rule_key', $ruleKeys->all())
             ->when($windowStart, fn ($query) => $query->where('occurred_at', '>=', $windowStart))
             ->delete();
     }
