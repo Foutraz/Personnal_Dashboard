@@ -7,6 +7,7 @@ use Functional\Finance\Events\BankTransactionsSynced;
 use Functional\Gamification\Console\BackfillGamification;
 use Functional\Gamification\Console\RecalculateGamification;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
+use Functional\Gamification\Database\Seeders\GamificationSeeder;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
@@ -103,6 +104,7 @@ class GamificationServiceProvider extends OsddServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+            $this->loadSeeders([GamificationSeeder::class]);
             $this->commands([BackfillGamification::class, RecalculateGamification::class]);
 
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
