@@ -59,12 +59,12 @@ class FinanceMonthlyXpRule implements XpRule
             ->merge($investmentMonths)
             ->unique()
             ->sort()
-            ->map(fn (string $month): XpAward => new XpAward(
+            ->map(fn (int|string $month): XpAward => new XpAward(
                 domain: $this->domain(),
                 ruleKey: $this->key(),
                 sourceType: 'period',
-                sourceId: $month,
-                points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains($month), $config),
+                sourceId: (string) $month,
+                points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains((string) $month), $config),
                 occurredAt: Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfDay(),
             ))
             ->filter(fn (XpAward $award): bool => $award->points > 0)

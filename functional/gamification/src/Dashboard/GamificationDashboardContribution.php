@@ -27,8 +27,8 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
     public function dashboardSummary(Authenticatable $user): DashboardSummary
     {
         $profile = PlayerProfile::query()->where('user_id', $user->getAuthIdentifier())->first();
-        $totalXp = $profile?->total_xp ?? 0;
-        $level = $profile?->level ?? 1;
+        $totalXp = $profile === null ? 0 : $profile->total_xp;
+        $level = $profile === null ? 1 : $profile->level;
         $remaining = max($this->levelCurve->xpForLevel($level + 1) - $totalXp, 0);
         /** @var User $user */
         $monthlyXp = $this->xpLedger->gainedSince($user, now()->startOfMonth());

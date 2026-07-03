@@ -23,6 +23,8 @@ use Lomkit\Access\Controls\HasControl;
  * @property int $visit_count
  * @property Carbon $first_seen_at
  * @property Carbon $last_seen_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 #[UseFactory(ExploredCellFactory::class)]
 class ExploredCell extends Model

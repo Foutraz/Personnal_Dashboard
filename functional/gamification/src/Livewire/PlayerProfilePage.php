@@ -26,8 +26,8 @@ class PlayerProfilePage extends Component
         $user = Auth::user();
 
         $profile = PlayerProfile::query()->where('user_id', $user->id)->first();
-        $totalXp = $profile?->total_xp ?? 0;
-        $level = $profile?->level ?? 1;
+        $totalXp = $profile === null ? 0 : $profile->total_xp;
+        $level = $profile === null ? 1 : $profile->level;
 
         $levelFloor = $levelCurve->xpForLevel($level);
         $levelCeiling = $levelCurve->xpForLevel($level + 1);
