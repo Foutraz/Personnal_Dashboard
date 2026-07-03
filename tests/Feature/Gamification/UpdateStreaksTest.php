@@ -196,6 +196,47 @@ class UpdateStreaksTest extends TestCase
         $this->assertSame($expected, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
     }
 
+    #[Test]
+    public function it_keeps_the_best_count_from_an_older_longer_run(): void
+    {
+        $user = User::factory()->create();
+        foreach ([10, 9, 8, 7, 6] as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        foreach ([1, 0] as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $streak = Streak::query()->where('user_id', $user->id)->sole();
+        $this->assertSame(2, $streak->current_count);
+        $this->assertSame(5, $streak->best_count);
+    }
+
+    #[Test]
+    public function it_removes_a_milestone_that_would_only_survive_through_its_own_entry(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(0, 7) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        $action = $this->app->make(UpdateStreaks::class);
+        $action->handle($user);
+
+        XpEntry::query()
+            ->where('user_id', $user->id)
+            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
+            ->whereDate('occurred_at', now()->subDay()->toDateString())
+            ->delete();
+        $action->handle($user);
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+        $streak = Streak::query()->where('user_id', $user->id)->sole();
+        $this->assertSame(1, $streak->current_count);
+        $this->assertSame(6, $streak->best_count);
+    }
+
     /**
      * Create a ledger entry for the domain the given number of days ago.
      */
