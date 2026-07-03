@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('xp_entries', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('user_id')->constrained('users');
-            $table->string('domain');
-            $table->string('rule_key');
-            $table->string('source_type');
-            $table->string('source_id');
+            $table->string('domain', 32);
+            $table->string('rule_key', 64);
+            $table->string('source_type', 160);
+            $table->string('source_id', 64);
             $table->unsignedSmallInteger('points');
             $table->timestamp('occurred_at');
             $table->timestamps();
