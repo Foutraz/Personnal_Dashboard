@@ -6,6 +6,7 @@ use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Sport\Models\SportActivity;
+use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -53,6 +54,25 @@ class GamificationCommandsTest extends TestCase
         $entries = XpEntry::query()->where('user_id', $user->id)->get();
         $this->assertCount(1, $entries);
         $this->assertSame(21, $entries->first()->points);
+        $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_drops_the_awards_of_a_deleted_source_on_the_next_recalculation(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        $task = Task::factory()->completed()->create(['user_id' => $user->id, 'completed_at' => now()->subDay()]);
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(24, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+
+        $task->delete();
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'todo_task_completed')->count());
         $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
     }
 }
