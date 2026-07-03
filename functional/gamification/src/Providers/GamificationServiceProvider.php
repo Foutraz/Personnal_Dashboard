@@ -2,6 +2,8 @@
 
 namespace Functional\Gamification\Providers;
 
+use Functional\Gamification\Console\BackfillGamification;
+use Functional\Gamification\Console\RecalculateGamification;
 use Functional\Gamification\Xp\Rules\ExplorationCellXpRule;
 use Functional\Gamification\Xp\Rules\FinanceMonthlyXpRule;
 use Functional\Gamification\Xp\Rules\HealthMeasurementDayXpRule;
@@ -38,6 +40,7 @@ class GamificationServiceProvider extends OsddServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+            $this->commands([BackfillGamification::class, RecalculateGamification::class]);
         }
     }
 }
