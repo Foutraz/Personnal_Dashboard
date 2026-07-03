@@ -20,6 +20,7 @@
         "foutraz/withings": "^1.0",
         "functional/exploration": "*",
         "functional/finance": "*",
+        "functional/gamification": "*",
         "functional/goals": "*",
         "functional/health": "*",
         "functional/moto": "*",

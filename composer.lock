@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "439a7f7a05fe2b222c4e3b57c9623296",
+    "content-hash": "4413f82e233f628c6fac34735a15d5f1",
     "packages": [
         {
             "name": "brick/math",
@@ -1125,6 +1125,42 @@
                     "Functional\\Finance\\": "src/",
                     "Functional\\Finance\\Database\\Seeders\\": "database/Seeders/",
                     "Functional\\Finance\\Database\\Factories\\": "database/Factories/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
+            "name": "functional/gamification",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./functional/gamification",
+                "reference": "815982476ea9301b71916ff32263d1ab267fd9f0"
+            },
+            "require": {
+                "functional/exploration": "*",
+                "functional/finance": "*",
+                "functional/health": "*",
+                "functional/moto": "*",
+                "functional/sport": "*",
+                "functional/todo": "*",
+                "xefi/laravel-osdd": "*"
+            },
+            "type": "layer",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Functional\\Gamification\\Providers\\GamificationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Functional\\Gamification\\": "src/",
+                    "Functional\\Gamification\\Database\\Seeders\\": "database/Seeders/",
+                    "Functional\\Gamification\\Database\\Factories\\": "database/Factories/"
                 }
             },
             "transport-options": {
