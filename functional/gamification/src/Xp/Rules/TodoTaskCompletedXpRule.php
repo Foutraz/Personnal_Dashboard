@@ -42,6 +42,7 @@ class TodoTaskCompletedXpRule implements XpRule
             ->whereNotNull('completed_at')
             ->when($since, fn ($query) => $query->where('completed_at', '>=', $since->copy()->startOfDay()))
             ->orderBy('completed_at')
+            ->orderBy('id')
             ->get(['id', 'completed_at'])
             ->groupBy(fn (Task $task): string => $task->completed_at->toDateString())
             ->flatMap(fn (Collection $tasks): Collection => $tasks->take($config['daily_task_cap']))

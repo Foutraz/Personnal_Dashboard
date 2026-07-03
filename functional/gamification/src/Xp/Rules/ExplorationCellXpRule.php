@@ -29,7 +29,7 @@ class ExplorationCellXpRule implements XpRule
     }
 
     /**
-     * Award a capped entry per fully elapsed day of newly discovered cells.
+     * Award a capped entry per fully elapsed discovery day, re-evaluating every day touched by recently recorded cells.
      *
      * @return Collection<int, XpAward>
      */
@@ -37,18 +37,22 @@ class ExplorationCellXpRule implements XpRule
     {
         $config = config('gamification.xp.exploration');
 
-        return ExploredCell::query()
+        $cells = ExploredCell::query()
             ->where('user_id', $user->id)
             ->where('first_seen_at', '<', now()->startOfDay())
-            ->when($since, fn ($query) => $query->where('first_seen_at', '>=', $since->copy()->startOfDay()))
-            ->get(['id', 'first_seen_at'])
-            ->groupBy(fn (ExploredCell $cell): string => $cell->first_seen_at->toDateString())
-            ->map(fn (Collection $cells, string $day): XpAward => new XpAward(
+            ->get(['id', 'first_seen_at', 'created_at'])
+            ->groupBy(fn (ExploredCell $cell): string => $cell->first_seen_at->toDateString());
+
+        return $cells
+            ->filter(fn (Collection $dayCells): bool => $since === null || $dayCells->contains(
+                fn (ExploredCell $cell): bool => $cell->created_at === null || $cell->created_at->gte($since)
+            ))
+            ->map(fn (Collection $dayCells, string $day): XpAward => new XpAward(
                 domain: $this->domain(),
                 ruleKey: $this->key(),
                 sourceType: 'period',
                 sourceId: $day,
-                points: min($cells->count() * $config['cell_discovered'], $config['daily_cap']),
+                points: min($dayCells->count() * $config['cell_discovered'], $config['daily_cap']),
                 occurredAt: Carbon::parse($day),
             ))
             ->values();

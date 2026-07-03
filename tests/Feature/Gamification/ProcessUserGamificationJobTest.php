@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Finance\Enums\TransactionType;
+use Functional\Finance\Models\BankTransaction;
+use Functional\Finance\Models\InvestmentTransaction;
+use Functional\Finance\Models\Position;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
@@ -35,12 +39,43 @@ class ProcessUserGamificationJobTest extends TestCase
     public function it_only_processes_sources_inside_the_since_window(): void
     {
         $user = User::factory()->create();
+        XpEntry::factory()->create(['user_id' => $user->id, 'rule_key' => 'seeded']);
         SportActivity::factory()->create(['user_id' => $user->id, 'started_at' => now()->subMonths(3)]);
         SportActivity::factory()->create(['user_id' => $user->id, 'started_at' => now()->subDay()]);
 
         ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
 
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'sport_activity')->count());
+    }
+
+    #[Test]
+    public function it_falls_back_to_the_full_history_when_the_ledger_is_empty(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'started_at' => now()->subMonths(3)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
+
         $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->count());
+    }
+
+    #[Test]
+    public function it_updates_a_period_award_when_the_month_data_changes(): void
+    {
+        $user = User::factory()->create();
+        $month = now()->subMonth()->startOfMonth();
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 500, 'booked_at' => $month->copy()->addDays(3)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $position = Position::factory()->create(['user_id' => $user->id]);
+        InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'executed_at' => $month->copy()->addDays(5)]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $entry = XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'finance_month')->sole();
+        $this->assertSame(30, $entry->points);
+        $this->assertSame(30, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
     }
 
     #[Test]

@@ -66,6 +66,60 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_rejects_updating_own_xp_entries_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $entry = XpEntry::factory()->create(['user_id' => $user->id, 'points' => 10]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/xp-entries/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $entry->id,
+                    'attributes' => ['points' => 65000],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(10, $entry->fresh()->points);
+    }
+
+    #[Test]
+    public function it_rejects_deleting_own_xp_entries_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $entry = XpEntry::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/xp-entries', [
+            'resources' => [$entry->id],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertTrue(XpEntry::query()->whereKey($entry->id)->exists());
+    }
+
+    #[Test]
+    public function it_rejects_updating_the_own_player_profile_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $profile = PlayerProfile::factory()->create(['user_id' => $user->id, 'level' => 2]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/player-profiles/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $profile->id,
+                    'attributes' => ['level' => 99],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(2, $profile->fresh()->level);
+    }
+
+    #[Test]
     public function it_requires_authentication(): void
     {
         $this->postJson('/api/xp-entries/search', ['search' => []])->assertUnauthorized();

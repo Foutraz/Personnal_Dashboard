@@ -2,8 +2,7 @@
 
 namespace Functional\Gamification\Jobs;
 
-use Functional\Gamification\Actions\AwardXp;
-use Functional\Gamification\Contracts\XpRule;
+use Functional\Gamification\Actions\RunUserGamification;
 use Functional\Users\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -41,13 +40,13 @@ class ProcessUserGamificationJob implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [new WithoutOverlapping($this->userId)];
+        return [(new WithoutOverlapping($this->userId))->releaseAfter(60)->expireAfter(600)];
     }
 
     /**
-     * Run every tagged xp rule for the user and write the awards to the ledger.
+     * Run the gamification rules for the user over the requested window.
      */
-    public function handle(AwardXp $awardXp): void
+    public function handle(RunUserGamification $runUserGamification): void
     {
         $user = User::query()->find($this->userId);
 
@@ -55,9 +54,6 @@ class ProcessUserGamificationJob implements ShouldQueue
             return;
         }
 
-        $awards = collect(app()->tagged('gamification.xp_rules'))
-            ->flatMap(fn (XpRule $rule) => $rule->awards($user, $this->since));
-
-        $awardXp->handle($user, $awards);
+        $runUserGamification->handle($user, $this->since);
     }
 }

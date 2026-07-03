@@ -2,7 +2,7 @@
 
 namespace Functional\Gamification\Console;
 
-use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Actions\RunUserGamification;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Console\Command;
@@ -25,9 +25,9 @@ class RecalculateGamification extends Command
     protected $description = 'Purge and replay the gamification ledger, applying the current scoring rules to the full history.';
 
     /**
-     * Purge each targeted ledger inside a transaction and replay the rules synchronously.
+     * Purge each targeted ledger inside a transaction and replay the rules inline, bypassing any queue lock.
      */
-    public function handle(): int
+    public function handle(RunUserGamification $runUserGamification): int
     {
         $userId = $this->argument('user');
 
@@ -38,10 +38,10 @@ class RecalculateGamification extends Command
         foreach ($users as $user) {
             $this->line("Recalculating gamification ledger for user [{$user->id}].");
 
-            DB::transaction(function () use ($user): void {
+            DB::transaction(function () use ($user, $runUserGamification): void {
                 XpEntry::query()->where('user_id', $user->id)->delete();
 
-                ProcessUserGamificationJob::dispatchSync($user->id);
+                $runUserGamification->handle($user);
             });
         }
 

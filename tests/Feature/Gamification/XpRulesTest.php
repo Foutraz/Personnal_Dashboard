@@ -180,6 +180,44 @@ class XpRulesTest extends TestCase
     }
 
     #[Test]
+    public function it_awards_exploration_cells_recorded_late_for_an_old_day(): void
+    {
+        $user = User::factory()->create();
+        ExploredCell::factory()->count(4)->create(['user_id' => $user->id, 'first_seen_at' => now()->subDays(20)]);
+
+        $awards = $this->app->make(ExplorationCellXpRule::class)->awards($user, now()->subDays(7));
+
+        $this->assertCount(1, $awards);
+        $this->assertSame(now()->subDays(20)->toDateString(), $awards->first()->sourceId);
+        $this->assertSame(8, $awards->first()->points);
+    }
+
+    #[Test]
+    public function it_awards_finance_months_delivered_after_the_since_window(): void
+    {
+        $user = User::factory()->create();
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 900, 'booked_at' => now()->subMonths(2)->startOfMonth()->addDays(4)]);
+
+        $awards = $this->app->make(FinanceMonthlyXpRule::class)->awards($user, now()->subDays(7));
+
+        $this->assertCount(1, $awards);
+        $this->assertSame(20, $awards->first()->points);
+    }
+
+    #[Test]
+    public function it_anchors_the_finance_award_to_the_first_day_of_the_month(): void
+    {
+        $this->travelTo(now()->endOfMonth()->setTime(10, 0));
+        $user = User::factory()->create();
+        $month = now()->startOfMonth()->subMonth();
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 900, 'booked_at' => $month->copy()->addDays(4)]);
+
+        $awards = $this->app->make(FinanceMonthlyXpRule::class)->awards($user, null);
+
+        $this->assertSame($month->toDateString(), $awards->first()->occurredAt->toDateString());
+    }
+
+    #[Test]
     public function it_tags_every_rule_in_the_container(): void
     {
         $rules = $this->app->tagged('gamification.xp_rules');

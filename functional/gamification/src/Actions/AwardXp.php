@@ -14,14 +14,16 @@ class AwardXp
     public function __construct(private RefreshPlayerProfile $refreshPlayerProfile) {}
 
     /**
-     * Idempotently write the awards to the ledger in batches and refresh the profile.
+     * Idempotently upsert the awards into the ledger in batches and refresh the profile.
      *
      * @param  Collection<int, XpAward>  $awards
      */
     public function handle(User $user, Collection $awards): LevelTransition
     {
-        $awards->chunk(500)->each(function (Collection $chunk) use ($user): void {
-            DB::table('xp_entries')->insertOrIgnore(
+        $now = now();
+
+        $awards->chunk(500)->each(function (Collection $chunk) use ($user, $now): void {
+            DB::table('xp_entries')->upsert(
                 $chunk->map(fn (XpAward $award): array => [
                     'id' => strtolower((string) Str::ulid()),
                     'user_id' => $user->id,
@@ -31,9 +33,11 @@ class AwardXp
                     'source_id' => $award->sourceId,
                     'points' => $award->points,
                     'occurred_at' => $award->occurredAt,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ])->all(),
+                ['user_id', 'rule_key', 'source_type', 'source_id'],
+                ['points', 'occurred_at', 'updated_at'],
             );
         });
 

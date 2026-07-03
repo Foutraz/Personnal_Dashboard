@@ -113,6 +113,8 @@ class GamificationServiceProvider extends OsddServiceProvider
                         ->cursor()
                         ->each(fn (User $user) => ProcessUserGamificationJob::dispatch($user->id, now()->subDays(3)));
                 })->dailyAt('02:00');
+
+                $schedule->command(BackfillGamification::class)->weeklyOn(0, '03:00');
             });
         }
     }

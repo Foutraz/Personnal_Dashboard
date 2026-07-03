@@ -31,7 +31,7 @@ class FinanceMonthlyXpRule implements XpRule
     }
 
     /**
-     * Award one entry per elapsed month of positive savings or investing, never per transaction.
+     * Award one entry per elapsed month of positive savings or investing, re-evaluating every month so late-booked data corrects the ledger.
      *
      * @return Collection<int, XpAward>
      */
@@ -39,12 +39,10 @@ class FinanceMonthlyXpRule implements XpRule
     {
         $config = config('gamification.xp.finance');
         $currentMonthStart = now()->startOfMonth();
-        $windowStart = $since?->copy()->startOfMonth();
 
         $savingsByMonth = BankTransaction::query()
             ->where('user_id', $user->id)
             ->where('booked_at', '<', $currentMonthStart)
-            ->when($windowStart, fn ($query) => $query->where('booked_at', '>=', $windowStart))
             ->get(['id', 'amount', 'booked_at'])
             ->groupBy(fn (BankTransaction $transaction): string => $transaction->booked_at->format('Y-m'))
             ->map(fn (Collection $transactions): float => (float) $transactions->sum('amount'));
@@ -53,7 +51,6 @@ class FinanceMonthlyXpRule implements XpRule
             ->where('user_id', $user->id)
             ->where('type', TransactionType::Buy)
             ->where('executed_at', '<', $currentMonthStart)
-            ->when($windowStart, fn ($query) => $query->where('executed_at', '>=', $windowStart))
             ->get(['id', 'executed_at'])
             ->map(fn (InvestmentTransaction $transaction): string => $transaction->executed_at->format('Y-m'))
             ->unique();
@@ -68,7 +65,7 @@ class FinanceMonthlyXpRule implements XpRule
                 sourceType: 'period',
                 sourceId: $month,
                 points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains($month), $config),
-                occurredAt: Carbon::createFromFormat('Y-m', $month)->startOfMonth(),
+                occurredAt: Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfDay(),
             ))
             ->filter(fn (XpAward $award): bool => $award->points > 0)
             ->values();
