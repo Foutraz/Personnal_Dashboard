@@ -36,6 +36,24 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_stays_stable_across_repeated_full_replays(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => 10000.0, 'total_elevation_gain' => 100.0]);
+        Task::factory()->completed()->create(['user_id' => $user->id, 'completed_at' => now()->subDay()]);
+        BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 500, 'booked_at' => now()->subMonth()->startOfMonth()->addDays(3)]);
+
+        for ($run = 0; $run < 3; $run++) {
+            ProcessUserGamificationJob::dispatchSync($user->id);
+        }
+
+        $this->assertSame(3, XpEntry::query()->where('user_id', $user->id)->count());
+        $ledgerSum = (int) XpEntry::query()->where('user_id', $user->id)->sum('points');
+        $this->assertSame(21 + 3 + 20, $ledgerSum);
+        $this->assertSame($ledgerSum, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
     public function it_only_processes_sources_inside_the_since_window(): void
     {
         $user = User::factory()->create();
