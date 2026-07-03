@@ -156,6 +156,30 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_windowed_xp_for_a_source_in_the_start_of_day_slice(): void
+    {
+        $this->travelTo(now()->startOfDay()->addHours(10));
+
+        $user = User::factory()->create();
+        SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'distance' => 10000.0,
+            'total_elevation_gain' => 100.0,
+            'started_at' => now()->subDays(3)->startOfDay()->addHours(2),
+        ]);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $seededTotal = PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp;
+        $this->assertSame(21, $seededTotal);
+
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(3));
+
+        $this->assertSame(1, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'sport_activity')->count());
+        $this->assertSame($seededTotal, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
     public function it_quietly_skips_a_deleted_user(): void
     {
         ProcessUserGamificationJob::dispatchSync('01hzzzzzzzzzzzzzzzzzzzzzzz');
