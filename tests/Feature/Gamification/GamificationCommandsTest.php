@@ -7,14 +7,12 @@ use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
@@ -108,20 +106,15 @@ class GamificationCommandsTest extends TestCase
     }
 
     #[Test]
-    public function it_notifies_the_new_badges_only_once_the_recalculation_has_committed(): void
+    public function it_stores_the_badge_notification_when_the_recalculation_awards_a_new_badge(): void
     {
         $user = User::factory()->create();
         SportActivity::factory()->count(10)->create(['user_id' => $user->id, 'distance' => 1000.0]);
-        $baselineLevel = DB::transactionLevel();
-        $sendingLevels = [];
-        Event::listen(NotificationSending::class, function () use (&$sendingLevels): void {
-            $sendingLevels[] = DB::transactionLevel();
-        });
 
         $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
 
-        $this->assertNotEmpty($sendingLevels);
-        $this->assertSame([$baselineLevel], array_values(array_unique($sendingLevels)));
+        $this->assertSame(BadgeAward::query()->whereBelongsTo($user)->count(), $user->notifications()->where('type', BadgeAwardedNotification::class)->count());
+        $this->assertGreaterThan(0, BadgeAward::query()->whereBelongsTo($user)->count());
     }
 
     #[Test]

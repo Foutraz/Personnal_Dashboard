@@ -17,8 +17,10 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
@@ -104,7 +106,7 @@ class RunUserGamificationTest extends TestCase
     }
 
     #[Test]
-    public function it_notifies_each_new_badge_once_after_the_pass(): void
+    public function it_notifies_each_new_badge_once(): void
     {
         Notification::fake();
         $user = User::factory()->create();
@@ -149,9 +151,8 @@ class RunUserGamificationTest extends TestCase
     }
 
     #[Test]
-    public function it_awards_no_badge_and_sends_no_notification_when_a_later_step_fails(): void
+    public function it_awards_no_badge_and_stores_no_notification_when_a_later_step_fails(): void
     {
-        Notification::fake();
         $user = User::factory()->create();
         $this->smallActivities($user, 10);
 
@@ -166,7 +167,44 @@ class RunUserGamificationTest extends TestCase
 
         $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
         $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->count());
-        Notification::assertNothingSent();
+        $this->assertSame(0, $user->notifications()->count());
+    }
+
+    #[Test]
+    public function it_rolls_the_awards_back_when_a_notification_fails(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+        Event::listen(NotificationSending::class, function (): void {
+            throw new QueryException('sqlite', 'insert into notifications', [], new PDOException('no such table: notifications'));
+        });
+
+        $this->assertThrows(
+            fn () => $this->app->make(RunUserGamification::class)->handle($user),
+            QueryException::class,
+        );
+
+        $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, $user->notifications()->count());
+    }
+
+    #[Test]
+    public function it_awards_and_notifies_again_when_the_run_is_retried_after_a_notification_failure(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+        Event::listen(NotificationSending::class, function (): void {
+            throw new QueryException('sqlite', 'insert into notifications', [], new PDOException('no such table: notifications'));
+        });
+        $run = $this->app->make(RunUserGamification::class);
+        $this->assertThrows(fn () => $run->handle($user), QueryException::class);
+        Event::forget(NotificationSending::class);
+
+        $run->handle($user);
+
+        $this->assertSame(1, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(1, $user->notifications()->where('type', BadgeAwardedNotification::class)->count());
     }
 
     #[Test]

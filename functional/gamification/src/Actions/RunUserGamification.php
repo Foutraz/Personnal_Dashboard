@@ -23,7 +23,7 @@ class RunUserGamification
     ) {}
 
     /**
-     * Sync the badge catalogue, then run every tagged xp rule, the streaks and the badges in one transaction, refresh the profile once and notify the new badges after the commit.
+     * Sync the badge catalogue, then run every tagged xp rule, the streaks and the badges in one transaction, notify the new badges within it and refresh the profile once.
      */
     public function handle(User $user, ?Carbon $since = null): LevelTransition
     {
@@ -42,15 +42,14 @@ class RunUserGamification
         return DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart): LevelTransition {
             $this->awardXp->handle($user, $awards, $ruleKeys, $windowStart);
             $this->updateStreaks->handle($user);
-            $newBadgeAwards = $this->evaluateBadges->handle($user);
-            DB::afterCommit(fn () => $this->notifyBadges($user, $newBadgeAwards));
+            $this->notifyBadges($user, $this->evaluateBadges->handle($user));
 
             return $this->refreshPlayerProfile->handle($user);
         });
     }
 
     /**
-     * Notify the user of each newly awarded badge.
+     * Notify the user of each new badge inside the run transaction, where a queued, mail or broadcast channel announces badges that a rollback removes.
      *
      * @param  Collection<int, BadgeAward>  $newBadgeAwards
      */

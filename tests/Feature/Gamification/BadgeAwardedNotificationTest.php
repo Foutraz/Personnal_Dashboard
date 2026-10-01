@@ -6,6 +6,7 @@ use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Users\Models\User;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -20,6 +21,14 @@ class BadgeAwardedNotificationTest extends TestCase
         $notification = new BadgeAwardedNotification(Badge::factory()->create());
 
         $this->assertSame(['database'], $notification->via(User::factory()->create()));
+    }
+
+    #[Test]
+    public function it_is_never_queued_so_it_stays_atomic_with_the_awards(): void
+    {
+        $notification = new BadgeAwardedNotification(Badge::factory()->create());
+
+        $this->assertNotInstanceOf(ShouldQueue::class, $notification);
     }
 
     #[Test]
