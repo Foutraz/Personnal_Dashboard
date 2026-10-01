@@ -186,7 +186,7 @@ class UpdateStreaksTest extends TestCase
     }
 
     #[Test]
-    public function it_refreshes_the_player_profile_with_the_milestone_points(): void
+    public function it_leaves_the_profile_refresh_to_the_gamification_run(): void
     {
         $user = User::factory()->create();
         foreach (range(0, 6) as $daysAgo) {
@@ -195,8 +195,7 @@ class UpdateStreaksTest extends TestCase
 
         $this->app->make(UpdateStreaks::class)->handle($user);
 
-        $expected = 7 * 10 + config('gamification.streaks.milestones.7');
-        $this->assertSame($expected, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+        $this->assertSame(0, PlayerProfile::query()->whereBelongsTo($user)->count());
     }
 
     #[Test]

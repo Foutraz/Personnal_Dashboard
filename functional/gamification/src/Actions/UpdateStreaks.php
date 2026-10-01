@@ -6,29 +6,21 @@ use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
-use Functional\Gamification\Services\Dto\LevelTransition;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class UpdateStreaks
 {
-    public function __construct(private RefreshPlayerProfile $refreshPlayerProfile) {}
-
     /**
-     * Recompute the user's streak projections from the ledger and refresh the profile.
+     * Run outside a transaction, a failure between the projection and milestone writes leaves them out of sync.
      */
-    public function handle(User $user): LevelTransition
+    public function handle(User $user): void
     {
-        return DB::transaction(function () use ($user): LevelTransition {
-            $runsByDomain = $this->activeDaysByDomain($user)->map(fn (Collection $days): Collection => $this->runs($days));
+        $runsByDomain = $this->activeDaysByDomain($user)->map(fn (Collection $days): Collection => $this->runs($days));
 
-            $this->syncProjections($user, $runsByDomain);
-            $this->syncMilestones($user, $runsByDomain);
-
-            return $this->refreshPlayerProfile->handle($user);
-        });
+        $this->syncProjections($user, $runsByDomain);
+        $this->syncMilestones($user, $runsByDomain);
     }
 
     /**
