@@ -14,13 +14,17 @@ use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Notifications\ChallengeCompletedNotification;
+use Functional\Gamification\Notifications\ChallengesProposedNotification;
 use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -279,6 +283,51 @@ class ProcessUserGamificationJobTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_challenge_xp_through_windowed_passes_and_totals_the_ledger(): void
+    {
+        $user = $this->userWithACompletableChallenge();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(3));
+
+        $challengeEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->sole();
+        $this->assertSame(50, $challengeEntry->points);
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_rebuilds_the_challenge_xp_after_a_full_recalculation(): void
+    {
+        $user = $this->userWithACompletableChallenge();
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(3));
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(1, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_stores_the_completed_challenge_notification_once_across_passes(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithACompletableChallenge();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(1, $user->notifications()->where('type', ChallengeCompletedNotification::class)->count());
+        $this->assertSame(0, $user->notifications()->where('type', ChallengesProposedNotification::class)->count());
+    }
+
+    #[Test]
     public function it_awards_no_badge_to_a_user_without_data(): void
     {
         $user = User::factory()->create();
@@ -317,6 +366,22 @@ class ProcessUserGamificationJobTest extends TestCase
         ProcessUserGamificationJob::dispatchSync($user->id);
 
         $this->assertSame(30, Badge::query()->count());
+    }
+
+    private function userWithACompletableChallenge(): User
+    {
+        $this->travelTo(Carbon::parse('2026-10-03 12:00:00', 'UTC'));
+        $user = User::factory()->create();
+        Challenge::factory()->accepted()->create(['user_id' => $user->id, 'target_value' => 28]);
+        SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'distance' => 30000.0,
+            'moving_time' => 0,
+            'total_elevation_gain' => 0,
+            'started_at' => now()->subDay(),
+        ]);
+
+        return $user;
     }
 
     private function smallActivities(User $user, int $count): void

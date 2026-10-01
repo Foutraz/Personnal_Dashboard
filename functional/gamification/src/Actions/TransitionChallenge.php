@@ -11,12 +11,16 @@ class TransitionChallenge
     private const SINGLE_ROW = 1;
 
     /**
-     * Persist the transition of the challenge only if its status is still the one it was loaded with.
+     * Persist the transition of the challenge only if its status is still the one it was loaded with, and nothing when the next state keeps that status.
      *
      * @throws StaleChallengeStatusException
      */
     public function handle(Challenge $challenge, ChallengeState $next, ?float $currentValue = null): void
     {
+        if ($next->status() === $challenge->status) {
+            return;
+        }
+
         $transitionedAt = now();
         $changes = ['status' => $next->status(), 'updated_at' => $transitionedAt];
 

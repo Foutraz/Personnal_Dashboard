@@ -7,8 +7,10 @@ use Functional\Gamification\Enums\ChallengeStatus;
 use Functional\Gamification\Exceptions\IllegalChallengeTransitionException;
 use Functional\Gamification\Exceptions\StaleChallengeStatusException;
 use Functional\Gamification\Models\Challenge;
+use Functional\Gamification\Services\Dto\ChallengeProgress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -174,6 +176,52 @@ class TransitionChallengeTest extends TestCase
         $this->expectException(IllegalChallengeTransitionException::class);
 
         new TransitionChallenge()->handle($challenge, $challenge->state()->accept());
+    }
+
+    #[Test]
+    public function it_persists_nothing_when_the_evolved_state_keeps_the_status_of_an_accepted_challenge(): void
+    {
+        $challenge = Challenge::factory()->accepted()->create(['accepted_at' => Carbon::parse('2026-09-29 08:00:00', 'UTC'), 'current_value' => 7.5]);
+        $before = $challenge->fresh();
+        $this->travelTo(Carbon::parse('2026-10-03 18:30:00', 'UTC'));
+        $unchanged = $challenge->state()->evolve(new ChallengeProgress(targetReached: false, weekEnded: false, gracePassed: false));
+
+        new TransitionChallenge()->handle($challenge, $unchanged, 12.0);
+
+        $persisted = $challenge->fresh();
+        $this->assertSame(ChallengeStatus::Accepted, $persisted->status);
+        $this->assertSame('2026-09-29 08:00:00', $persisted->accepted_at->toDateTimeString());
+        $this->assertNull($persisted->resolved_at);
+        $this->assertSame('7.50', $persisted->current_value);
+        $this->assertTrue($before->updated_at->equalTo($persisted->updated_at));
+    }
+
+    #[Test]
+    public function it_persists_nothing_when_the_evolved_state_keeps_the_status_of_a_proposed_challenge(): void
+    {
+        $challenge = Challenge::factory()->create();
+        $before = $challenge->fresh();
+        $this->travelTo(Carbon::parse('2026-10-03 18:30:00', 'UTC'));
+        $unchanged = $challenge->state()->evolve(new ChallengeProgress(targetReached: true, weekEnded: false, gracePassed: false));
+
+        new TransitionChallenge()->handle($challenge, $unchanged);
+
+        $persisted = $challenge->fresh();
+        $this->assertSame(ChallengeStatus::Proposed, $persisted->status);
+        $this->assertNull($persisted->accepted_at);
+        $this->assertNull($persisted->resolved_at);
+        $this->assertTrue($before->updated_at->equalTo($persisted->updated_at));
+    }
+
+    #[Test]
+    public function it_issues_no_query_when_the_next_state_keeps_the_status(): void
+    {
+        $challenge = Challenge::factory()->accepted()->create();
+        DB::enableQueryLog();
+
+        new TransitionChallenge()->handle($challenge, $challenge->state());
+
+        $this->assertSame([], DB::getQueryLog());
     }
 
     private function challengeDeclinedBehindTheLoadedModel(): Challenge

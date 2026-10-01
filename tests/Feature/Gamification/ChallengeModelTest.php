@@ -7,10 +7,13 @@ use Functional\Gamification\Enums\ChallengeStatus;
 use Functional\Gamification\Enums\ChallengeTemplateKey;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Challenge;
+use Functional\Gamification\Notifications\ChallengeCompletedNotification;
+use Functional\Gamification\Notifications\ChallengesProposedNotification;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Goals\Enums\GoalMetric;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -172,6 +175,36 @@ class ChallengeModelTest extends TestCase
 
         $this->assertFalse(Challenge::query()->whereKey($challenge->id)->exists());
         $this->assertTrue(Challenge::query()->whereKey($otherChallenge->id)->exists());
+    }
+
+    #[Test]
+    public function it_deletes_both_challenge_notifications_of_a_deleted_user(): void
+    {
+        $challenge = Challenge::factory()->completed()->create();
+        $user = $challenge->user;
+        $week = app(GamificationCalendar::class)->currentWeek();
+        $user->notify(new ChallengesProposedNotification($week, 2));
+        $user->notify(new ChallengeCompletedNotification($challenge));
+        $this->assertSame(2, DatabaseNotification::query()->whereMorphedTo('notifiable', $user)->count());
+
+        $user->delete();
+
+        $this->assertSame(0, DatabaseNotification::query()->whereMorphedTo('notifiable', $user)->count());
+    }
+
+    #[Test]
+    public function it_keeps_the_challenge_notifications_of_the_other_users_when_a_user_is_deleted(): void
+    {
+        $challenge = Challenge::factory()->completed()->create();
+        $otherChallenge = Challenge::factory()->completed()->create();
+        $otherUser = $otherChallenge->user;
+        $week = app(GamificationCalendar::class)->currentWeek();
+        $otherUser->notify(new ChallengesProposedNotification($week, 2));
+        $otherUser->notify(new ChallengeCompletedNotification($otherChallenge));
+
+        $challenge->user->delete();
+
+        $this->assertSame(2, DatabaseNotification::query()->whereMorphedTo('notifiable', $otherUser)->count());
     }
 
     private function insertChallengeRow(string $userId, string $weekKey, ChallengeTemplateKey $template): int

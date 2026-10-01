@@ -21,7 +21,6 @@ class ProposeWeeklyChallenges
     public function __construct(
         private WeeklyMetricMeter $meter,
         private ChallengeTargetCalculator $calculator,
-        private ChallengeSettings $settings,
     ) {}
 
     /**
@@ -33,14 +32,16 @@ class ProposeWeeklyChallenges
      */
     public function handle(User $user, GamificationWeek $week): Collection
     {
+        $settings = ChallengeSettings::fromConfig();
+
         if ($this->hasSet($user, $week)) {
             return new Collection;
         }
 
         $moment = now()->toDateTimeString();
-        $targets = $this->eligibleTargets($user, $week);
+        $targets = $this->eligibleTargets($user, $week, $settings);
         $rows = collect($this->pickedTemplates($targets, $week))
-            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment))
+            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment, $settings->xpReward))
             ->values();
 
         if ($rows->isEmpty()) {
@@ -96,16 +97,16 @@ class ProposeWeeklyChallenges
      *
      * @throws MissingChallengeTemplateConfigException|InvalidChallengeConfigException
      */
-    private function eligibleTargets(User $user, GamificationWeek $week): array
+    private function eligibleTargets(User $user, GamificationWeek $week, ChallengeSettings $settings): array
     {
         $targets = [];
 
         foreach (ChallengeTemplateKey::cases() as $template) {
-            if (! $this->hasHistory($user, $template, $week)) {
+            if (! $this->hasHistory($user, $template, $week, $settings)) {
                 continue;
             }
 
-            $target = $this->calculator->target($template->settings(), $this->settings, $this->weeklyValues($user, $template, $week));
+            $target = $this->calculator->target($template->settings(), $settings, $this->weeklyValues($user, $template, $week, $settings));
 
             if ($target !== null) {
                 $targets[$template->value] = $target;
@@ -115,9 +116,9 @@ class ProposeWeeklyChallenges
         return $targets;
     }
 
-    private function hasHistory(User $user, ChallengeTemplateKey $template, GamificationWeek $week): bool
+    private function hasHistory(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): bool
     {
-        $historyStartsAt = $week->previous($this->settings->historyWeeks)->startsAt;
+        $historyStartsAt = $week->previous($settings->historyWeeks)->startsAt;
 
         return $this->meter->measure($user, $template->metric(), $historyStartsAt, $week->startsAt) > 0.0;
     }
@@ -125,18 +126,18 @@ class ProposeWeeklyChallenges
     /**
      * @return list<float>
      */
-    private function weeklyValues(User $user, ChallengeTemplateKey $template, GamificationWeek $week): array
+    private function weeklyValues(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): array
     {
         return array_map(
             fn (int $weeksBack): float => $this->meter->measureWeek($user, $template->metric(), $week->previous($weeksBack)),
-            range($this->settings->historyWeeks, 1),
+            range($settings->historyWeeks, 1),
         );
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment): array
+    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment, int $xpReward): array
     {
         return [
             'id' => (new Challenge)->newUniqueId(),
@@ -150,7 +151,7 @@ class ProposeWeeklyChallenges
             'baseline_value' => $target->baseline,
             'target_value' => $target->target,
             'current_value' => 0,
-            'xp_reward' => $this->settings->xpReward,
+            'xp_reward' => $xpReward,
             'status' => ChallengeStatus::Proposed->value,
             'accepted_at' => null,
             'resolved_at' => null,
