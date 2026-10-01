@@ -9,14 +9,29 @@ use Tests\TestCase;
 class GamificationDomainTest extends TestCase
 {
     #[Test]
-    public function it_labels_every_domain(): void
+    public function it_labels_every_domain_in_french(): void
     {
+        $this->app->setLocale('fr');
+
         foreach (GamificationDomain::cases() as $domain) {
-            $this->assertNotSame('', $domain->label());
+            $this->assertStringNotContainsString('gamification::', $domain->label());
         }
 
         $this->assertSame('Sport', GamificationDomain::Sport->label());
         $this->assertSame('Santé', GamificationDomain::Health->label());
+    }
+
+    #[Test]
+    public function it_labels_every_domain_in_english(): void
+    {
+        $this->app->setLocale('en');
+
+        foreach (GamificationDomain::cases() as $domain) {
+            $this->assertStringNotContainsString('gamification::', $domain->label());
+        }
+
+        $this->assertSame('Health', GamificationDomain::Health->label());
+        $this->assertSame('Tasks', GamificationDomain::Todo->label());
     }
 
     #[Test]
@@ -35,6 +50,22 @@ class GamificationDomainTest extends TestCase
     {
         foreach (GamificationDomain::cases() as $domain) {
             $this->assertNotSame('', $domain->icon());
+        }
+    }
+
+    #[Test]
+    public function it_tracks_streaks_on_every_daily_domain_but_finance(): void
+    {
+        $this->assertNotContains(GamificationDomain::Finance, GamificationDomain::streakDomains());
+        $this->assertCount(count(GamificationDomain::cases()) - 1, GamificationDomain::streakDomains());
+    }
+
+    #[Test]
+    public function it_exposes_literal_accent_classes_matching_the_domain_color(): void
+    {
+        foreach (GamificationDomain::cases() as $domain) {
+            $this->assertSame("text-{$domain->color()}", $domain->textClass());
+            $this->assertSame("bg-{$domain->color()}-soft", $domain->softBackgroundClass());
         }
     }
 }

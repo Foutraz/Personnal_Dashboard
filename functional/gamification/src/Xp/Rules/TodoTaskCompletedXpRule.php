@@ -4,6 +4,7 @@ namespace Functional\Gamification\Xp\Rules;
 
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
@@ -17,7 +18,7 @@ class TodoTaskCompletedXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'todo_task_completed';
+        return XpRuleKey::TodoTaskCompleted->value;
     }
 
     /**

@@ -68,6 +68,8 @@ Relire `feature/gamification-phase-1`, la rebaser sur `develop`, revue de code c
 ### Phase G2 — Streaks (régularité)
 Modèle `Streak`, calcul par domaine dans l'orchestrateur, XP bonus de palier (7/30/100 jours), affichage sur le hub Jeu et la tuile dashboard. Livrable : séries visibles et récompensées.
 
+**Décision produit (revue PR #33) — un palier ne se gagne qu'une fois.** Le bonus d'un palier (7, 30 ou 100 jours) est attribué **une seule fois par utilisateur, par domaine et par palier** : il n'est jamais réattribué après une rupture de série, et une synchronisation tardive qui fusionne deux séries ne le retire pas. La clé ledger du bonus est donc `{domaine}:{palier}` (et non plus la date de début de la série) ; l'entrée est datée du jour où la première série a atteint le palier. Le bonus ne disparaît que si les données sources elles-mêmes disparaissent (plus aucune série du ledger n'atteint le palier). Rejeté : un bonus par série (récompense la rupture-reprise, et la fusion de deux séries faisait perdre un bonus déjà affiché).
+
 ### Phase G3 — Badges (jalons)
 Catalogue seedé multi-tiers par domaine (distance cumulée, nombre d'activités, régularité, patrimoine investi…), contrat `BadgeRule` tagué, attribution idempotente, notifications, vitrine sur le hub. Livrable : collection de badges.
 

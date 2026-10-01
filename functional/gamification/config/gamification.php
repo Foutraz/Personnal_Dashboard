@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'timezone' => env('GAMIFICATION_TIMEZONE', 'Europe/Paris'),
     'level_curve' => [
         'base' => env('GAMIFICATION_LEVEL_BASE', 250),
         'exponent' => env('GAMIFICATION_LEVEL_EXPONENT', 1.5),
@@ -32,6 +33,13 @@ return [
         'finance' => [
             'positive_savings_month' => 20,
             'investment_contribution_month' => 10,
+        ],
+    ],
+    'streaks' => [
+        'milestones' => [
+            7 => 25,
+            30 => 100,
+            100 => 400,
         ],
     ],
 ];
