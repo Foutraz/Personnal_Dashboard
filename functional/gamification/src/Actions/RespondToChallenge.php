@@ -7,6 +7,9 @@ use Functional\Gamification\Exceptions\StaleChallengeStatusException;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\Challenge;
 
+/**
+ * No ownership check here: a challenge not loaded through the authenticated user and authorized for "respond" lets that user answer for someone else.
+ */
 class RespondToChallenge
 {
     public function __construct(private TransitionChallenge $transitionChallenge) {}
