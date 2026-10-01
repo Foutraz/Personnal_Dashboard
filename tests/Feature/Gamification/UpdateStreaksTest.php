@@ -84,6 +84,21 @@ class UpdateStreaksTest extends TestCase
     }
 
     #[Test]
+    public function it_drops_the_current_count_when_the_last_activity_is_two_days_old(): void
+    {
+        $user = User::factory()->create();
+        foreach ([4, 3, 2] as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $streak = Streak::query()->whereBelongsTo($user)->sole();
+        $this->assertSame(0, $streak->current_count);
+        $this->assertSame(3, $streak->best_count);
+    }
+
+    #[Test]
     public function it_tracks_each_domain_independently(): void
     {
         $user = User::factory()->create();
