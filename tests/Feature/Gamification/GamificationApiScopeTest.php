@@ -163,4 +163,14 @@ class GamificationApiScopeTest extends TestCase
         $this->postJson('/api/player-profiles/search', ['search' => []])->assertUnauthorized();
         $this->postJson('/api/streaks/search', ['search' => []])->assertUnauthorized();
     }
+
+    #[Test]
+    public function it_denies_creation_in_every_gamification_policy(): void
+    {
+        $user = User::factory()->create();
+
+        $this->assertFalse($user->can('create', XpEntry::class));
+        $this->assertFalse($user->can('create', PlayerProfile::class));
+        $this->assertFalse($user->can('create', Streak::class));
+    }
 }
