@@ -40,7 +40,7 @@ class ChallengeBoard extends Component
         $this->announcement = __('gamification::challenges.board.declined_announcement', ['name' => $challenge->template_key->label()]);
     }
 
-    public function render(WeeklyChallenges $weeklyChallenges, GamificationCalendar $calendar, RespondToChallenge $respond, ChallengeSettings $settings): View
+    public function render(WeeklyChallenges $weeklyChallenges, GamificationCalendar $calendar, RespondToChallenge $respond): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -51,7 +51,7 @@ class ChallengeBoard extends Component
             'subtitle' => $this->subtitle($week),
             'currentCards' => $weeklyChallenges->forWeek($user, $week)->map($toCard),
             'previousCards' => $weeklyChallenges->forWeek($user, $week->previous())->map($toCard),
-            'historyWeeks' => $settings->historyWeeks,
+            'historyWeeks' => ChallengeSettings::fromConfig()->historyWeeks,
         ]);
     }
 

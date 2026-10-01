@@ -22,9 +22,12 @@ class ChallengeSettingsTest extends TestCase
     }
 
     #[Test]
-    public function it_resolves_the_settings_from_the_container(): void
+    public function it_reads_the_configuration_again_on_every_call(): void
     {
-        $this->assertEquals(ChallengeSettings::fromConfig(), $this->app->make(ChallengeSettings::class));
+        $firstRead = ChallengeSettings::fromConfig();
+        config(['gamification.challenges.xp_reward' => $firstRead->xpReward + 1]);
+
+        $this->assertSame($firstRead->xpReward + 1, ChallengeSettings::fromConfig()->xpReward);
     }
 
     #[Test]
