@@ -148,9 +148,21 @@ class GamificationTranslationsTest extends TestCase
         $this->app->setLocale('en');
 
         $this->assertSame('Challenges of the week', __('gamification::challenges.board.title'));
-        $this->assertSame('Take on the Sport distance challenge', __('gamification::challenges.board.accept_label', ['name' => 'Sport distance']));
+        $this->assertSame('Take on the challenge: Sport distance', __('gamification::challenges.board.accept_label', ['name' => 'Sport distance']));
+        $this->assertSame('Skip the challenge: Sport distance', __('gamification::challenges.board.decline_label', ['name' => 'Sport distance']));
         $this->assertSame('Challenge accepted: Sport distance', __('gamification::challenges.board.accepted_announcement', ['name' => 'Sport distance']));
         $this->assertSame('No challenges this week. Challenges are proposed every Monday from your last 6 weeks of activity.', __('gamification::challenges.board.empty', ['weeks' => 6]));
+    }
+
+    #[Test]
+    public function it_names_each_action_of_the_board_with_the_text_it_displays_in_both_locales(): void
+    {
+        foreach (['fr', 'en'] as $locale) {
+            $this->app->setLocale($locale);
+
+            $this->assertStringContainsString(__('gamification::challenges.board.accept'), __('gamification::challenges.board.accept_label', ['name' => 'Sport']), "{$locale}.accept");
+            $this->assertStringContainsString(__('gamification::challenges.board.decline'), __('gamification::challenges.board.decline_label', ['name' => 'Sport']), "{$locale}.decline");
+        }
     }
 
     #[Test]

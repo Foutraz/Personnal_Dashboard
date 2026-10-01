@@ -96,8 +96,8 @@ class ChallengeBoardTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(ChallengeBoard::class)
-            ->assertSeeHtml('aria-label="Take on the Sport distance challenge"')
-            ->assertSeeHtml('aria-label="Skip the Sport distance challenge"');
+            ->assertSeeHtml('aria-label="Take on the challenge: Sport distance"')
+            ->assertSeeHtml('aria-label="Skip the challenge: Sport distance"');
     }
 
     #[Test]

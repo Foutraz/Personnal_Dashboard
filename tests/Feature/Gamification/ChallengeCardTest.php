@@ -189,7 +189,8 @@ class ChallengeCardTest extends TestCase
         $this->app->setLocale('en');
         $card = $this->card(['current_value' => 12, 'target_value' => 28, 'updated_at' => now()->subHours(2)]);
 
-        $this->assertSame('Take on the Sport distance challenge', $card->acceptAccessibleLabel());
+        $this->assertSame('Take on the challenge: Sport distance', $card->acceptAccessibleLabel());
+        $this->assertSame('Skip the challenge: Sport distance', $card->declineAccessibleLabel());
         $this->assertSame('12 / 28 km', $card->progressLabel());
         $this->assertSame('Progress updated 2 hours ago', $card->updatedLabel());
     }
