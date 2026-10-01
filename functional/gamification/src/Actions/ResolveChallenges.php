@@ -83,6 +83,9 @@ class ResolveChallenges
 
     private function recordProgress(Challenge $challenge, float $measured): void
     {
-        Challenge::query()->whereKey($challenge->getKey())->update(['current_value' => $measured]);
+        Challenge::query()
+            ->whereKey($challenge->getKey())
+            ->where('status', $challenge->status)
+            ->update(['current_value' => $measured]);
     }
 }

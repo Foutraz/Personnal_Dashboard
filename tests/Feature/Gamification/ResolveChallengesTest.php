@@ -11,9 +11,11 @@ use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Moto\Models\MotoRide;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -256,6 +258,49 @@ class ResolveChallengesTest extends TestCase
         $this->assertSame('2026-09-29 08:00:00', $persisted->accepted_at->toDateTimeString());
         $this->assertNull($persisted->resolved_at);
         $this->assertSame('2026-10-03 18:45:00', $persisted->updated_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_keeps_the_status_out_of_the_progress_update(): void
+    {
+        $user = User::factory()->create();
+        $this->acceptedChallenge($user);
+        $this->activityAt($user, '2026-09-29 08:00:00', 20000.0);
+        $updates = [];
+        DB::listen(function (QueryExecuted $query) use (&$updates): void {
+            if (str_starts_with($query->sql, 'update')) {
+                $updates[] = $query->sql;
+            }
+        });
+
+        $this->resolve($user);
+
+        $this->assertCount(1, $updates);
+        $this->assertStringNotContainsString('status', explode(' where ', $updates[0])[0]);
+    }
+
+    #[Test]
+    public function it_does_not_rewrite_a_challenge_declined_while_its_progress_was_measured(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->proposedChallenge($user);
+        $this->activityAt($user, '2026-10-01 08:00:00', 12000.0);
+        $this->travelTo(Carbon::parse('2026-10-03 18:45:00', 'UTC'));
+        $declined = false;
+        DB::listen(function (QueryExecuted $query) use (&$declined, $challenge): void {
+            if (! $declined && str_contains($query->sql, 'sport_activities')) {
+                $declined = true;
+                DB::table('challenges')->where('id', $challenge->id)->update(['status' => ChallengeStatus::Declined->value]);
+            }
+        });
+
+        $this->resolve($user);
+
+        $persisted = $challenge->fresh();
+        $this->assertTrue($declined);
+        $this->assertSame(ChallengeStatus::Declined, $persisted->status);
+        $this->assertSame('0.00', $persisted->current_value);
+        $this->assertSame('2026-10-03 12:00:00', $persisted->updated_at->toDateTimeString());
     }
 
     #[Test]
