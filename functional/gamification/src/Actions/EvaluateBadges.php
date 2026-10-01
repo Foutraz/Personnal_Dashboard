@@ -11,7 +11,6 @@ use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
-use Illuminate\Support\Str;
 
 class EvaluateBadges
 {
@@ -48,7 +47,7 @@ class EvaluateBadges
             ->get()
             ->filter(fn (Badge $badge): bool => (float) $badge->threshold <= $measures[$badge->rule_key])
             ->map(fn (Badge $badge): array => [
-                'id' => (string) Str::ulid(),
+                'id' => (new BadgeAward)->newUniqueId(),
                 'user_id' => $user->id,
                 'badge_id' => $badge->id,
                 'awarded_at' => $awardedAt,

@@ -16,6 +16,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -38,6 +39,20 @@ class EvaluateBadgesTest extends TestCase
         $this->assertSame(XpSourceType::Badge->value, $entry->source_type);
         $this->assertSame('sport_activity_count_bronze', $entry->source_id);
         $this->assertTrue($entry->occurred_at->equalTo($awards->sole()->awarded_at));
+    }
+
+    #[Test]
+    public function it_creates_the_awards_with_lowercase_ulids(): void
+    {
+        $user = User::factory()->create();
+        $this->activities($user, 10);
+
+        $awards = $this->evaluate($user);
+
+        $storedId = BadgeAward::query()->whereBelongsTo($user)->sole()->id;
+        $this->assertTrue(Str::isUlid($storedId));
+        $this->assertSame(strtolower($storedId), $storedId);
+        $this->assertSame($storedId, $awards->sole()->id);
     }
 
     #[Test]
