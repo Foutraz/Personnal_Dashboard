@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Sport\Models\SportActivity;
@@ -10,6 +12,7 @@ use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -75,6 +78,30 @@ class GamificationCommandsTest extends TestCase
 
         $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', 'todo_task_completed')->count());
         $this->assertSame(21, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_keeps_the_awarded_badge_and_the_xp_total_when_recalculating_after_the_job(): void
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->count(10)->create(['user_id' => $user->id, 'distance' => 1000.0]);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        $award = BadgeAward::query()->whereBelongsTo($user)->sole();
+        $totalXp = PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp;
+        $badgeEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->sole();
+        Notification::fake();
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $recalculatedAward = BadgeAward::query()->whereBelongsTo($user)->sole();
+        $recalculatedEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->sole();
+        $this->assertSame($award->id, $recalculatedAward->id);
+        $this->assertTrue($award->awarded_at->equalTo($recalculatedAward->awarded_at));
+        $this->assertSame($badgeEntry->source_id, $recalculatedEntry->source_id);
+        $this->assertSame($badgeEntry->points, $recalculatedEntry->points);
+        $this->assertTrue($badgeEntry->occurred_at->equalTo($recalculatedEntry->occurred_at));
+        $this->assertSame($totalXp, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
+        Notification::assertNothingSent();
     }
 
     #[Test]
