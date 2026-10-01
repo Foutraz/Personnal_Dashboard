@@ -68,6 +68,9 @@ class ResolveChallenges
         return $completed;
     }
 
+    /**
+     * Rebuilding the week through GamificationCalendar::weekOf moves its bounds after a game timezone change; only startsAt and endsAt are frozen on the row.
+     */
     private function weekOf(Challenge $challenge): GamificationWeek
     {
         $startDate = $challenge->starts_at->toImmutable()->setTimezone($this->calendar->timezone());
