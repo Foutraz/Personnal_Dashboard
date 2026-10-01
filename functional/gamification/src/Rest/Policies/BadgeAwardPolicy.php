@@ -39,4 +39,20 @@ class BadgeAwardPolicy extends ControlledPolicy
     {
         return false;
     }
+
+    /**
+     * Forbid attaching a badge to an award through the API.
+     */
+    public function attachBadge(Model $user, Model $model, Model $badge): bool
+    {
+        return false;
+    }
+
+    /**
+     * Forbid detaching a badge from an award through the API.
+     */
+    public function detachBadge(Model $user, Model $model, Model $badge): bool
+    {
+        return false;
+    }
 }

@@ -41,7 +41,7 @@ class BadgeAwardResource extends Resource
     public function relations(RestRequest $request): array
     {
         return [
-            BelongsTo::make('badge', BadgeResource::class),
+            BelongsTo::make('badge', BadgeResource::class)->prohibitedOnCreation()->prohibitedOnUpdate(),
         ];
     }
 

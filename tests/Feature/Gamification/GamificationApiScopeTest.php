@@ -468,6 +468,127 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_prohibits_updating_the_badge_through_an_own_badge_award(): void
+    {
+        $user = User::factory()->create();
+        $award = BadgeAward::factory()->create(['user_id' => $user->id]);
+        $originalReward = $award->badge->xp_reward;
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'relations' => [
+                        'badge' => [
+                            'operation' => 'update',
+                            'key' => $award->badge_id,
+                            'attributes' => ['xp_reward' => $originalReward + faker()->number(1000, 9000)],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.relations.badge');
+        $this->assertSame($originalReward, $award->badge->fresh()->xp_reward);
+    }
+
+    #[Test]
+    public function it_prohibits_attaching_another_badge_to_an_own_badge_award(): void
+    {
+        $user = User::factory()->create();
+        $award = BadgeAward::factory()->create(['user_id' => $user->id]);
+        $originalBadgeId = $award->badge_id;
+        $otherBadge = Badge::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'relations' => [
+                        'badge' => ['operation' => 'attach', 'key' => $otherBadge->id],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.relations.badge');
+        $this->assertSame($originalBadgeId, $award->fresh()->badge_id);
+    }
+
+    #[Test]
+    public function it_prohibits_detaching_the_badge_from_an_own_badge_award(): void
+    {
+        $user = User::factory()->create();
+        $award = BadgeAward::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'relations' => [
+                        'badge' => ['operation' => 'detach', 'key' => $award->badge_id],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.relations.badge');
+        $this->assertSame($award->badge_id, $award->fresh()->badge_id);
+    }
+
+    #[Test]
+    public function it_prohibits_creating_a_badge_through_an_own_badge_award(): void
+    {
+        $user = User::factory()->create();
+        $award = BadgeAward::factory()->create(['user_id' => $user->id]);
+        $badgeCount = Badge::query()->count();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'relations' => [
+                        'badge' => [
+                            'operation' => 'create',
+                            'attributes' => [
+                                'key' => faker()->words(2),
+                                'rule_key' => 'sport_distance',
+                                'domain' => 'sport',
+                                'tier' => 'gold',
+                                'threshold' => faker()->number(1, 100),
+                                'xp_reward' => faker()->number(1000, 9000),
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.relations.badge');
+        $this->assertSame($badgeCount, Badge::query()->count());
+    }
+
+    #[Test]
+    public function it_denies_attaching_and_detaching_a_badge_in_the_badge_award_policy(): void
+    {
+        $user = User::factory()->create();
+        $award = BadgeAward::factory()->create(['user_id' => $user->id]);
+        $otherBadge = Badge::factory()->create();
+
+        $this->assertFalse($user->can('attachBadge', [$award, $otherBadge]));
+        $this->assertFalse($user->can('detachBadge', [$award, $award->badge]));
+    }
+
+    #[Test]
     public function it_rejects_deleting_own_badge_awards_through_the_api(): void
     {
         $user = User::factory()->create();
