@@ -22,6 +22,7 @@ use Functional\Gamification\Database\Seeders\GamificationSeeder;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
+use Functional\Gamification\Livewire\ChallengeBoard;
 use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
@@ -133,6 +134,7 @@ class GamificationServiceProvider extends OsddServiceProvider
         Blade::anonymousComponentNamespace('gamification::components', 'gamification');
 
         Livewire::component('gamification-player-profile', PlayerProfilePage::class);
+        Livewire::component('gamification-challenge-board', ChallengeBoard::class);
 
         (new Access)->addControl(new XpEntryControl);
         (new Access)->addControl(new PlayerProfileControl);

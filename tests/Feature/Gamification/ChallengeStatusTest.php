@@ -51,6 +51,17 @@ class ChallengeStatusTest extends TestCase
     }
 
     #[Test]
+    public function it_counts_only_the_accepted_and_the_resolved_challenges_as_engaged(): void
+    {
+        $engaged = array_filter(ChallengeStatus::cases(), fn (ChallengeStatus $status): bool => $status->isEngaged());
+
+        $this->assertEqualsCanonicalizing(
+            [ChallengeStatus::Accepted, ChallengeStatus::Completed, ChallengeStatus::Failed],
+            array_values($engaged),
+        );
+    }
+
+    #[Test]
     #[DataProvider('chipClasses')]
     public function it_gives_each_status_its_chip_classes(ChallengeStatus $status, string $expectedClasses): void
     {

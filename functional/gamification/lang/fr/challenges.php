@@ -62,7 +62,7 @@ return [
         'already_reached' => 'Objectif déjà atteint : relevez le défi pour le valider',
         'previous_title' => 'Semaine dernière',
         'grace_pending' => 'Clôture en attente des dernières synchronisations',
-        'empty' => "Aucun défi cette semaine. Les défis sont proposés chaque lundi à partir de vos 4 dernières semaines d'activité.",
+        'empty' => "Aucun défi cette semaine. Les défis sont proposés chaque lundi à partir de vos :weeks dernières semaines d'activité.",
         'accepted_announcement' => 'Défi accepté : :name',
         'declined_announcement' => 'Défi passé : :name',
     ],

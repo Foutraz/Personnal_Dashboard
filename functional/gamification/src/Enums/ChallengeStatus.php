@@ -29,6 +29,14 @@ enum ChallengeStatus: string
         return __("gamification::challenges.statuses.{$this->value}");
     }
 
+    public function isEngaged(): bool
+    {
+        return match ($this) {
+            self::Accepted, self::Completed, self::Failed => true,
+            self::Proposed, self::Declined, self::Expired => false,
+        };
+    }
+
     public function chipClass(): string
     {
         return match ($this) {

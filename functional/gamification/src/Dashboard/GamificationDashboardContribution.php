@@ -2,11 +2,14 @@
 
 namespace Functional\Gamification\Dashboard;
 
+use Functional\Gamification\Enums\ChallengeStatus;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Services\BadgeShowcase;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
+use Functional\Gamification\Services\WeeklyChallenges;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -24,6 +27,7 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
         private XpLedger $xpLedger,
         private GamificationCalendar $calendar,
         private BadgeShowcase $badgeShowcase,
+        private WeeklyChallenges $weeklyChallenges,
     ) {}
 
     /**
@@ -59,6 +63,12 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             $secondaryLines[] = __('gamification::dashboard.hottest_streak', ['domain' => $hottest->domain->label(), 'count' => $hottest->current_count]);
         }
 
+        $challengeLine = $this->challengeLine($user);
+
+        if ($challengeLine !== null) {
+            $secondaryLines[] = $challengeLine;
+        }
+
         return new DashboardSummary(
             key: 'gamification',
             title: __('gamification::dashboard.title'),
@@ -71,6 +81,26 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             metricUnit: __('gamification::dashboard.metric_unit'),
             secondaryLines: $secondaryLines,
         );
+    }
+
+    private function challengeLine(User $user): ?string
+    {
+        $challenges = $this->weeklyChallenges->forWeek($user, $this->calendar->currentWeek());
+        $proposed = $challenges->filter(fn (Challenge $challenge): bool => $challenge->status === ChallengeStatus::Proposed)->count();
+        $engaged = $challenges->filter(fn (Challenge $challenge): bool => $challenge->status->isEngaged());
+
+        if ($proposed > 0) {
+            return trans_choice('gamification::dashboard.challenges_pending', $proposed);
+        }
+
+        if ($engaged->isEmpty()) {
+            return null;
+        }
+
+        return __('gamification::dashboard.challenges_progress', [
+            'completed' => $engaged->filter(fn (Challenge $challenge): bool => $challenge->status === ChallengeStatus::Completed)->count(),
+            'committed' => $engaged->count(),
+        ]);
     }
 
     /**
