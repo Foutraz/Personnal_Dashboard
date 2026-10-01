@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Number;
 use Lomkit\Access\Controls\HasControl;
 
 /**
@@ -67,23 +66,5 @@ class Badge extends Model
     public function awards(): HasMany
     {
         return $this->hasMany(BadgeAward::class);
-    }
-
-    /**
-     * Get the translated name of the badge family.
-     */
-    public function name(): string
-    {
-        return __("gamification::badges.rules.{$this->rule_key}.name");
-    }
-
-    /**
-     * Get the translated description of the badge with its threshold.
-     */
-    public function description(): string
-    {
-        return __("gamification::badges.rules.{$this->rule_key}.description", [
-            'threshold' => Number::format((float) $this->threshold, locale: app()->getLocale()),
-        ]);
     }
 }

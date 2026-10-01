@@ -2,8 +2,8 @@
 
 namespace Functional\Gamification\Services\Dto;
 
+use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeTier;
-use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Models\Badge;
 
 final readonly class BadgeMedal
@@ -17,16 +17,18 @@ final readonly class BadgeMedal
     ) {}
 
     /**
-     * Build the medal of a catalogue badge with its threshold expressed in the unit of its family, pending when the live measure reaches an unawarded tier.
+     * Build the medal of a catalogue badge with its threshold expressed in the unit of its rule, pending when the live measure reaches an unawarded tier.
      */
-    public static function fromBadge(Badge $badge, BadgeUnit $unit, bool $earned, float $measure): self
+    public static function fromBadge(Badge $badge, BadgeRule $rule, bool $earned, float $measure): self
     {
+        $threshold = (float) $badge->threshold;
+
         return new self(
             tier: $badge->tier,
-            description: $badge->description(),
-            thresholdLabel: $unit->format((float) $badge->threshold),
+            description: $rule->key()->description($rule->unit()->formatNumber($threshold)),
+            thresholdLabel: $rule->unit()->format($threshold),
             earned: $earned,
-            pending: ! $earned && $measure >= (float) $badge->threshold,
+            pending: ! $earned && $measure >= $threshold,
         );
     }
 

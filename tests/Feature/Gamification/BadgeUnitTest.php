@@ -53,4 +53,15 @@ class BadgeUnitTest extends TestCase
             $this->assertStringContainsString('12', __('gamification::badges.showcase.current', ['measure' => '12']), "{$locale}.current");
         }
     }
+
+    #[Test]
+    public function it_formats_a_bare_number_with_the_locale_digit_grouping(): void
+    {
+        $this->app->setLocale('en');
+        $this->assertSame('1,250', BadgeUnit::Kilometers->formatNumber(1250.0));
+        $this->assertSame('150.4', BadgeUnit::Euros->formatNumber(150.37));
+
+        $this->app->setLocale('fr');
+        $this->assertSame('1 250', Str::squish(BadgeUnit::Days->formatNumber(1250.0)));
+    }
 }

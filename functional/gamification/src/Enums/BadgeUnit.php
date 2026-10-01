@@ -18,8 +18,16 @@ enum BadgeUnit: string
      */
     public function format(float $measure): string
     {
-        return __("gamification::badges.units.{$this->value}", [
-            'measure' => Number::format($measure, maxPrecision: self::MAX_DECIMALS, locale: app()->getLocale()),
-        ]);
+        return __("gamification::badges.units.{$this->value}", ['measure' => $this->formatNumber($measure)]);
+    }
+
+    /**
+     * Format a bare number with the locale digit grouping and the single decimal of the family units.
+     */
+    public function formatNumber(float $measure): string
+    {
+        $formatted = Number::format($measure, maxPrecision: self::MAX_DECIMALS, locale: app()->getLocale());
+
+        return $formatted === false ? (string) $measure : $formatted;
     }
 }

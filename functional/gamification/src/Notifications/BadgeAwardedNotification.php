@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Notifications;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Models\Badge;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
@@ -33,7 +34,7 @@ class BadgeAwardedNotification extends Notification
     public function toArray(object $notifiable): array
     {
         $replacements = [
-            'name' => $this->badge->name(),
+            'name' => BadgeRuleKey::from($this->badge->rule_key)->label(),
             'tier' => $this->badge->tier->label(),
             'xp' => $this->badge->xp_reward,
         ];

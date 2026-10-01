@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Gamification;
 
-use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Badge;
@@ -61,46 +60,6 @@ class BadgeModelTest extends TestCase
 
         $this->assertSame(0, $inserted);
         $this->assertSame(1, BadgeAward::query()->count());
-    }
-
-    #[Test]
-    public function it_translates_the_name_and_description(): void
-    {
-        $this->app->setLocale('fr');
-        $badge = Badge::factory()->create([
-            'rule_key' => BadgeRuleKey::SportDistance->value,
-            'tier' => BadgeTier::Bronze,
-            'threshold' => 100,
-        ]);
-
-        $this->assertSame('Distance sportive', $badge->name());
-        $this->assertStringContainsString('100', $badge->description());
-    }
-
-    #[Test]
-    public function it_groups_the_description_threshold_digits_the_french_way(): void
-    {
-        $this->app->setLocale('fr');
-        $badge = Badge::factory()->create([
-            'rule_key' => BadgeRuleKey::SportDistance->value,
-            'tier' => BadgeTier::Silver,
-            'threshold' => 1000,
-        ]);
-
-        $this->assertSame('Cumulez 1 000 km en activité sportive.', Str::squish($badge->description()));
-    }
-
-    #[Test]
-    public function it_groups_the_description_threshold_digits_the_english_way(): void
-    {
-        $this->app->setLocale('en');
-        $badge = Badge::factory()->create([
-            'rule_key' => BadgeRuleKey::SportDistance->value,
-            'tier' => BadgeTier::Silver,
-            'threshold' => 1000,
-        ]);
-
-        $this->assertSame('Cover 1,000 km in sport activities.', $badge->description());
     }
 
     #[Test]
