@@ -3,6 +3,7 @@
 namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\EvaluateBadges;
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
@@ -92,14 +93,15 @@ class EvaluateBadgesTest extends TestCase
     }
 
     #[Test]
-    public function it_syncs_the_catalogue_before_evaluating(): void
+    public function it_leaves_the_catalogue_untouched(): void
     {
         $user = User::factory()->create();
+        $this->activities($user, 10);
+
+        $awards = $this->app->make(EvaluateBadges::class)->handle($user);
+
+        $this->assertTrue($awards->isEmpty());
         $this->assertSame(0, Badge::query()->count());
-
-        $this->evaluate($user);
-
-        $this->assertSame(30, Badge::query()->count());
     }
 
     #[Test]
@@ -207,6 +209,8 @@ class EvaluateBadgesTest extends TestCase
      */
     private function evaluate(User $user): Collection
     {
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+
         return $this->app->make(EvaluateBadges::class)->handle($user);
     }
 

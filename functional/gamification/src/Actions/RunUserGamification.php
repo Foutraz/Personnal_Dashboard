@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 class RunUserGamification
 {
     public function __construct(
+        private SyncBadgeCatalogue $syncBadgeCatalogue,
         private AwardXp $awardXp,
         private UpdateStreaks $updateStreaks,
         private EvaluateBadges $evaluateBadges,
@@ -22,7 +23,7 @@ class RunUserGamification
     ) {}
 
     /**
-     * Run every tagged xp rule, the streaks and the badges in one transaction, refresh the profile once and notify the new badges after the commit.
+     * Sync the badge catalogue, then run every tagged xp rule, the streaks and the badges in one transaction, refresh the profile once and notify the new badges after the commit.
      */
     public function handle(User $user, ?Carbon $since = null): LevelTransition
     {
@@ -31,6 +32,8 @@ class RunUserGamification
         }
 
         $windowStart = $since?->copy()->startOfDay();
+
+        $this->syncBadgeCatalogue->handle();
 
         $rules = collect(app()->tagged('gamification.xp_rules'));
         $awards = $rules->flatMap(fn (XpRule $rule) => $rule->awards($user, $windowStart));

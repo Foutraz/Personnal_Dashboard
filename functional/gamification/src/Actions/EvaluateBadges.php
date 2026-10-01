@@ -15,17 +15,13 @@ use Illuminate\Support\Str;
 
 class EvaluateBadges
 {
-    public function __construct(private SyncBadgeCatalogue $syncBadgeCatalogue) {}
-
     /**
-     * Award the badges whose threshold the tagged rules now reach, reconverge the badge ledger entries and return the new awards.
+     * Award the badges of the already synced catalogue whose threshold the tagged rules now reach, reconverge the badge ledger entries and return the new awards.
      *
      * @return Collection<int, BadgeAward>
      */
     public function handle(User $user): Collection
     {
-        $this->syncBadgeCatalogue->handle();
-
         $newAwards = $this->award($user);
         $this->reconvergeLedger($user);
 
