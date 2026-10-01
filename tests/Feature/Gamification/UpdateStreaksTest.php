@@ -5,6 +5,7 @@ namespace Tests\Feature\Gamification;
 use Functional\Gamification\Actions\UpdateStreaks;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
@@ -130,6 +131,7 @@ class UpdateStreaksTest extends TestCase
             ->sole();
         $this->assertSame(config('gamification.streaks.milestones.7'), $milestone->points);
         $this->assertSame(GamificationDomain::Sport, $milestone->domain);
+        $this->assertSame(XpSourceType::StreakMilestone->value, $milestone->source_type);
         $this->assertSame(now()->toDateString(), $milestone->occurred_at->toDateString());
     }
 

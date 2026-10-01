@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Services\Dto\LevelTransition;
@@ -135,7 +136,7 @@ class UpdateStreaks
                     'user_id' => $user->id,
                     'domain' => $domain,
                     'rule_key' => XpRuleKey::StreakMilestone->value,
-                    'source_type' => Streak::class,
+                    'source_type' => XpSourceType::StreakMilestone->value,
                     'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
                     'points' => $points,
                     'occurred_at' => $run['start']->copy()->addDays($days - 1),

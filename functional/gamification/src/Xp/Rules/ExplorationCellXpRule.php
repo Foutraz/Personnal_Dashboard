@@ -6,6 +6,7 @@ use Functional\Exploration\Models\ExploredCell;
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
@@ -51,7 +52,7 @@ class ExplorationCellXpRule implements XpRule
             ->map(fn (Collection $dayCells, string $day): XpAward => new XpAward(
                 domain: $this->domain(),
                 ruleKey: $this->key(),
-                sourceType: 'period',
+                sourceType: XpSourceType::Period->value,
                 sourceId: $day,
                 points: min($dayCells->count() * $config['cell_discovered'], $config['daily_cap']),
                 occurredAt: Carbon::parse($day),
