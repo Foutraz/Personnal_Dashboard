@@ -13,16 +13,16 @@ use Functional\Users\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
 class PlayerProfilePage extends Component
 {
+    private const DAILY_SERIES_DAYS = 30;
+
     /**
      * Render the player profile with level ring, domain totals and daily xp chart.
      */
     #[Layout('layouts.app')]
-    #[Title('Joueur')]
     public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar): View
     {
         /** @var User $user */
@@ -37,7 +37,7 @@ class PlayerProfilePage extends Component
         $levelSpan = max($levelCeiling - $levelFloor, 1);
         $levelPercentage = min(($totalXp - $levelFloor) / $levelSpan * 100, 100);
 
-        $series = $xpLedger->dailySeries($user, 30);
+        $series = $xpLedger->dailySeries($user, self::DAILY_SERIES_DAYS);
 
         return view('gamification::player', [
             'level' => $level,
@@ -50,6 +50,7 @@ class PlayerProfilePage extends Component
             'domains' => GamificationDomain::cases(),
             'chartLabels' => array_keys($series),
             'chartValues' => array_values($series),
+            'dailySeriesDays' => self::DAILY_SERIES_DAYS,
             'streakCards' => Streak::query()
                 ->whereBelongsTo($user)
                 ->orderByDesc('current_count')
@@ -60,6 +61,6 @@ class PlayerProfilePage extends Component
                     bestCount: $streak->best_count,
                     isAlive: $calendar->isStreakAlive($streak->last_activity_date),
                 )),
-        ]);
+        ])->title(__('gamification::player.title'));
     }
 }

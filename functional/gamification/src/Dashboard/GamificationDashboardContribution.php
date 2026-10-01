@@ -44,25 +44,25 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             ->first(fn (Streak $streak): bool => $this->calendar->isStreakAlive($streak->last_activity_date));
 
         $secondaryLines = [
-            number_format($totalXp, 0, ',', ' ').' XP au total',
-            number_format($remaining, 0, ',', ' ').' XP avant le niveau '.($level + 1),
-            number_format($monthlyXp, 0, ',', ' ').' XP ce mois-ci',
+            __('gamification::dashboard.total_xp', ['xp' => number_format($totalXp, 0, ',', ' ')]),
+            __('gamification::dashboard.remaining_xp', ['xp' => number_format($remaining, 0, ',', ' '), 'level' => $level + 1]),
+            __('gamification::dashboard.monthly_xp', ['xp' => number_format($monthlyXp, 0, ',', ' ')]),
         ];
 
         if ($hottest !== null) {
-            $secondaryLines[] = 'Série '.$hottest->domain->label().' : '.$hottest->current_count.' j';
+            $secondaryLines[] = __('gamification::dashboard.hottest_streak', ['domain' => $hottest->domain->label(), 'count' => $hottest->current_count]);
         }
 
         return new DashboardSummary(
             key: 'gamification',
-            title: 'Joueur',
+            title: __('gamification::dashboard.title'),
             accent: 'violet',
             icon: self::ICON,
             href: route('player'),
             order: 45,
             available: true,
             metricValue: number_format($level, 0, ',', ' '),
-            metricUnit: 'niv.',
+            metricUnit: __('gamification::dashboard.metric_unit'),
             secondaryLines: $secondaryLines,
         );
     }
@@ -72,6 +72,6 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
      */
     public function navigationItem(): NavigationItem
     {
-        return new NavigationItem(label: 'Joueur', route: 'player', icon: self::ICON, order: 45);
+        return new NavigationItem(label: __('gamification::dashboard.title'), route: 'player', icon: self::ICON, order: 45);
     }
 }

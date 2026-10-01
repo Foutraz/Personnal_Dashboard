@@ -9,14 +9,29 @@ use Tests\TestCase;
 class GamificationDomainTest extends TestCase
 {
     #[Test]
-    public function it_labels_every_domain(): void
+    public function it_labels_every_domain_in_french(): void
     {
+        $this->app->setLocale('fr');
+
         foreach (GamificationDomain::cases() as $domain) {
-            $this->assertNotSame('', $domain->label());
+            $this->assertStringNotContainsString('gamification::', $domain->label());
         }
 
         $this->assertSame('Sport', GamificationDomain::Sport->label());
         $this->assertSame('Santé', GamificationDomain::Health->label());
+    }
+
+    #[Test]
+    public function it_labels_every_domain_in_english(): void
+    {
+        $this->app->setLocale('en');
+
+        foreach (GamificationDomain::cases() as $domain) {
+            $this->assertStringNotContainsString('gamification::', $domain->label());
+        }
+
+        $this->assertSame('Health', GamificationDomain::Health->label());
+        $this->assertSame('Tasks', GamificationDomain::Todo->label());
     }
 
     #[Test]

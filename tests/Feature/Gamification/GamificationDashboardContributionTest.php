@@ -58,6 +58,7 @@ class GamificationDashboardContributionTest extends TestCase
     #[Test]
     public function it_surfaces_the_hottest_streak_on_the_summary(): void
     {
+        $this->app->setLocale('fr');
         $user = User::factory()->create();
         Streak::factory()->create(['user_id' => $user->id, 'domain' => GamificationDomain::Sport, 'current_count' => 3]);
         Streak::factory()->create(['user_id' => $user->id, 'domain' => GamificationDomain::Todo, 'current_count' => 9]);
@@ -81,6 +82,7 @@ class GamificationDashboardContributionTest extends TestCase
     #[Test]
     public function it_ignores_a_projection_whose_last_activity_is_two_days_old(): void
     {
+        $this->app->setLocale('fr');
         $user = User::factory()->create();
         Streak::factory()->create([
             'user_id' => $user->id,
@@ -98,5 +100,25 @@ class GamificationDashboardContributionTest extends TestCase
         $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
 
         $this->assertContains('Série Tâches : 4 j', $summary->secondaryLines);
+    }
+
+    #[Test]
+    public function it_translates_the_summary_in_english(): void
+    {
+        $this->app->setLocale('en');
+        $user = User::factory()->create();
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Todo,
+            'current_count' => 9,
+            'last_activity_date' => now()->toDateString(),
+        ]);
+
+        $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
+
+        $this->assertSame('Player', $summary->title);
+        $this->assertSame('lvl', $summary->metricUnit);
+        $this->assertContains('0 XP in total', $summary->secondaryLines);
+        $this->assertContains('Tasks streak: 9 d', $summary->secondaryLines);
     }
 }

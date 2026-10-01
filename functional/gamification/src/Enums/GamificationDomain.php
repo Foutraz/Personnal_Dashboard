@@ -16,14 +16,7 @@ enum GamificationDomain: string
      */
     public function label(): string
     {
-        return match ($this) {
-            self::Sport => 'Sport',
-            self::Health => 'Santé',
-            self::Finance => 'Finance',
-            self::Moto => 'Moto',
-            self::Todo => 'Tâches',
-            self::Exploration => 'Exploration',
-        };
+        return __("gamification::domains.{$this->value}");
     }
 
     /**

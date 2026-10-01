@@ -24,6 +24,7 @@
 - **Jours découpés dans le fuseau d'affichage.** Les jours actifs et le test « série vivante » (dernier jour actif = aujourd'hui ou hier) utilisent tous deux `config('gamification.timezone')` (défaut `Europe/Paris`, surcharge `GAMIFICATION_TIMEZONE`) via le service `GamificationCalendar`, et non plus `DATE(occurred_at)` en UTC côté base.
 - **Pas de série Finance.** La règle Finance n'écrit qu'une entrée par mois : une série quotidienne y serait toujours morte. `GamificationDomain::tracksStreaks()` exclut Finance du calcul.
 - **Rescan complet conservé.** `UpdateStreaks` relit tout l'historique du user (une ligne distincte par domaine et instant) : `best_count`, la date du premier palier atteint et une série en cours de plus de 100 jours dépendent de l'historique complet ; une fenêtre de 100 jours imposerait de faire confiance au `best_count` stocké, ce qui casserait la reconvergence depuis le ledger.
+- **Textes traduits.** Les libellés du layer (hub Joueur, anneau de niveau, tuile dashboard, navigation, libellés de domaines) sont dans `functional/gamification/lang/{fr,en}/*.php`, chargés par `loadTranslationsFrom(..., 'gamification')` dans `GamificationServiceProvider` ; la langue affichée suit `APP_LOCALE`.
 
 ---
 

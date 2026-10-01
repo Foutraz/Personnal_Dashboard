@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Joueur',
+    'eyebrow' => 'Module Joueur — Gamification',
+    'headline_lead' => 'Votre vie,',
+    'headline_highlight' => 'convertie en XP',
+    'intro' => "Chaque activité sportive, tâche accomplie, pesée, sortie moto, mois d'épargne positive et zone explorée alimente votre progression. Battez-vous contre vous-même.",
+    'level' => 'Niveau',
+    'xp_amount' => ':xp XP',
+    'xp_unit' => 'XP',
+    'remaining_lead' => 'Encore',
+    'remaining_tail' => 'avant le niveau :level.',
+    'weekly_label' => 'XP cette semaine',
+    'weekly_trend' => '7 derniers jours',
+    'monthly_label' => 'XP ce mois-ci',
+    'monthly_trend' => 'Depuis le 1er du mois',
+    'streaks_title' => 'Séries',
+    'streaks_subtitle' => "Vos jours consécutifs d'activité par domaine.",
+    'day_unit' => 'j',
+    'streak_alive' => 'Série en cours',
+    'streak_best' => 'Record : :count',
+    'daily_title' => 'XP par jour',
+    'daily_subtitle' => "Vos gains d'expérience sur les :days derniers jours.",
+    'domains_title' => 'XP par domaine',
+];

@@ -92,6 +92,7 @@ class GamificationServiceProvider extends OsddServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../../routes/api.php');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'gamification');
+        $this->loadTranslationsFrom(__DIR__.'/../../lang', 'gamification');
 
         Blade::anonymousComponentNamespace('gamification::components', 'gamification');
 
