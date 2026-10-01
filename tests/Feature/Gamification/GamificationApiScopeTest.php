@@ -283,6 +283,74 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_refuses_including_the_awards_of_badges(): void
+    {
+        $user = User::factory()->create();
+        $foreign = BadgeAward::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badges/search', [
+            'search' => [
+                'includes' => [['relation' => 'awards']],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.includes.0.relation');
+        $this->assertStringNotContainsString($foreign->user_id, $response->getContent());
+    }
+
+    #[Test]
+    public function it_refuses_filtering_badges_on_the_user_of_their_awards(): void
+    {
+        $user = User::factory()->create();
+        $foreign = BadgeAward::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badges/search', [
+            'search' => [
+                'filters' => [['field' => 'awards.user_id', 'value' => $foreign->user_id]],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.filters.0.field');
+        $this->assertStringNotContainsString($foreign->badge_id, $response->getContent());
+    }
+
+    #[Test]
+    public function it_refuses_aggregating_the_awards_of_badges(): void
+    {
+        $user = User::factory()->create();
+        BadgeAward::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badges/search', [
+            'search' => [
+                'aggregates' => [['relation' => 'awards', 'type' => 'count']],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.aggregates.0.relation');
+    }
+
+    #[Test]
+    public function it_refuses_including_the_awards_of_the_badge_of_a_badge_award(): void
+    {
+        $user = User::factory()->create();
+        $foreign = BadgeAward::factory()->create();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'badge_id' => $foreign->badge_id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/search', [
+            'search' => [
+                'includes' => [['relation' => 'badge.awards']],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.includes.0.relation');
+        $this->assertStringNotContainsString($foreign->id, $response->getContent());
+    }
+
+    #[Test]
     public function it_rejects_creating_badges_through_the_api(): void
     {
         $user = User::factory()->create();
