@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Console;
 
 use Functional\Gamification\Actions\RunUserGamification;
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
@@ -27,11 +28,13 @@ class RecalculateGamification extends Command
     protected $description = 'Purge and replay the gamification ledger, applying the current scoring rules to the full history.';
 
     /**
-     * Purge each targeted ledger inside a transaction and replay the rules under the job's shared per-user lock.
+     * Sync the badge catalogue once, then purge each targeted ledger inside a transaction and replay the rules under the job's shared per-user lock.
      */
-    public function handle(RunUserGamification $runUserGamification): int
+    public function handle(SyncBadgeCatalogue $syncBadgeCatalogue, RunUserGamification $runUserGamification): int
     {
         $userId = $this->argument('user');
+
+        $syncBadgeCatalogue->handle();
 
         $users = $userId !== null
             ? User::query()->whereKey($userId)->cursor()

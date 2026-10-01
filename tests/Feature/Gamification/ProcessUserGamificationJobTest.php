@@ -6,10 +6,12 @@ use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
@@ -18,6 +20,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -284,6 +287,35 @@ class ProcessUserGamificationJobTest extends TestCase
         $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
         $this->assertSame(0, $user->notifications()->count());
         $this->assertSame(0, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_syncs_the_badge_catalogue_once_outside_the_transaction_before_running(): void
+    {
+        $user = User::factory()->create();
+        $baselineLevel = DB::transactionLevel();
+        $syncLevels = [];
+        $this->mock(SyncBadgeCatalogue::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->andReturnUsing(function () use (&$syncLevels): void {
+                $syncLevels[] = DB::transactionLevel();
+            });
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame([$baselineLevel], $syncLevels);
+    }
+
+    #[Test]
+    public function it_creates_the_badge_catalogue_on_the_first_run(): void
+    {
+        $user = User::factory()->create();
+        $this->assertSame(0, Badge::query()->count());
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(30, Badge::query()->count());
     }
 
     private function smallActivities(User $user, int $count): void

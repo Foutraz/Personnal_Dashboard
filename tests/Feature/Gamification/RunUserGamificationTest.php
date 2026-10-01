@@ -8,7 +8,6 @@ use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Actions\UpdateStreaks;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\XpRuleKey;
-use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
@@ -19,7 +18,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Events\NotificationSending;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use PDOException;
@@ -35,6 +33,7 @@ class RunUserGamificationTest extends TestCase
         parent::setUp();
 
         $this->travelTo(Carbon::parse('2026-07-10 12:00', 'Europe/Paris')->utc());
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
 
     #[Test]
@@ -208,32 +207,14 @@ class RunUserGamificationTest extends TestCase
     }
 
     #[Test]
-    public function it_syncs_the_badge_catalogue_once_outside_the_transaction(): void
+    public function it_leaves_the_badge_catalogue_to_its_callers(): void
     {
+        $this->mock(SyncBadgeCatalogue::class)->shouldNotReceive('handle');
         $user = User::factory()->create();
-        $baselineLevel = DB::transactionLevel();
-        $syncLevels = [];
-        $this->mock(SyncBadgeCatalogue::class)
-            ->shouldReceive('handle')
-            ->once()
-            ->andReturnUsing(function () use (&$syncLevels): void {
-                $syncLevels[] = DB::transactionLevel();
-            });
 
         $this->app->make(RunUserGamification::class)->handle($user);
 
-        $this->assertSame([$baselineLevel], $syncLevels);
-    }
-
-    #[Test]
-    public function it_creates_the_badge_catalogue_on_the_first_run(): void
-    {
-        $user = User::factory()->create();
-        $this->assertSame(0, Badge::query()->count());
-
-        $this->app->make(RunUserGamification::class)->handle($user);
-
-        $this->assertSame(30, Badge::query()->count());
+        $this->assertTrue(PlayerProfile::query()->whereBelongsTo($user)->exists());
     }
 
     private function smallActivities(User $user, int $count): void

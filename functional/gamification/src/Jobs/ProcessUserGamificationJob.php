@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Jobs;
 
 use Functional\Gamification\Actions\RunUserGamification;
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Users\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,9 +53,9 @@ class ProcessUserGamificationJob implements ShouldQueue
     }
 
     /**
-     * Run the gamification rules for the user over the requested window.
+     * Sync the badge catalogue then run the gamification rules for the user over the requested window.
      */
-    public function handle(RunUserGamification $runUserGamification): void
+    public function handle(SyncBadgeCatalogue $syncBadgeCatalogue, RunUserGamification $runUserGamification): void
     {
         $user = User::query()->find($this->userId);
 
@@ -62,6 +63,7 @@ class ProcessUserGamificationJob implements ShouldQueue
             return;
         }
 
+        $syncBadgeCatalogue->handle();
         $runUserGamification->handle($user, $this->since);
     }
 }

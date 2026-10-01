@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Models\BadgeAward;
@@ -13,6 +14,7 @@ use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
@@ -115,6 +117,24 @@ class GamificationCommandsTest extends TestCase
 
         $this->assertSame(BadgeAward::query()->whereBelongsTo($user)->count(), $user->notifications()->where('type', BadgeAwardedNotification::class)->count());
         $this->assertGreaterThan(0, BadgeAward::query()->whereBelongsTo($user)->count());
+    }
+
+    #[Test]
+    public function it_syncs_the_badge_catalogue_once_before_any_user_transaction(): void
+    {
+        User::factory()->count(2)->create();
+        $baselineLevel = DB::transactionLevel();
+        $syncLevels = [];
+        $this->mock(SyncBadgeCatalogue::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->andReturnUsing(function () use (&$syncLevels): void {
+                $syncLevels[] = DB::transactionLevel();
+            });
+
+        $this->artisan('gamification:recalculate')->assertExitCode(0);
+
+        $this->assertSame([$baselineLevel], $syncLevels);
     }
 
     #[Test]
