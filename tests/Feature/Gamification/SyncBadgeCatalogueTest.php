@@ -7,7 +7,9 @@ use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Exceptions\InvalidBadgeThresholdException;
+use Functional\Gamification\Exceptions\InvalidBadgeTierXpException;
 use Functional\Gamification\Exceptions\MissingBadgeThresholdException;
+use Functional\Gamification\Exceptions\NonIncreasingBadgeThresholdsException;
 use Functional\Gamification\Models\Badge;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -142,6 +144,82 @@ class SyncBadgeCatalogueTest extends TestCase
         $this->assertThrows(
             fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
             InvalidBadgeThresholdException::class,
+        );
+
+        $this->assertSame(0, Badge::query()->count());
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_a_tier_xp_is_missing(): void
+    {
+        config(['gamification.badges.tier_xp' => ['bronze' => 50, 'gold' => 500]]);
+
+        $this->expectExceptionObject(new InvalidBadgeTierXpException(BadgeTier::Silver, null));
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_a_tier_xp_is_not_positive(): void
+    {
+        config(['gamification.badges.tier_xp.gold' => 0]);
+
+        $this->expectExceptionObject(new InvalidBadgeTierXpException(BadgeTier::Gold, 0));
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_a_tier_xp_is_not_an_integer(): void
+    {
+        config(['gamification.badges.tier_xp.bronze' => 'a few']);
+
+        $this->expectExceptionObject(new InvalidBadgeTierXpException(BadgeTier::Bronze, 'a few'));
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_the_thresholds_do_not_strictly_increase(): void
+    {
+        config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]]);
+
+        $this->expectExceptionObject(new NonIncreasingBadgeThresholdsException('sport_distance', ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]));
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_rejects_two_tiers_sharing_the_same_threshold(): void
+    {
+        config(['gamification.badges.thresholds.todo_streak' => ['bronze' => 7, 'silver' => 30, 'gold' => 30]]);
+
+        $this->expectException(NonIncreasingBadgeThresholdsException::class);
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_writes_nothing_when_the_thresholds_do_not_increase(): void
+    {
+        config(['gamification.badges.thresholds.exploration_cells' => ['bronze' => 5000, 'silver' => 1000, 'gold' => 100]]);
+
+        $this->assertThrows(
+            fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
+            NonIncreasingBadgeThresholdsException::class,
+        );
+
+        $this->assertSame(0, Badge::query()->count());
+    }
+
+    #[Test]
+    public function it_writes_nothing_when_a_tier_xp_is_invalid(): void
+    {
+        config(['gamification.badges.tier_xp.silver' => -150]);
+
+        $this->assertThrows(
+            fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
+            InvalidBadgeTierXpException::class,
         );
 
         $this->assertSame(0, Badge::query()->count());

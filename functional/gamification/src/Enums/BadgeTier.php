@@ -2,6 +2,8 @@
 
 namespace Functional\Gamification\Enums;
 
+use Functional\Gamification\Exceptions\InvalidBadgeTierXpException;
+
 enum BadgeTier: string
 {
     case Bronze = 'bronze';
@@ -27,10 +29,18 @@ enum BadgeTier: string
 
     /**
      * Get the XP granted when a badge of this tier is awarded.
+     *
+     * @throws InvalidBadgeTierXpException
      */
     public function xpReward(): int
     {
-        return (int) config("gamification.badges.tier_xp.{$this->value}");
+        $xpReward = config("gamification.badges.tier_xp.{$this->value}");
+
+        if (! is_int($xpReward) || $xpReward < 1) {
+            throw new InvalidBadgeTierXpException($this, $xpReward);
+        }
+
+        return $xpReward;
     }
 
     /**
