@@ -38,6 +38,14 @@ final readonly class BadgeFamilyProgress
     }
 
     /**
+     * Count the tiers of the family.
+     */
+    public function medalCount(): int
+    {
+        return count($this->medals);
+    }
+
+    /**
      * Get the current measure in the unit of the family.
      */
     public function currentLabel(): string

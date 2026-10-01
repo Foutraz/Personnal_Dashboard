@@ -17,6 +17,7 @@ use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -278,6 +279,18 @@ class PlayerProfilePageTest extends TestCase
             ->assertViewHas('badgeFamilies', fn (Collection $families): bool => $families->count() === 10)
             ->assertViewHas('badgesEarned', 1)
             ->assertViewHas('badgesTotal', 30);
+    }
+
+    #[Test]
+    public function it_derives_the_badge_counters_from_the_families_without_counting_queries(): void
+    {
+        $user = $this->userWithDistanceAndBronze(150);
+        DB::enableQueryLog();
+
+        Livewire::actingAs($user)->test(PlayerProfilePage::class);
+
+        $badgeCountQueries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_starts_with($query['query'], 'select count(*)') && str_contains($query['query'], 'badge'));
+        $this->assertTrue($badgeCountQueries->isEmpty());
     }
 
     #[Test]
