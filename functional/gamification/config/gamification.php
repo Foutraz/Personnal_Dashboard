@@ -61,4 +61,20 @@ return [
             'exploration_cells' => ['bronze' => 100, 'silver' => 1000, 'gold' => 5000],
         ],
     ],
+    'challenges' => [
+        'history_weeks' => 4,
+        'min_active_weeks' => 2,
+        'stretch_ratio' => 0.10,
+        'closing_grace_hours' => 48,
+        'xp_reward' => 50,
+        'templates' => [
+            'sport_distance' => ['step' => 1, 'floor' => 5, 'cap' => 300],
+            'sport_elevation' => ['step' => 50, 'floor' => 100, 'cap' => 10000],
+            'sport_activity_count' => ['step' => 1, 'floor' => 1, 'cap' => 14],
+            'sport_moving_time' => ['step' => 0.5, 'floor' => 1, 'cap' => 30],
+            'moto_distance' => ['step' => 10, 'floor' => 50, 'cap' => 3000],
+            'moto_ride_count' => ['step' => 1, 'floor' => 1, 'cap' => 14],
+            'exploration_cells' => ['step' => 5, 'floor' => 10, 'cap' => 1000],
+        ],
+    ],
 ];

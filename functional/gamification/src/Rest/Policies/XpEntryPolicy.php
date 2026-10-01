@@ -39,4 +39,20 @@ class XpEntryPolicy extends ControlledPolicy
     {
         return false;
     }
+
+    /**
+     * Forbid restoring entries of the append-only ledger through the API.
+     */
+    public function restore(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * Forbid purging entries of the append-only ledger through the API.
+     */
+    public function forceDelete(Model $user, Model $model): bool
+    {
+        return false;
+    }
 }

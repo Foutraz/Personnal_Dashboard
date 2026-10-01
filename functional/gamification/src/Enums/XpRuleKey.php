@@ -12,11 +12,12 @@ enum XpRuleKey: string
     case ExplorationDailyCells = 'exploration_daily_cells';
     case StreakMilestone = 'streak_milestone';
     case BadgeAward = 'badge_award';
+    case ChallengeCompleted = 'challenge_completed';
 
     public function isBonus(): bool
     {
         return match ($this) {
-            self::StreakMilestone, self::BadgeAward => true,
+            self::StreakMilestone, self::BadgeAward, self::ChallengeCompleted => true,
             default => false,
         };
     }

@@ -14,7 +14,10 @@ use Illuminate\Support\Collection;
 
 class UpdateStreaks
 {
-    public function __construct(private GamificationCalendar $calendar) {}
+    public function __construct(
+        private GamificationCalendar $calendar,
+        private ReconvergeBonusXp $reconvergeBonusXp,
+    ) {}
 
     /**
      * Run outside a transaction, a failure between the projection and milestone writes leaves them out of sync.
@@ -129,32 +132,20 @@ class UpdateStreaks
         /** @var array<int, int> $milestones */
         $milestones = config('gamification.streaks.milestones');
 
-        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => collect($milestones)
-            ->map(fn (int $points, int $days): ?array => $this->milestoneRow($user, $domain, $runs, $days, $points))
+        $entries = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => collect($milestones)
+            ->map(fn (int $points, int $days): ?array => $this->milestoneEntry($domain, $runs, $days, $points))
             ->filter()
             ->values()
-        )->values();
+        )->values()->all();
 
-        XpEntry::query()
-            ->whereBelongsTo($user)
-            ->where('rule_key', XpRuleKey::StreakMilestone->value)
-            ->whereNotIn('source_id', $rows->pluck('source_id'))
-            ->delete();
-
-        $rows->chunk(500)->each(function (Collection $chunk): void {
-            XpEntry::query()->upsert(
-                $chunk->all(),
-                ['user_id', 'rule_key', 'source_type', 'source_id'],
-                ['points', 'occurred_at'],
-            );
-        });
+        $this->reconvergeBonusXp->handle($user, XpRuleKey::StreakMilestone, $entries, ['points', 'occurred_at']);
     }
 
     /**
      * @param  Collection<int, array{start: Carbon, length: int}>  $runs
      * @return array<string, mixed>|null
      */
-    private function milestoneRow(User $user, string $domain, Collection $runs, int $days, int $points): ?array
+    private function milestoneEntry(string $domain, Collection $runs, int $days, int $points): ?array
     {
         $firstReachingRun = $runs->first(fn (array $run): bool => $run['length'] >= $days);
 
@@ -163,9 +154,7 @@ class UpdateStreaks
         }
 
         return [
-            'user_id' => $user->id,
             'domain' => $domain,
-            'rule_key' => XpRuleKey::StreakMilestone->value,
             'source_type' => XpSourceType::StreakMilestone->value,
             'source_id' => "{$domain}:{$days}",
             'points' => $points,

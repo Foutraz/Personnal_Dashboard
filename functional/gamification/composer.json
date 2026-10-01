@@ -10,7 +10,8 @@
         "functional/health": "*",
         "functional/moto": "*",
         "functional/todo": "*",
-        "functional/exploration": "*"
+        "functional/exploration": "*",
+        "functional/goals": "*"
     },
     "autoload": {
         "psr-4": {
