@@ -18,6 +18,10 @@
 - Worktree : symlinks SDK + `.env` + `public/build` copiés depuis le repo principal avant que la suite passe (voir Task 1).
 - Le calcul des jours actifs DOIT exclure `rule_key = 'streak_milestone'` (sinon les bonus s'auto-entretiennent).
 
+## Révisions post-revue (PR #33)
+
+- **Palier attribué une seule fois (décision produit).** Un bonus de palier (7/30/100 jours) est gagné une seule fois par user, par domaine et par palier : jamais réattribué après une rupture, jamais retiré par une sync tardive qui fusionne deux séries. Clé `source_id = "{domain}:{days}"`, `occurred_at` = jour où la première série atteint le palier ; le bonus ne disparaît que si plus aucune série du ledger n'atteint le palier.
+
 ---
 
 ### Task 1: Créer le worktree et préparer l'environnement
@@ -622,7 +626,7 @@ git push
 
 **Interfaces:**
 - Consumes: `UpdateStreaks` (Task 3), `Streak::MILESTONE_RULE_KEY`, clé unique ledger (`user_id`, `rule_key`, `source_type`, `source_id`).
-- Produces: entrées `xp_entries` avec `rule_key = 'streak_milestone'`, `source_type = Streak::class`, `source_id = "{domain}:{startDate}:{days}"`, points depuis `config('gamification.streaks.milestones')`, synchronisées de façon convergente (les paliers non atteints sont supprimés).
+- Produces: entrées `xp_entries` avec `rule_key = 'streak_milestone'`, `source_type = 'streak_milestone'`, `source_id = "{domain}:{days}"` (un seul bonus par user, domaine et palier — voir « Révisions post-revue »), points depuis `config('gamification.streaks.milestones')`, synchronisées de façon convergente (un palier n'est retiré que si plus aucune série du ledger ne l'atteint).
 
 - [ ] **Step 1: Ajouter les tests qui échouent**
 

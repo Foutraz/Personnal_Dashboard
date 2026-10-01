@@ -112,7 +112,7 @@ class UpdateStreaks
     }
 
     /**
-     * Upsert the reached milestone awards and drop the ones no run reaches anymore.
+     * Upsert one award per domain and reached threshold, dated on the first run reaching it, and drop the thresholds no run reaches anymore.
      *
      * @param  Collection<string, Collection<int, array{start: Carbon, length: int}>>  $runsByDomain
      */
@@ -121,22 +121,14 @@ class UpdateStreaks
         /** @var array<int, int> $milestones */
         $milestones = config('gamification.streaks.milestones');
 
-        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => $runs->flatMap(
-            fn (array $run): Collection => collect($milestones)
-                ->filter(fn (int $points, int $days): bool => $days <= $run['length'])
-                ->map(fn (int $points, int $days): array => [
-                    'user_id' => $user->id,
-                    'domain' => $domain,
-                    'rule_key' => XpRuleKey::StreakMilestone->value,
-                    'source_type' => XpSourceType::StreakMilestone->value,
-                    'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
-                    'points' => $points,
-                    'occurred_at' => $run['start']->copy()->addDays($days - 1),
-                ])->values()
-        ))->values();
+        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => collect($milestones)
+            ->map(fn (int $points, int $days): ?array => $this->milestoneRow($user, $domain, $runs, $days, $points))
+            ->filter()
+            ->values()
+        )->values();
 
         XpEntry::query()
-            ->where('user_id', $user->id)
+            ->whereBelongsTo($user)
             ->where('rule_key', XpRuleKey::StreakMilestone->value)
             ->whereNotIn('source_id', $rows->pluck('source_id'))
             ->delete();
@@ -148,5 +140,28 @@ class UpdateStreaks
                 ['points', 'occurred_at'],
             );
         });
+    }
+
+    /**
+     * @param  Collection<int, array{start: Carbon, length: int}>  $runs
+     * @return array<string, mixed>|null
+     */
+    private function milestoneRow(User $user, string $domain, Collection $runs, int $days, int $points): ?array
+    {
+        $firstReachingRun = $runs->first(fn (array $run): bool => $run['length'] >= $days);
+
+        if ($firstReachingRun === null) {
+            return null;
+        }
+
+        return [
+            'user_id' => $user->id,
+            'domain' => $domain,
+            'rule_key' => XpRuleKey::StreakMilestone->value,
+            'source_type' => XpSourceType::StreakMilestone->value,
+            'source_id' => "{$domain}:{$days}",
+            'points' => $points,
+            'occurred_at' => $firstReachingRun['start']->copy()->addDays($days - 1),
+        ];
     }
 }

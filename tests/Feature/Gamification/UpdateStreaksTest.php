@@ -10,6 +10,7 @@ use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -237,6 +238,63 @@ class UpdateStreaksTest extends TestCase
         $streak = Streak::query()->where('user_id', $user->id)->sole();
         $this->assertSame(1, $streak->current_count);
         $this->assertSame(6, $streak->best_count);
+    }
+
+    #[Test]
+    public function it_awards_each_threshold_once_per_domain_even_after_a_break(): void
+    {
+        $user = User::factory()->create();
+        foreach ([...range(20, 14), ...range(6, 0)] as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $milestone = $this->milestones($user)->sole();
+        $this->assertSame('sport:7', $milestone->source_id);
+        $this->assertSame(now()->subDays(14)->toDateString(), $milestone->occurred_at->toDateString());
+    }
+
+    #[Test]
+    public function it_keeps_the_milestone_when_a_late_sync_merges_two_runs(): void
+    {
+        $user = User::factory()->create();
+        foreach ([...range(14, 8), ...range(6, 0)] as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+        }
+        $action = $this->app->make(UpdateStreaks::class);
+        $action->handle($user);
+        $milestone = $this->milestones($user)->sole();
+
+        $this->entryOn($user, GamificationDomain::Sport, 7);
+        $action->handle($user);
+
+        $merged = $this->milestones($user)->sole();
+        $this->assertSame($milestone->id, $merged->id);
+        $this->assertSame($milestone->occurred_at->toDateString(), $merged->occurred_at->toDateString());
+        $this->assertSame(15, Streak::query()->whereBelongsTo($user)->sole()->current_count);
+    }
+
+    #[Test]
+    public function it_awards_the_same_threshold_separately_for_each_domain(): void
+    {
+        $user = User::factory()->create();
+        foreach (range(6, 0) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Sport, $daysAgo);
+            $this->entryOn($user, GamificationDomain::Todo, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $this->assertSame(['sport:7', 'todo:7'], $this->milestones($user)->pluck('source_id')->sort()->values()->all());
+    }
+
+    /**
+     * @return Collection<int, XpEntry>
+     */
+    private function milestones(User $user): Collection
+    {
+        return XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::StreakMilestone->value)->get();
     }
 
     /**
