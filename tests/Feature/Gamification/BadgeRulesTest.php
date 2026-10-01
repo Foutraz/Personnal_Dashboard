@@ -76,6 +76,28 @@ class BadgeRulesTest extends TestCase
     }
 
     #[Test]
+    public function it_groups_measurement_days_in_the_gamification_timezone(): void
+    {
+        config(['gamification.timezone' => 'Europe/Paris']);
+        $user = User::factory()->create();
+        BodyMeasurement::factory()->create(['user_id' => $user->id, 'measured_at' => '2026-03-10 23:30:00']);
+        BodyMeasurement::factory()->create(['user_id' => $user->id, 'measured_at' => '2026-03-11 08:00:00']);
+
+        $this->assertSame(1.0, $this->app->make(HealthMeasurementDaysBadgeRule::class)->measure($user));
+    }
+
+    #[Test]
+    public function it_separates_paris_days_that_share_a_utc_day(): void
+    {
+        config(['gamification.timezone' => 'Europe/Paris']);
+        $user = User::factory()->create();
+        BodyMeasurement::factory()->create(['user_id' => $user->id, 'measured_at' => '2026-03-10 22:30:00']);
+        BodyMeasurement::factory()->create(['user_id' => $user->id, 'measured_at' => '2026-03-10 23:30:00']);
+
+        $this->assertSame(2.0, $this->app->make(HealthMeasurementDaysBadgeRule::class)->measure($user));
+    }
+
+    #[Test]
     public function it_measures_the_net_invested_capital_of_the_user(): void
     {
         $user = User::factory()->create();
@@ -84,6 +106,7 @@ class BadgeRulesTest extends TestCase
         InvestmentTransaction::factory()->create(['position_id' => $position->id, 'user_id' => $user->id, 'type' => TransactionType::Sell, 'quantity' => 2, 'unit_price' => 100]);
         $otherPosition = Position::factory()->create();
         InvestmentTransaction::factory()->create(['position_id' => $otherPosition->id, 'user_id' => $otherPosition->user_id, 'type' => TransactionType::Buy, 'quantity' => 50, 'unit_price' => 100]);
+        InvestmentTransaction::factory()->create(['position_id' => $otherPosition->id, 'user_id' => $otherPosition->user_id, 'type' => TransactionType::Sell, 'quantity' => 30, 'unit_price' => 100]);
 
         $this->assertSame(800.0, $this->app->make(FinanceInvestedCapitalBadgeRule::class)->measure($user));
     }

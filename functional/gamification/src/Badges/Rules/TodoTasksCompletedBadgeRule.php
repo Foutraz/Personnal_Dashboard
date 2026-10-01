@@ -29,9 +29,9 @@ class TodoTasksCompletedBadgeRule implements BadgeRule
     /**
      * Get the unit in which the rule expresses its measure.
      */
-    public function unit(): string
+    public function unit(): BadgeUnit
     {
-        return BadgeUnit::Count->value;
+        return BadgeUnit::Count;
     }
 
     /**

@@ -5,12 +5,17 @@ namespace Functional\Gamification\Badges\Rules;
 use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Health\Models\BodyMeasurement;
 use Functional\Users\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class HealthMeasurementDaysBadgeRule implements BadgeRule
 {
+    /**
+     * Create the rule with the gamification calendar.
+     */
+    public function __construct(private GamificationCalendar $calendar) {}
+
     /**
      * Get the badge family key matching the configured thresholds.
      */
@@ -30,16 +35,21 @@ class HealthMeasurementDaysBadgeRule implements BadgeRule
     /**
      * Get the unit in which the rule expresses its measure.
      */
-    public function unit(): string
+    public function unit(): BadgeUnit
     {
-        return BadgeUnit::Days->value;
+        return BadgeUnit::Days;
     }
 
     /**
-     * Measure the user's progress with a single scoped aggregation.
+     * Count the user's distinct measurement days in the gamification timezone.
      */
     public function measure(User $user): float
     {
-        return (float) BodyMeasurement::query()->whereBelongsTo($user)->distinct()->count(DB::raw('DATE(measured_at)'));
+        return (float) BodyMeasurement::query()
+            ->whereBelongsTo($user)
+            ->pluck('measured_at')
+            ->map(fn ($measuredAt): string => $this->calendar->dayOf($measuredAt))
+            ->unique()
+            ->count();
     }
 }

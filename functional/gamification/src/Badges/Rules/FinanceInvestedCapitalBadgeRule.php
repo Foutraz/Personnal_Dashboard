@@ -35,9 +35,9 @@ class FinanceInvestedCapitalBadgeRule implements BadgeRule
     /**
      * Get the unit in which the rule expresses its measure.
      */
-    public function unit(): string
+    public function unit(): BadgeUnit
     {
-        return BadgeUnit::Euros->value;
+        return BadgeUnit::Euros;
     }
 
     /**
