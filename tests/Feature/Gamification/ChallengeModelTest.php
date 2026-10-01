@@ -15,7 +15,6 @@ use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -211,7 +210,7 @@ class ChallengeModelTest extends TestCase
     {
         $currentWeek = app(GamificationCalendar::class)->currentWeek();
 
-        return DB::table('challenges')->insertOrIgnore([
+        return Challenge::query()->insertOrIgnore([
             'id' => (new Challenge)->newUniqueId(),
             'user_id' => $userId,
             'week_key' => $weekKey,

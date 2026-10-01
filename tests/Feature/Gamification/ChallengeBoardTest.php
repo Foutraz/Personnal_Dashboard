@@ -16,6 +16,7 @@ use Functional\Gamification\Services\Dto\GamificationWeek;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -311,7 +312,7 @@ class ChallengeBoardTest extends TestCase
         Livewire::actingAs($user)
             ->test(ChallengeBoard::class)
             ->call('accept', $challenge->id)
-            ->assertStatus(409)
+            ->assertStatus(Response::HTTP_CONFLICT)
             ->assertSet('announcement', '');
 
         $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
@@ -327,7 +328,7 @@ class ChallengeBoardTest extends TestCase
         Livewire::actingAs($user)
             ->test(ChallengeBoard::class)
             ->call('decline', $challenge->id)
-            ->assertStatus(409);
+            ->assertStatus(Response::HTTP_CONFLICT);
 
         $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
     }
@@ -348,7 +349,7 @@ class ChallengeBoardTest extends TestCase
         Livewire::actingAs($user)
             ->test(ChallengeBoard::class)
             ->call('accept', $challenge->id)
-            ->assertStatus(409)
+            ->assertStatus(Response::HTTP_CONFLICT)
             ->assertSet('announcement', '');
 
         Queue::assertNothingPushed();
