@@ -8,11 +8,13 @@ use Carbon\CarbonInterface;
 class GamificationCalendar
 {
     /**
-     * Get the timezone in which gamification days are bucketed.
+     * Get the configured gamification timezone, falling back to the application timezone when it is not a valid identifier.
      */
     public function timezone(): string
     {
-        return (string) config('gamification.timezone');
+        $configured = (string) config('gamification.timezone');
+
+        return in_array($configured, timezone_identifiers_list(), true) ? $configured : (string) config('app.timezone');
     }
 
     /**

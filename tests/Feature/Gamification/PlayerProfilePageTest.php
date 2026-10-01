@@ -146,4 +146,14 @@ class PlayerProfilePageTest extends TestCase
                 && $cards->sole()->bestCount === 8
                 && ! $cards->sole()->isAlive);
     }
+
+    #[Test]
+    public function it_still_renders_when_the_configured_timezone_is_invalid(): void
+    {
+        config(['gamification.timezone' => 'Not/A_Zone']);
+        $user = User::factory()->create();
+        Streak::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user, 'web')->get(route('player'))->assertOk();
+    }
 }
