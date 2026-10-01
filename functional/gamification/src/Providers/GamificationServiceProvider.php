@@ -22,12 +22,18 @@ use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
 use Functional\Gamification\Livewire\PlayerProfilePage;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Rest\Controls\BadgeAwardControl;
+use Functional\Gamification\Rest\Controls\BadgeControl;
 use Functional\Gamification\Rest\Controls\PlayerProfileControl;
 use Functional\Gamification\Rest\Controls\StreakControl;
 use Functional\Gamification\Rest\Controls\XpEntryControl;
+use Functional\Gamification\Rest\Policies\BadgeAwardPolicy;
+use Functional\Gamification\Rest\Policies\BadgePolicy;
 use Functional\Gamification\Rest\Policies\PlayerProfilePolicy;
 use Functional\Gamification\Rest\Policies\StreakPolicy;
 use Functional\Gamification\Rest\Policies\XpEntryPolicy;
@@ -124,10 +130,14 @@ class GamificationServiceProvider extends OsddServiceProvider
         (new Access)->addControl(new XpEntryControl);
         (new Access)->addControl(new PlayerProfileControl);
         (new Access)->addControl(new StreakControl);
+        (new Access)->addControl(new BadgeControl);
+        (new Access)->addControl(new BadgeAwardControl);
 
         Gate::policy(XpEntry::class, XpEntryPolicy::class);
         Gate::policy(PlayerProfile::class, PlayerProfilePolicy::class);
         Gate::policy(Streak::class, StreakPolicy::class);
+        Gate::policy(Badge::class, BadgePolicy::class);
+        Gate::policy(BadgeAward::class, BadgeAwardPolicy::class);
 
         $this->loadListenEvent();
 
