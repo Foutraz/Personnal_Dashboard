@@ -41,6 +41,16 @@ enum GamificationDomain: string
         };
     }
 
+    public function textClass(): string
+    {
+        return "text-{$this->color()}";
+    }
+
+    public function softBackgroundClass(): string
+    {
+        return "bg-{$this->color()}-soft";
+    }
+
     /**
      * Get the SVG icon path matching the domain's dashboard contribution.
      */

@@ -63,10 +63,32 @@ class GamificationDashboardContributionTest extends TestCase
     public function it_omits_the_streak_line_without_a_live_streak(): void
     {
         $user = User::factory()->create();
-        Streak::factory()->create(['user_id' => $user->id, 'current_count' => 0]);
+        Streak::factory()->broken()->create(['user_id' => $user->id]);
 
         $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
 
         $this->assertCount(3, $summary->secondaryLines);
+    }
+
+    #[Test]
+    public function it_ignores_a_projection_whose_last_activity_is_two_days_old(): void
+    {
+        $user = User::factory()->create();
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Sport,
+            'current_count' => 12,
+            'last_activity_date' => now()->subDays(2)->toDateString(),
+        ]);
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Todo,
+            'current_count' => 4,
+            'last_activity_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
+
+        $this->assertContains('Série Tâches : 4 j', $summary->secondaryLines);
     }
 }

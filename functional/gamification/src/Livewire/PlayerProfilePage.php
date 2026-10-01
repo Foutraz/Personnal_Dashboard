@@ -5,6 +5,8 @@ namespace Functional\Gamification\Livewire;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\Dto\StreakCard;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
@@ -21,12 +23,12 @@ class PlayerProfilePage extends Component
      */
     #[Layout('layouts.app')]
     #[Title('Joueur')]
-    public function render(LevelCurve $levelCurve, XpLedger $xpLedger): View
+    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $profile = PlayerProfile::query()->where('user_id', $user->id)->first();
+        $profile = PlayerProfile::query()->whereBelongsTo($user)->first();
         $totalXp = $profile === null ? 0 : $profile->total_xp;
         $level = $profile === null ? 1 : $profile->level;
 
@@ -48,10 +50,16 @@ class PlayerProfilePage extends Component
             'domains' => GamificationDomain::cases(),
             'chartLabels' => array_keys($series),
             'chartValues' => array_values($series),
-            'streaks' => Streak::query()
-                ->where('user_id', $user->id)
+            'streakCards' => Streak::query()
+                ->whereBelongsTo($user)
                 ->orderByDesc('current_count')
-                ->get(),
+                ->get()
+                ->map(fn (Streak $streak): StreakCard => new StreakCard(
+                    domain: $streak->domain,
+                    currentCount: $streak->current_count,
+                    bestCount: $streak->best_count,
+                    isAlive: $calendar->isStreakAlive($streak->last_activity_date),
+                )),
         ]);
     }
 }

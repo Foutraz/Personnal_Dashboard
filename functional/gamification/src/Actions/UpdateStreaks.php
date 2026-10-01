@@ -6,12 +6,15 @@ use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class UpdateStreaks
 {
+    public function __construct(private GamificationCalendar $calendar) {}
+
     /**
      * Run outside a transaction, a failure between the projection and milestone writes leaves them out of sync.
      */
@@ -31,7 +34,7 @@ class UpdateStreaks
     private function activeDaysByDomain(User $user): Collection
     {
         return XpEntry::query()
-            ->where('user_id', $user->id)
+            ->whereBelongsTo($user)
             ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
             ->selectRaw('DISTINCT domain, DATE(occurred_at) as day')
             ->get()
@@ -82,16 +85,14 @@ class UpdateStreaks
     private function syncProjections(User $user, Collection $runsByDomain): void
     {
         Streak::query()
-            ->where('user_id', $user->id)
+            ->whereBelongsTo($user)
             ->whereNotIn('domain', $runsByDomain->keys())
             ->delete();
 
-        $threshold = now()->subDay()->toDateString();
-
-        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user, $threshold): array {
+        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user): array {
             $last = $runs->last();
             $lastDay = $last['start']->copy()->addDays($last['length'] - 1);
-            $current = $lastDay->toDateString() >= $threshold ? $last['length'] : 0;
+            $current = $this->calendar->isStreakAlive($lastDay) ? $last['length'] : 0;
 
             return [
                 'user_id' => $user->id,

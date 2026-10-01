@@ -3,11 +3,15 @@
 namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Services\Dto\StreakCard;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
+use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -64,5 +68,29 @@ class PlayerProfilePageTest extends TestCase
             ->get(route('player'))
             ->assertOk()
             ->assertDontSee('Record :');
+    }
+
+    #[Test]
+    public function it_flags_only_the_live_streaks_as_burning(): void
+    {
+        $user = User::factory()->create();
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Sport,
+            'current_count' => 5,
+            'last_activity_date' => now()->subDay()->toDateString(),
+        ]);
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Todo,
+            'current_count' => 3,
+            'last_activity_date' => now()->subDays(2)->toDateString(),
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(PlayerProfilePage::class)
+            ->assertViewHas('streakCards', fn (Collection $cards): bool => $cards->mapWithKeys(
+                fn (StreakCard $card): array => [$card->domain->value => $card->isAlive]
+            )->all() === ['sport' => true, 'todo' => false]);
     }
 }

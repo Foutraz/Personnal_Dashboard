@@ -4,6 +4,7 @@ namespace Functional\Gamification\Dashboard;
 
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
@@ -20,6 +21,7 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
     public function __construct(
         private LevelCurve $levelCurve,
         private XpLedger $xpLedger,
+        private GamificationCalendar $calendar,
     ) {}
 
     /**
@@ -27,18 +29,19 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
      */
     public function dashboardSummary(Authenticatable $user): DashboardSummary
     {
-        $profile = PlayerProfile::query()->where('user_id', $user->getAuthIdentifier())->first();
+        /** @var User $user */
+        $profile = PlayerProfile::query()->whereBelongsTo($user)->first();
         $totalXp = $profile === null ? 0 : $profile->total_xp;
         $level = $profile === null ? 1 : $profile->level;
         $remaining = max($this->levelCurve->xpForLevel($level + 1) - $totalXp, 0);
-        /** @var User $user */
         $monthlyXp = $this->xpLedger->gainedSince($user, now()->startOfMonth());
 
         $hottest = Streak::query()
-            ->where('user_id', $user->getAuthIdentifier())
+            ->whereBelongsTo($user)
             ->where('current_count', '>', 0)
             ->orderByDesc('current_count')
-            ->first();
+            ->get()
+            ->first(fn (Streak $streak): bool => $this->calendar->isStreakAlive($streak->last_activity_date));
 
         $secondaryLines = [
             number_format($totalXp, 0, ',', ' ').' XP au total',
