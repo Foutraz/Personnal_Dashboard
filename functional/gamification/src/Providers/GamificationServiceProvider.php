@@ -38,6 +38,7 @@ use Functional\Gamification\Rest\Policies\BadgePolicy;
 use Functional\Gamification\Rest\Policies\PlayerProfilePolicy;
 use Functional\Gamification\Rest\Policies\StreakPolicy;
 use Functional\Gamification\Rest\Policies\XpEntryPolicy;
+use Functional\Gamification\Services\Dto\ChallengeSettings;
 use Functional\Gamification\Xp\Rules\ExplorationCellXpRule;
 use Functional\Gamification\Xp\Rules\FinanceMonthlyXpRule;
 use Functional\Gamification\Xp\Rules\HealthMeasurementDayXpRule;
@@ -112,6 +113,8 @@ class GamificationServiceProvider extends OsddServiceProvider
         ], BadgeRule::TAG);
 
         $this->app->tag(GamificationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
+
+        $this->app->bind(ChallengeSettings::class, fn (): ChallengeSettings => ChallengeSettings::fromConfig());
     }
 
     /**
