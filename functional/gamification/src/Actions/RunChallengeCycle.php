@@ -4,8 +4,10 @@ namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Exceptions\InvalidChallengeConfigException;
 use Functional\Gamification\Exceptions\MissingChallengeTemplateConfigException;
+use Functional\Gamification\Exceptions\StaleChallengeStatusException;
 use Functional\Gamification\Services\Dto\ChallengeCycleOutcome;
 use Functional\Gamification\Services\GamificationCalendar;
+use Functional\Goals\Exceptions\UnboundedGoalMetricException;
 use Functional\Users\Models\User;
 
 class RunChallengeCycle
@@ -20,7 +22,7 @@ class RunChallengeCycle
     /**
      * Propose the set of the current week, resolve the open challenges and reconverge the challenge ledger entries.
      *
-     * @throws MissingChallengeTemplateConfigException|InvalidChallengeConfigException
+     * @throws MissingChallengeTemplateConfigException|InvalidChallengeConfigException|StaleChallengeStatusException|UnboundedGoalMetricException
      */
     public function handle(User $user): ChallengeCycleOutcome
     {
