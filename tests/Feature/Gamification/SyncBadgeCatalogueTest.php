@@ -46,7 +46,7 @@ class SyncBadgeCatalogueTest extends TestCase
     {
         $this->app->make(SyncBadgeCatalogue::class)->handle();
 
-        collect($this->app->tagged('gamification.badge_rules'))->each(fn (BadgeRule $rule) => $this->assertSame(
+        collect($this->app->tagged(BadgeRule::TAG))->each(fn (BadgeRule $rule) => $this->assertSame(
             [$rule->domain()],
             Badge::query()->where('rule_key', $rule->key())->get()->pluck('domain')->unique()->values()->all(),
             $rule->key(),
@@ -108,9 +108,7 @@ class SyncBadgeCatalogueTest extends TestCase
     {
         config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 100, 'gold' => 5000]]);
 
-        $this->expectException(MissingBadgeThresholdException::class);
-        $this->expectExceptionMessage('sport_distance');
-        $this->expectExceptionMessage('silver');
+        $this->expectExceptionObject(new MissingBadgeThresholdException('sport_distance', BadgeTier::Silver));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
@@ -120,8 +118,7 @@ class SyncBadgeCatalogueTest extends TestCase
     {
         config(['gamification.badges.thresholds' => collect(config('gamification.badges.thresholds'))->except('todo_streak')->all()]);
 
-        $this->expectException(MissingBadgeThresholdException::class);
-        $this->expectExceptionMessage('todo_streak');
+        $this->expectExceptionObject(new MissingBadgeThresholdException('todo_streak', BadgeTier::Bronze));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }

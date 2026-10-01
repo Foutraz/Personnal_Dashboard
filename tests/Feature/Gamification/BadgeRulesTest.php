@@ -38,7 +38,7 @@ class BadgeRulesTest extends TestCase
     {
         $user = User::factory()->create();
 
-        foreach ($this->app->tagged('gamification.badge_rules') as $rule) {
+        foreach ($this->app->tagged(BadgeRule::TAG) as $rule) {
             $this->assertSame(0.0, $rule->measure($user), $rule->key());
         }
     }
@@ -161,7 +161,7 @@ class BadgeRulesTest extends TestCase
     #[Test]
     public function it_tags_every_rule_with_unique_keys_and_configured_thresholds(): void
     {
-        $rules = collect($this->app->tagged('gamification.badge_rules'));
+        $rules = collect($this->app->tagged(BadgeRule::TAG));
 
         $this->assertCount(10, $rules);
         $this->assertCount(10, $rules->map(fn (BadgeRule $rule): string => $rule->key())->unique());
