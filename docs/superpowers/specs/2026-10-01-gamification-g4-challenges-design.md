@@ -200,12 +200,16 @@ Strava / Withings / banque / couverture, le passage quotidien et chaque acceptat
 
 - `Accepted` atteint (`current_value ≥ target_value`) → `Completed` immédiatement, y compris pendant le délai
   de grâce (une synchronisation tardive du dimanche soir compte).
-- `Accepted` non atteint, `now ≥ ends_at + 48 h` → `Failed`.
+- `Accepted` non atteint, `now ≥ ends_at + 48 h` → `Failed` ; à ce passage la cible est mesurée une dernière fois
+  et, si elle est atteinte, `Completed` l'emporte.
 - `Proposed`, `now ≥ ends_at` → `Expired` (on ne peut plus répondre après la fin de semaine).
 - Les états terminaux sont définitifs : une donnée supprimée après coup ne retire ni la réussite ni l'XP.
 
-Le verdict est déterministe : il ne dépend que des données de la semaine (bornes figées sur la ligne), de la
-cible figée et de l'instant de clôture, jamais de l'ordre des passages.
+Le verdict est pris au premier passage qui suit le délai de grâce, avec les données connues à cet instant : une
+activité de la semaine synchronisée avant ce passage compte encore (`Completed`, même au-delà de
+`ends_at + 48 h`) ; une fois `Failed` posé, il est définitif, même si cette activité arrive ensuite. Pendant la
+semaine et la grâce, il ne dépend que des données de la semaine (bornes figées sur la ligne), de la cible figée et
+de l'instant du passage, jamais de l'ordre des passages.
 
 ### 7.6 XP
 
@@ -269,8 +273,9 @@ sur `user_id`. Champs : `id`, `week_key`, `template_key`, `domain`, `metric`, `s
   neutre sur le hub, rien sur la tuile.
 - **Backfill en milieu de semaine** : ensemble créé au passage suivant ; une cible peut déjà être atteinte, le
   défi reste `Proposed` jusqu'à l'acceptation, puis se valide au job déclenché par l'acceptation.
-- **Synchronisation tardive** : comptée si l'activité est dans la semaine et arrive avant `ends_at + 48 h` ;
-  au-delà, le verdict `Failed` est définitif.
+- **Synchronisation tardive** : comptée si l'activité est dans la semaine et arrive avant le premier passage qui
+  suit `ends_at + 48 h` (au plus tard le passage quotidien de 02:00) ; une fois `Failed` posé par ce passage, le
+  verdict est définitif.
 - **Données supprimées** : en cours de semaine, la progression baisse ; après `Completed`, rien ne change.
 - **Sorties moto saisies à la main** : le module moto n'émet pas d'événement de fin de saisie, la progression moto
   se met donc à jour au passage suivant (quotidien ou toute autre synchronisation).

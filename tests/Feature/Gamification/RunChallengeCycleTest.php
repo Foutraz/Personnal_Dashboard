@@ -139,6 +139,46 @@ class RunChallengeCycleTest extends TestCase
         $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->count());
     }
 
+    #[Test]
+    public function it_completes_with_xp_a_challenge_reached_only_by_an_activity_synced_after_the_grace(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->acceptedChallengeOfWeekForty($user);
+        $this->travelTo(Carbon::parse('2026-10-06 02:00:00', 'UTC'));
+        $this->cycle()->handle($user);
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+        $this->travelTo(Carbon::parse('2026-10-06 22:30:00', 'UTC'));
+        $this->inWeekActivity($user);
+
+        $outcome = $this->cycle()->handle($user);
+
+        $this->assertSame(ChallengeStatus::Completed, $challenge->fresh()->status);
+        $this->assertTrue($outcome->completed->sole()->is($challenge));
+        $entry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->sole();
+        $this->assertSame($challenge->id, $entry->source_id);
+        $this->assertSame(50, $entry->points);
+    }
+
+    #[Test]
+    public function it_keeps_a_failed_challenge_failed_without_xp_when_the_activity_arrives_after_the_verdict(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->acceptedChallengeOfWeekForty($user);
+        $this->travelTo(Carbon::parse('2026-10-06 22:30:00', 'UTC'));
+        $this->cycle()->handle($user);
+        $this->assertSame(ChallengeStatus::Failed, $challenge->fresh()->status);
+        $this->inWeekActivity($user);
+        $this->travelTo(Carbon::parse('2026-10-07 02:00:00', 'UTC'));
+
+        $outcome = $this->cycle()->handle($user);
+
+        $persisted = $challenge->fresh();
+        $this->assertSame(ChallengeStatus::Failed, $persisted->status);
+        $this->assertSame('0.00', $persisted->current_value);
+        $this->assertCount(0, $outcome->completed);
+        $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->count());
+    }
+
     private function cycle(): RunChallengeCycle
     {
         return $this->app->make(RunChallengeCycle::class);
@@ -147,6 +187,24 @@ class RunChallengeCycleTest extends TestCase
     private function currentWeek(): GamificationWeek
     {
         return $this->app->make(GamificationCalendar::class)->currentWeek();
+    }
+
+    private function acceptedChallengeOfWeekForty(User $user): Challenge
+    {
+        $week = $this->app->make(GamificationCalendar::class)->weekOf(Carbon::parse('2026-10-01 10:00:00', 'UTC'));
+
+        return Challenge::factory()->accepted()->forWeek($week)->create(['user_id' => $user->id, 'target_value' => 28]);
+    }
+
+    private function inWeekActivity(User $user): void
+    {
+        SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'distance' => 30000.0,
+            'moving_time' => 0,
+            'total_elevation_gain' => 0,
+            'started_at' => Carbon::parse('2026-10-02 08:00:00', 'UTC'),
+        ]);
     }
 
     private function sportHistory(User $user): void
