@@ -298,6 +298,30 @@ class RunUserGamificationTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_challenge_xp_through_a_full_pass_after_the_activity_disappears(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->accepted()->create(['user_id' => $user->id, 'target_value' => 28]);
+        $this->reachTheTarget($user, $challenge);
+        $run = $this->app->make(RunUserGamification::class);
+        $run->handle($user);
+        SportActivity::query()->whereBelongsTo($user)->delete();
+
+        $run->handle($user);
+
+        $persisted = $challenge->fresh();
+        $this->assertSame(ChallengeStatus::Completed, $persisted->status);
+        $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::SportActivity->value)->count());
+        $entry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->sole();
+        $this->assertSame(50, $entry->points);
+        $this->assertSame($challenge->id, $entry->source_id);
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
     public function it_stores_no_challenge_xp_or_notification_when_a_later_step_fails(): void
     {
         $user = User::factory()->create();
