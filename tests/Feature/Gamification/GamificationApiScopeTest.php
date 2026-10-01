@@ -187,6 +187,25 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_denies_restoring_and_force_deleting_a_record_in_every_gamification_policy(): void
+    {
+        $user = User::factory()->create();
+        $records = [
+            XpEntry::factory()->create(['user_id' => $user->id]),
+            PlayerProfile::factory()->create(['user_id' => $user->id]),
+            Streak::factory()->create(['user_id' => $user->id]),
+            Badge::factory()->create(),
+            BadgeAward::factory()->create(['user_id' => $user->id]),
+            Challenge::factory()->create(['user_id' => $user->id]),
+        ];
+
+        foreach ($records as $record) {
+            $this->assertFalse($user->can('restore', $record), $record::class);
+            $this->assertFalse($user->can('forceDelete', $record), $record::class);
+        }
+    }
+
+    #[Test]
     public function it_rejects_creating_streaks_through_the_api(): void
     {
         $user = User::factory()->create();

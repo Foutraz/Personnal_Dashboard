@@ -41,6 +41,22 @@ class BadgeAwardPolicy extends ControlledPolicy
     }
 
     /**
+     * Forbid restoring definitive awards through the API.
+     */
+    public function restore(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * Forbid purging definitive awards through the API.
+     */
+    public function forceDelete(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    /**
      * Forbid attaching a badge to an award through the API.
      */
     public function attachBadge(Model $user, Model $model, Model $badge): bool
