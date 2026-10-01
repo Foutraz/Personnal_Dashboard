@@ -61,7 +61,7 @@ class SyncBadgeCatalogue
      */
     private function row(BadgeRule $rule, BadgeTier $tier): array
     {
-        $threshold = config("gamification.badges.thresholds.{$rule->key()}.{$tier->value}");
+        $threshold = config($rule->key()->thresholdConfigPath($tier));
 
         if ($threshold === null) {
             throw new MissingBadgeThresholdException($rule->key(), $tier);
@@ -72,8 +72,8 @@ class SyncBadgeCatalogue
         }
 
         return [
-            'key' => "{$rule->key()}_{$tier->value}",
-            'rule_key' => $rule->key(),
+            'key' => $rule->key()->badgeKey($tier),
+            'rule_key' => $rule->key()->value,
             'domain' => $rule->domain()->value,
             'tier' => $tier->value,
             'threshold' => $threshold,

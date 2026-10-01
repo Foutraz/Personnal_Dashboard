@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
@@ -361,7 +362,7 @@ class GamificationApiScopeTest extends TestCase
                     'operation' => 'create',
                     'attributes' => [
                         'key' => faker()->words(2),
-                        'rule_key' => 'sport_distance',
+                        'rule_key' => BadgeRuleKey::SportDistance->value,
                         'domain' => 'sport',
                         'tier' => 'gold',
                         'threshold' => faker()->number(1, 100),
@@ -630,7 +631,7 @@ class GamificationApiScopeTest extends TestCase
                             'operation' => 'create',
                             'attributes' => [
                                 'key' => faker()->words(2),
-                                'rule_key' => 'sport_distance',
+                                'rule_key' => BadgeRuleKey::SportDistance->value,
                                 'domain' => 'sport',
                                 'tier' => 'gold',
                                 'threshold' => faker()->number(1, 100),

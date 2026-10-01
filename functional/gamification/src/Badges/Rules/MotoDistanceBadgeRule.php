@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Badges\Rules;
 
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Moto\Models\MotoRide;
@@ -13,9 +14,9 @@ class MotoDistanceBadgeRule implements BadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string
+    public function key(): BadgeRuleKey
     {
-        return 'moto_distance';
+        return BadgeRuleKey::MotoDistance;
     }
 
     /**

@@ -25,8 +25,8 @@ class BadgeShowcase
         $ownedBadgeIds = BadgeAward::query()->whereBelongsTo($user)->pluck('badge_id')->flip();
 
         return $rules
-            ->filter(fn (BadgeRule $rule): bool => $catalogue->has($rule->key()))
-            ->map(fn (BadgeRule $rule): BadgeFamilyProgress => $this->family($rule, $catalogue->get($rule->key()), $ownedBadgeIds, $rule->measure($user)))
+            ->filter(fn (BadgeRule $rule): bool => $catalogue->has($rule->key()->value))
+            ->map(fn (BadgeRule $rule): BadgeFamilyProgress => $this->family($rule, $catalogue->get($rule->key()->value), $ownedBadgeIds, $rule->measure($user)))
             ->values();
     }
 
@@ -60,7 +60,7 @@ class BadgeShowcase
 
         return new BadgeFamilyProgress(
             ruleKey: $rule->key(),
-            name: $tiers->firstOrFail()->name(),
+            name: $rule->key()->label(),
             domain: $rule->domain(),
             unit: $rule->unit(),
             medals: $tiers
@@ -103,6 +103,6 @@ class BadgeShowcase
      */
     private function keysOf(Collection $rules): array
     {
-        return $rules->map(fn (BadgeRule $rule): string => $rule->key())->all();
+        return $rules->map(fn (BadgeRule $rule): string => $rule->key()->value)->all();
     }
 }

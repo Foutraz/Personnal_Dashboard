@@ -6,6 +6,7 @@ use Functional\Gamification\Actions\RefreshPlayerProfile;
 use Functional\Gamification\Actions\RunUserGamification;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Actions\UpdateStreaks;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Models\BadgeAward;
@@ -119,7 +120,7 @@ class RunUserGamificationTest extends TestCase
         Notification::assertSentTo(
             $user,
             BadgeAwardedNotification::class,
-            fn (BadgeAwardedNotification $notification): bool => $notification->badge->key === 'sport_activity_count_bronze',
+            fn (BadgeAwardedNotification $notification): bool => $notification->badge->key === BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze),
         );
     }
 
@@ -132,7 +133,7 @@ class RunUserGamificationTest extends TestCase
         $this->app->make(RunUserGamification::class)->handle($user);
 
         $this->assertTrue(
-            BadgeAward::query()->whereBelongsTo($user)->whereHas('badge', fn ($query) => $query->where('key', 'sport_streak_bronze'))->exists(),
+            BadgeAward::query()->whereBelongsTo($user)->whereHas('badge', fn ($query) => $query->where('key', BadgeRuleKey::SportStreak->badgeKey(BadgeTier::Bronze)))->exists(),
         );
     }
 

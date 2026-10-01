@@ -35,7 +35,7 @@ class EvaluateBadges
     private function award(User $user): Collection
     {
         $measures = collect(app()->tagged(BadgeRule::TAG))
-            ->mapWithKeys(fn (BadgeRule $rule): array => [$rule->key() => $rule->measure($user)]);
+            ->mapWithKeys(fn (BadgeRule $rule): array => [$rule->key()->value => $rule->measure($user)]);
 
         $ownedBadgeIds = BadgeAward::query()->whereBelongsTo($user)->pluck('badge_id');
         $awardedAt = now();

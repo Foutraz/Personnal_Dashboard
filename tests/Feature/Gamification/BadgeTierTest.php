@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -60,9 +61,9 @@ class BadgeTierTest extends TestCase
     {
         $thresholds = config('gamification.badges.thresholds');
 
-        $this->assertCount(10, $thresholds);
-        $this->assertSame(['bronze' => 100, 'silver' => 1000, 'gold' => 5000], $thresholds['sport_distance']);
-        $this->assertSame(['bronze' => 25, 'silver' => 250, 'gold' => 1000], $thresholds['todo_tasks_completed']);
+        $this->assertCount(count(BadgeRuleKey::cases()), $thresholds);
+        $this->assertSame(['bronze' => 100, 'silver' => 1000, 'gold' => 5000], config(BadgeRuleKey::SportDistance->thresholdsConfigPath()));
+        $this->assertSame(['bronze' => 25, 'silver' => 250, 'gold' => 1000], config(BadgeRuleKey::TodoTasksCompleted->thresholdsConfigPath()));
 
         foreach ($thresholds as $tiers) {
             $this->assertSame(['bronze', 'silver', 'gold'], array_keys($tiers));
@@ -74,9 +75,9 @@ class BadgeTierTest extends TestCase
     {
         $this->app->setLocale('fr');
 
-        foreach (array_keys(config('gamification.badges.thresholds')) as $ruleKey) {
-            $this->assertNotSame("gamification::badges.rules.{$ruleKey}.name", __("gamification::badges.rules.{$ruleKey}.name"));
-            $this->assertStringContainsString('42', __("gamification::badges.rules.{$ruleKey}.description", ['threshold' => 42]));
+        foreach (BadgeRuleKey::cases() as $ruleKey) {
+            $this->assertNotSame("gamification::badges.rules.{$ruleKey->value}.name", $ruleKey->label());
+            $this->assertStringContainsString('42', $ruleKey->description('42'));
         }
     }
 }

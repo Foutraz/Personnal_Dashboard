@@ -4,6 +4,7 @@ namespace Functional\Gamification\Badges\Rules;
 
 use Functional\Exploration\Models\ExploredCell;
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Users\Models\User;
@@ -13,9 +14,9 @@ class ExplorationCellsBadgeRule implements BadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string
+    public function key(): BadgeRuleKey
     {
-        return 'exploration_cells';
+        return BadgeRuleKey::ExplorationCells;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Functional\Gamification\Badges\Rules;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Services\CapitalCalculator;
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Users\Models\User;
@@ -19,9 +20,9 @@ class FinanceInvestedCapitalBadgeRule implements BadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string
+    public function key(): BadgeRuleKey
     {
-        return 'finance_invested_capital';
+        return BadgeRuleKey::FinanceInvestedCapital;
     }
 
     /**

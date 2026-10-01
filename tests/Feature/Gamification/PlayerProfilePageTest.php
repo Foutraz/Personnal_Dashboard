@@ -4,6 +4,8 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Badges\Rules\SportDistanceBadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\Badge;
@@ -229,8 +231,8 @@ class PlayerProfilePageTest extends TestCase
     {
         $this->app->setLocale('fr');
         $user = $this->userWithDistanceAndBronze(6000);
-        foreach (['silver', 'gold'] as $tier) {
-            BadgeAward::factory()->for($user)->for(Badge::query()->where('key', "sport_distance_{$tier}")->sole())->create();
+        foreach ([BadgeTier::Silver, BadgeTier::Gold] as $tier) {
+            BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey($tier))->sole())->create();
         }
 
         $this->actingAs($user, 'web')
@@ -351,7 +353,7 @@ class PlayerProfilePageTest extends TestCase
         $user = User::factory()->create();
         SportActivity::factory()->create(['user_id' => $user->id, 'distance' => $kilometres * 1000]);
         $this->app->make(SyncBadgeCatalogue::class)->handle();
-        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', 'sport_distance_bronze')->sole())->create();
+        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze))->sole())->create();
 
         return $user;
     }

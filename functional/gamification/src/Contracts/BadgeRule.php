@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Contracts;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Users\Models\User;
@@ -13,7 +14,7 @@ interface BadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string;
+    public function key(): BadgeRuleKey;
 
     /**
      * Get the domain the badge family belongs to.

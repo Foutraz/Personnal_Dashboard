@@ -7,6 +7,7 @@ use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
@@ -273,7 +274,7 @@ class ProcessUserGamificationJobTest extends TestCase
 
         $notification = $user->notifications()->get()->sole();
         $this->assertSame('Nouveau badge : Assiduité sportive (Bronze)', $notification->data['title']);
-        $this->assertSame('sport_activity_count_bronze', $notification->data['badge_key']);
+        $this->assertSame(BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze), $notification->data['badge_key']);
         $this->assertSame(BadgeTier::Bronze->xpReward(), $notification->data['xp_reward']);
     }
 

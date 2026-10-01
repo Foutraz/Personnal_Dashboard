@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Services\Dto;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 
@@ -11,7 +12,7 @@ final readonly class BadgeFamilyProgress
      * @param  array<int, BadgeMedal>  $medals
      */
     public function __construct(
-        public string $ruleKey,
+        public BadgeRuleKey $ruleKey,
         public string $name,
         public GamificationDomain $domain,
         public BadgeUnit $unit,

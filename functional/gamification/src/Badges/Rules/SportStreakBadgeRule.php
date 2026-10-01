@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Badges\Rules;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\GamificationDomain;
 
 class SportStreakBadgeRule extends StreakBadgeRule
@@ -9,9 +10,9 @@ class SportStreakBadgeRule extends StreakBadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string
+    public function key(): BadgeRuleKey
     {
-        return 'sport_streak';
+        return BadgeRuleKey::SportStreak;
     }
 
     /**

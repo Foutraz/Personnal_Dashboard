@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Badge;
@@ -67,7 +68,7 @@ class BadgeModelTest extends TestCase
     {
         $this->app->setLocale('fr');
         $badge = Badge::factory()->create([
-            'rule_key' => 'sport_distance',
+            'rule_key' => BadgeRuleKey::SportDistance->value,
             'tier' => BadgeTier::Bronze,
             'threshold' => 100,
         ]);
@@ -81,7 +82,7 @@ class BadgeModelTest extends TestCase
     {
         $this->app->setLocale('fr');
         $badge = Badge::factory()->create([
-            'rule_key' => 'sport_distance',
+            'rule_key' => BadgeRuleKey::SportDistance->value,
             'tier' => BadgeTier::Silver,
             'threshold' => 1000,
         ]);
@@ -94,7 +95,7 @@ class BadgeModelTest extends TestCase
     {
         $this->app->setLocale('en');
         $badge = Badge::factory()->create([
-            'rule_key' => 'sport_distance',
+            'rule_key' => BadgeRuleKey::SportDistance->value,
             'tier' => BadgeTier::Silver,
             'threshold' => 1000,
         ]);

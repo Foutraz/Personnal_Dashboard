@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\EvaluateBadges;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
@@ -33,12 +34,12 @@ class EvaluateBadgesTest extends TestCase
 
         $awards = $this->evaluate($user);
 
-        $this->assertSame(['sport_activity_count_bronze'], $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all());
+        $this->assertSame([BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze)], $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all());
         $entry = $this->badgeEntries($user)->sole();
         $this->assertSame(BadgeTier::Bronze->xpReward(), $entry->points);
         $this->assertSame(GamificationDomain::Sport, $entry->domain);
         $this->assertSame(XpSourceType::Badge->value, $entry->source_type);
-        $this->assertSame('sport_activity_count_bronze', $entry->source_id);
+        $this->assertSame(BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze), $entry->source_id);
         $this->assertTrue($entry->occurred_at->equalTo($awards->sole()->awarded_at));
     }
 
@@ -84,7 +85,7 @@ class EvaluateBadgesTest extends TestCase
     #[Test]
     public function it_awards_every_tier_reached_in_the_same_pass(): void
     {
-        config(['gamification.badges.thresholds.sport_activity_count' => ['bronze' => 1, 'silver' => 2, 'gold' => 3]]);
+        config([BadgeRuleKey::SportActivityCount->thresholdsConfigPath() => ['bronze' => 1, 'silver' => 2, 'gold' => 3]]);
         $user = User::factory()->create();
         $this->activities($user, 3);
 
@@ -101,8 +102,8 @@ class EvaluateBadgesTest extends TestCase
     public function it_returns_the_new_awards_ordered_by_tier_then_key(): void
     {
         config([
-            'gamification.badges.thresholds.sport_activity_count' => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
-            'gamification.badges.thresholds.sport_distance' => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
+            BadgeRuleKey::SportActivityCount->thresholdsConfigPath() => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
+            BadgeRuleKey::SportDistance->thresholdsConfigPath() => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
         ]);
         $user = User::factory()->create();
         $this->activities($user, 3);
@@ -111,12 +112,12 @@ class EvaluateBadgesTest extends TestCase
 
         $this->assertSame(
             [
-                'sport_activity_count_bronze',
-                'sport_distance_bronze',
-                'sport_activity_count_silver',
-                'sport_distance_silver',
-                'sport_activity_count_gold',
-                'sport_distance_gold',
+                BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze),
+                BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze),
+                BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Silver),
+                BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Silver),
+                BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Gold),
+                BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Gold),
             ],
             $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all(),
         );
@@ -145,7 +146,7 @@ class EvaluateBadgesTest extends TestCase
 
         $awards = $this->evaluate($user);
 
-        $this->assertSame(['sport_streak_bronze'], $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all());
+        $this->assertSame([BadgeRuleKey::SportStreak->badgeKey(BadgeTier::Bronze)], $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all());
     }
 
     #[Test]
@@ -228,7 +229,7 @@ class EvaluateBadgesTest extends TestCase
 
         $this->assertFalse(XpEntry::query()->whereKey($orphan->id)->exists());
         $this->assertTrue(XpEntry::query()->whereKey($foreign->id)->exists());
-        $this->assertSame(['sport_activity_count_bronze'], $this->badgeEntries($user)->pluck('source_id')->all());
+        $this->assertSame([BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze)], $this->badgeEntries($user)->pluck('source_id')->all());
     }
 
     #[Test]

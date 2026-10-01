@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Database\Factories;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Badge;
@@ -27,15 +28,15 @@ class BadgeFactory extends Factory
      */
     public function definition(): array
     {
-        $ruleKey = faker()->randomElement(array_keys(config('gamification.badges.thresholds')));
+        $ruleKey = faker()->randomElement(BadgeRuleKey::cases());
         $tier = faker()->randomElement(BadgeTier::cases());
 
         return [
-            'key' => "{$ruleKey}_{$tier->value}_".Str::lower(Str::random(6)),
-            'rule_key' => $ruleKey,
+            'key' => $ruleKey->badgeKey($tier).'_'.Str::lower(Str::random(6)),
+            'rule_key' => $ruleKey->value,
             'domain' => faker()->randomElement(GamificationDomain::cases()),
             'tier' => $tier,
-            'threshold' => config("gamification.badges.thresholds.{$ruleKey}.{$tier->value}"),
+            'threshold' => config($ruleKey->thresholdConfigPath($tier)),
             'xp_reward' => $tier->xpReward(),
         ];
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Exceptions\InvalidBadgeThresholdException;
@@ -33,9 +34,9 @@ class SyncBadgeCatalogueTest extends TestCase
     {
         $this->app->make(SyncBadgeCatalogue::class)->handle();
 
-        $badge = Badge::query()->where('key', 'sport_distance_gold')->sole();
+        $badge = Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Gold))->sole();
 
-        $this->assertSame('sport_distance', $badge->rule_key);
+        $this->assertSame(BadgeRuleKey::SportDistance->value, $badge->rule_key);
         $this->assertSame(BadgeTier::Gold, $badge->tier);
         $this->assertSame('5000.00', $badge->threshold);
         $this->assertSame(BadgeTier::Gold->xpReward(), $badge->xp_reward);
@@ -48,11 +49,11 @@ class SyncBadgeCatalogueTest extends TestCase
 
         collect($this->app->tagged(BadgeRule::TAG))->each(fn (BadgeRule $rule) => $this->assertSame(
             [$rule->domain()],
-            Badge::query()->where('rule_key', $rule->key())->get()->pluck('domain')->unique()->values()->all(),
-            $rule->key(),
+            Badge::query()->where('rule_key', $rule->key()->value)->get()->pluck('domain')->unique()->values()->all(),
+            $rule->key()->value,
         ));
 
-        $this->assertSame(GamificationDomain::Moto, Badge::query()->where('key', 'moto_distance_bronze')->sole()->domain);
+        $this->assertSame(GamificationDomain::Moto, Badge::query()->where('key', BadgeRuleKey::MotoDistance->badgeKey(BadgeTier::Bronze))->sole()->domain);
     }
 
     #[Test]
@@ -79,17 +80,17 @@ class SyncBadgeCatalogueTest extends TestCase
         $newXpReward = faker()->number(600, 900);
 
         config([
-            'gamification.badges.thresholds.sport_distance.gold' => $newThreshold,
+            BadgeRuleKey::SportDistance->thresholdConfigPath(BadgeTier::Gold) => $newThreshold,
             'gamification.badges.tier_xp.gold' => $newXpReward,
         ]);
         $action->handle();
 
-        $badge = Badge::query()->where('key', 'sport_distance_gold')->sole();
+        $badge = Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Gold))->sole();
 
         $this->assertSame(number_format($newThreshold, 2, '.', ''), $badge->threshold);
         $this->assertSame($newXpReward, $badge->xp_reward);
         $this->assertSame(30, Badge::query()->count());
-        $this->assertSame($idsByKey['sport_distance_gold'], $badge->id);
+        $this->assertSame($idsByKey[BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Gold)], $badge->id);
     }
 
     #[Test]
@@ -106,9 +107,9 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_throws_a_named_exception_when_a_tier_has_no_threshold(): void
     {
-        config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 100, 'gold' => 5000]]);
+        config([BadgeRuleKey::SportDistance->thresholdsConfigPath() => ['bronze' => 100, 'gold' => 5000]]);
 
-        $this->expectExceptionObject(new MissingBadgeThresholdException('sport_distance', BadgeTier::Silver));
+        $this->expectExceptionObject(new MissingBadgeThresholdException(BadgeRuleKey::SportDistance, BadgeTier::Silver));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
@@ -116,9 +117,9 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_throws_a_named_exception_when_a_rule_has_no_thresholds_at_all(): void
     {
-        config(['gamification.badges.thresholds' => collect(config('gamification.badges.thresholds'))->except('todo_streak')->all()]);
+        config(['gamification.badges.thresholds' => collect(config('gamification.badges.thresholds'))->except(BadgeRuleKey::TodoStreak->value)->all()]);
 
-        $this->expectExceptionObject(new MissingBadgeThresholdException('todo_streak', BadgeTier::Bronze));
+        $this->expectExceptionObject(new MissingBadgeThresholdException(BadgeRuleKey::TodoStreak, BadgeTier::Bronze));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
@@ -126,9 +127,9 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_throws_a_named_exception_when_a_threshold_is_not_numeric(): void
     {
-        config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 100, 'silver' => 'a lot', 'gold' => 5000]]);
+        config([BadgeRuleKey::SportDistance->thresholdsConfigPath() => ['bronze' => 100, 'silver' => 'a lot', 'gold' => 5000]]);
 
-        $this->expectExceptionObject(new InvalidBadgeThresholdException('sport_distance', BadgeTier::Silver, 'a lot'));
+        $this->expectExceptionObject(new InvalidBadgeThresholdException(BadgeRuleKey::SportDistance, BadgeTier::Silver, 'a lot'));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
@@ -136,7 +137,7 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_writes_nothing_when_a_threshold_is_not_numeric(): void
     {
-        config(['gamification.badges.thresholds.moto_distance' => ['bronze' => 100, 'silver' => 1000, 'gold' => ['many']]]);
+        config([BadgeRuleKey::MotoDistance->thresholdsConfigPath() => ['bronze' => 100, 'silver' => 1000, 'gold' => ['many']]]);
 
         $this->assertThrows(
             fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
@@ -179,9 +180,9 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_throws_a_named_exception_when_the_thresholds_do_not_strictly_increase(): void
     {
-        config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]]);
+        config([BadgeRuleKey::SportDistance->thresholdsConfigPath() => ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]]);
 
-        $this->expectExceptionObject(new NonIncreasingBadgeThresholdsException('sport_distance', ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]));
+        $this->expectExceptionObject(new NonIncreasingBadgeThresholdsException(BadgeRuleKey::SportDistance, ['bronze' => 1000, 'silver' => 100, 'gold' => 5000]));
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
@@ -189,7 +190,7 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_rejects_two_tiers_sharing_the_same_threshold(): void
     {
-        config(['gamification.badges.thresholds.todo_streak' => ['bronze' => 7, 'silver' => 30, 'gold' => 30]]);
+        config([BadgeRuleKey::TodoStreak->thresholdsConfigPath() => ['bronze' => 7, 'silver' => 30, 'gold' => 30]]);
 
         $this->expectException(NonIncreasingBadgeThresholdsException::class);
 
@@ -199,7 +200,7 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_writes_nothing_when_the_thresholds_do_not_increase(): void
     {
-        config(['gamification.badges.thresholds.exploration_cells' => ['bronze' => 5000, 'silver' => 1000, 'gold' => 100]]);
+        config([BadgeRuleKey::ExplorationCells->thresholdsConfigPath() => ['bronze' => 5000, 'silver' => 1000, 'gold' => 100]]);
 
         $this->assertThrows(
             fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
@@ -225,7 +226,7 @@ class SyncBadgeCatalogueTest extends TestCase
     #[Test]
     public function it_writes_nothing_when_a_threshold_is_missing(): void
     {
-        config(['gamification.badges.thresholds.exploration_cells' => ['bronze' => 100]]);
+        config([BadgeRuleKey::ExplorationCells->thresholdsConfigPath() => ['bronze' => 100]]);
 
         $this->assertThrows(
             fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),

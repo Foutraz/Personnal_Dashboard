@@ -5,6 +5,7 @@ namespace Tests\Feature\Gamification;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Badges\Rules\SportDistanceBadgeRule;
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
@@ -28,9 +29,9 @@ class BadgeShowcaseTest extends TestCase
     public function it_measures_progress_towards_the_next_tier_from_the_previous_tier(): void
     {
         $user = $this->userWithDistance(150);
-        $this->award($user, 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertSame(150.0, $family->currentValue);
         $this->assertSame(1000.0, $family->nextThreshold);
@@ -43,7 +44,7 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = $this->userWithDistance(50);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertSame(100.0, $family->nextThreshold);
         $this->assertEqualsWithDelta(50.0, $family->percentage, 0.001);
@@ -53,11 +54,11 @@ class BadgeShowcaseTest extends TestCase
     public function it_reports_full_progress_for_a_completed_family(): void
     {
         $user = $this->userWithDistance(6000);
-        foreach (['bronze', 'silver', 'gold'] as $tier) {
-            $this->award($user, "sport_distance_{$tier}");
+        foreach (BadgeTier::cases() as $tier) {
+            $this->award($user, BadgeRuleKey::SportDistance, $tier);
         }
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertTrue($family->isComplete());
         $this->assertNull($family->nextThreshold);
@@ -69,9 +70,9 @@ class BadgeShowcaseTest extends TestCase
     public function it_clamps_progress_to_zero_when_the_measure_fell_below_the_earned_tier(): void
     {
         $user = $this->userWithDistance(80);
-        $this->award($user, 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertSame(1000.0, $family->nextThreshold);
         $this->assertSame(0.0, $family->percentage);
@@ -82,7 +83,7 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = $this->userWithDistance(150);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertSame(100.0, $family->nextThreshold);
         $this->assertSame(100.0, $family->percentage);
@@ -93,7 +94,7 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = $this->userWithDistance(150);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertTrue($family->isAwaitingUnlock());
         $this->assertSame([true, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
@@ -103,9 +104,9 @@ class BadgeShowcaseTest extends TestCase
     public function it_flags_only_the_reached_tiers_that_are_still_unawarded(): void
     {
         $user = $this->userWithDistance(1500);
-        $this->award($user, 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertTrue($family->isAwaitingUnlock());
         $this->assertSame([false, true, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
@@ -117,7 +118,7 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = $this->userWithDistance(50);
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertFalse($family->isAwaitingUnlock());
         $this->assertSame([false, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
@@ -127,11 +128,11 @@ class BadgeShowcaseTest extends TestCase
     public function it_does_not_flag_a_completed_family(): void
     {
         $user = $this->userWithDistance(6000);
-        foreach (['bronze', 'silver', 'gold'] as $tier) {
-            $this->award($user, "sport_distance_{$tier}");
+        foreach (BadgeTier::cases() as $tier) {
+            $this->award($user, BadgeRuleKey::SportDistance, $tier);
         }
 
-        $family = $this->family($user, 'sport_distance');
+        $family = $this->family($user, BadgeRuleKey::SportDistance);
 
         $this->assertFalse($family->isAwaitingUnlock());
         $this->assertSame([false, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
@@ -142,14 +143,14 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = User::factory()->create();
         $this->seedCatalogue();
-        $this->award($user, 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
         $families = $this->app->make(BadgeShowcase::class)->families($user);
 
         $this->assertCount(10, $families);
         $this->assertSame(
-            collect($this->app->tagged(BadgeRule::TAG))->map(fn (BadgeRule $rule): string => $rule->key())->all(),
-            $families->map(fn (BadgeFamilyProgress $family): string => $family->ruleKey)->all(),
+            collect($this->app->tagged(BadgeRule::TAG))->map(fn (BadgeRule $rule): BadgeRuleKey => $rule->key())->all(),
+            $families->map(fn (BadgeFamilyProgress $family): BadgeRuleKey => $family->ruleKey)->all(),
         );
         $families->each(fn (BadgeFamilyProgress $family) => $this->assertSame(
             [BadgeTier::Bronze, BadgeTier::Silver, BadgeTier::Gold],
@@ -163,8 +164,8 @@ class BadgeShowcaseTest extends TestCase
         $user = User::factory()->create();
         foreach ([BadgeTier::Gold, BadgeTier::Bronze, BadgeTier::Silver] as $tier) {
             Badge::factory()->create([
-                'key' => "sport_distance_{$tier->value}",
-                'rule_key' => 'sport_distance',
+                'key' => BadgeRuleKey::SportDistance->badgeKey($tier),
+                'rule_key' => BadgeRuleKey::SportDistance->value,
                 'domain' => GamificationDomain::Sport,
                 'tier' => $tier,
                 'threshold' => $tier->rank() * 100,
@@ -186,7 +187,7 @@ class BadgeShowcaseTest extends TestCase
         $user = User::factory()->create();
         $this->seedCatalogue();
 
-        $family = $this->family($user, 'finance_invested_capital');
+        $family = $this->family($user, BadgeRuleKey::FinanceInvestedCapital);
 
         $this->assertSame('Capital investi', $family->name);
         $this->assertSame(GamificationDomain::Finance, $family->domain);
@@ -198,8 +199,8 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = User::factory()->create();
         $this->seedCatalogue();
-        $this->award($user, 'sport_distance_silver');
-        $this->award(User::factory()->create(), 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Silver);
+        $this->award(User::factory()->create(), BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
         $medals = $this->app->make(BadgeShowcase::class)->families($user)->first()->medals;
 
@@ -212,7 +213,7 @@ class BadgeShowcaseTest extends TestCase
         $this->app->setLocale('fr');
         $user = User::factory()->create();
         $this->seedCatalogue();
-        $this->award($user, 'sport_distance_bronze');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
 
         $medals = $this->app->make(BadgeShowcase::class)->families($user)->first()->medals;
 
@@ -225,8 +226,8 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = User::factory()->create();
         $this->seedCatalogue();
-        $this->award($user, 'sport_distance_bronze');
-        $this->award(User::factory()->create(), 'sport_distance_silver');
+        $this->award($user, BadgeRuleKey::SportDistance, BadgeTier::Bronze);
+        $this->award(User::factory()->create(), BadgeRuleKey::SportDistance, BadgeTier::Silver);
 
         $showcase = $this->app->make(BadgeShowcase::class);
 
@@ -290,8 +291,8 @@ class BadgeShowcaseTest extends TestCase
     {
         $user = User::factory()->create();
         $this->seedCatalogue();
-        foreach (['bronze', 'silver', 'gold'] as $tier) {
-            $this->award($user, "sport_distance_{$tier}");
+        foreach (BadgeTier::cases() as $tier) {
+            $this->award($user, BadgeRuleKey::SportDistance, $tier);
         }
         $awardsTable = (new BadgeAward)->getTable();
 
@@ -308,9 +309,9 @@ class BadgeShowcaseTest extends TestCase
         $this->app->make(SyncBadgeCatalogue::class)->handle();
     }
 
-    private function award(User $user, string $badgeKey): BadgeAward
+    private function award(User $user, BadgeRuleKey $ruleKey, BadgeTier $tier): BadgeAward
     {
-        return BadgeAward::factory()->for($user)->for(Badge::query()->where('key', $badgeKey)->sole())->create();
+        return BadgeAward::factory()->for($user)->for(Badge::query()->where('key', $ruleKey->badgeKey($tier))->sole())->create();
     }
 
     private function userWithDistance(int $kilometres): User
@@ -322,7 +323,7 @@ class BadgeShowcaseTest extends TestCase
         return $user;
     }
 
-    private function family(User $user, string $ruleKey): BadgeFamilyProgress
+    private function family(User $user, BadgeRuleKey $ruleKey): BadgeFamilyProgress
     {
         return $this->app->make(BadgeShowcase::class)
             ->families($user)

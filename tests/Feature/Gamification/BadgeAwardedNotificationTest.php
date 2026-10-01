@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Notifications\BadgeAwardedNotification;
@@ -35,7 +36,7 @@ class BadgeAwardedNotificationTest extends TestCase
     public function it_describes_the_badge_in_french(): void
     {
         $this->app->setLocale('fr');
-        $badge = Badge::factory()->create(['rule_key' => 'sport_distance', 'tier' => BadgeTier::Silver, 'xp_reward' => 150]);
+        $badge = Badge::factory()->create(['rule_key' => BadgeRuleKey::SportDistance->value, 'tier' => BadgeTier::Silver, 'xp_reward' => 150]);
 
         $data = (new BadgeAwardedNotification($badge))->toArray(User::factory()->create());
 
@@ -52,7 +53,7 @@ class BadgeAwardedNotificationTest extends TestCase
     public function it_describes_the_badge_in_english(): void
     {
         $this->app->setLocale('en');
-        $badge = Badge::factory()->create(['rule_key' => 'moto_distance', 'tier' => BadgeTier::Gold, 'xp_reward' => 500]);
+        $badge = Badge::factory()->create(['rule_key' => BadgeRuleKey::MotoDistance->value, 'tier' => BadgeTier::Gold, 'xp_reward' => 500]);
 
         $data = (new BadgeAwardedNotification($badge))->toArray(User::factory()->create());
 

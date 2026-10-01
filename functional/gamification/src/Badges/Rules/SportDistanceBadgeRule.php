@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Badges\Rules;
 
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Sport\Models\SportActivity;
@@ -13,9 +14,9 @@ class SportDistanceBadgeRule implements BadgeRule
     /**
      * Get the badge family key matching the configured thresholds.
      */
-    public function key(): string
+    public function key(): BadgeRuleKey
     {
-        return 'sport_distance';
+        return BadgeRuleKey::SportDistance;
     }
 
     /**

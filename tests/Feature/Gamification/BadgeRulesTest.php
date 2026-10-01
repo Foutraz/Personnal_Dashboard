@@ -17,6 +17,7 @@ use Functional\Gamification\Badges\Rules\SportStreakBadgeRule;
 use Functional\Gamification\Badges\Rules\TodoStreakBadgeRule;
 use Functional\Gamification\Badges\Rules\TodoTasksCompletedBadgeRule;
 use Functional\Gamification\Contracts\BadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Streak;
@@ -39,7 +40,7 @@ class BadgeRulesTest extends TestCase
         $user = User::factory()->create();
 
         foreach ($this->app->tagged(BadgeRule::TAG) as $rule) {
-            $this->assertSame(0.0, $rule->measure($user), $rule->key());
+            $this->assertSame(0.0, $rule->measure($user), $rule->key()->value);
         }
     }
 
@@ -164,11 +165,11 @@ class BadgeRulesTest extends TestCase
         $rules = collect($this->app->tagged(BadgeRule::TAG));
 
         $this->assertCount(10, $rules);
-        $this->assertCount(10, $rules->map(fn (BadgeRule $rule): string => $rule->key())->unique());
+        $this->assertCount(10, $rules->map(fn (BadgeRule $rule): BadgeRuleKey => $rule->key())->unique());
 
         foreach ($rules as $rule) {
             foreach (BadgeTier::cases() as $tier) {
-                $this->assertNotNull(config("gamification.badges.thresholds.{$rule->key()}.{$tier->value}"), "{$rule->key()} {$tier->value}");
+                $this->assertNotNull(config($rule->key()->thresholdConfigPath($tier)), "{$rule->key()->value} {$tier->value}");
             }
         }
     }

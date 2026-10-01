@@ -4,6 +4,8 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
+use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
@@ -133,7 +135,7 @@ class GamificationDashboardContributionTest extends TestCase
         $this->app->setLocale('fr');
         $user = User::factory()->create();
         $this->app->make(SyncBadgeCatalogue::class)->handle();
-        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', 'sport_distance_bronze')->sole())->create();
+        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze))->sole())->create();
 
         $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
 
