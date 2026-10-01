@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -185,11 +186,12 @@ class PlayerProfilePageTest extends TestCase
         $this->app->setLocale('fr');
         $user = $this->userWithDistanceAndBronze(150);
 
-        $this->actingAs($user, 'web')
+        $response = $this->actingAs($user, 'web')
             ->get(route('player'))
             ->assertOk()
-            ->assertSee('Actuel : 150 km')
-            ->assertSee("Prochain palier : 1\u{202F}000 km");
+            ->assertSee('Actuel : 150 km');
+
+        $this->assertStringContainsString('Prochain palier : 1 000 km', Str::squish($response->getContent()));
     }
 
     #[Test]

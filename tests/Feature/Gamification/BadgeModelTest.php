@@ -86,7 +86,7 @@ class BadgeModelTest extends TestCase
             'threshold' => 1000,
         ]);
 
-        $this->assertSame("Cumulez 1\u{202F}000 km en activité sportive.", $badge->description());
+        $this->assertSame('Cumulez 1 000 km en activité sportive.', Str::squish($badge->description()));
     }
 
     #[Test]

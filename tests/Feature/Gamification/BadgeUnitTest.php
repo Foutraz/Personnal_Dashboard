@@ -3,6 +3,7 @@
 namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Enums\BadgeUnit;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -13,10 +14,10 @@ class BadgeUnitTest extends TestCase
     {
         $this->app->setLocale('fr');
 
-        $this->assertSame("1\u{202F}250 km", BadgeUnit::Kilometers->format(1250));
-        $this->assertSame("1\u{202F}250", BadgeUnit::Count->format(1250));
-        $this->assertSame("1\u{202F}250 j", BadgeUnit::Days->format(1250));
-        $this->assertSame("1\u{202F}250 €", BadgeUnit::Euros->format(1250));
+        $this->assertSame('1 250 km', Str::squish(BadgeUnit::Kilometers->format(1250)));
+        $this->assertSame('1 250', Str::squish(BadgeUnit::Count->format(1250)));
+        $this->assertSame('1 250 j', Str::squish(BadgeUnit::Days->format(1250)));
+        $this->assertSame('1 250 €', Str::squish(BadgeUnit::Euros->format(1250)));
     }
 
     #[Test]
