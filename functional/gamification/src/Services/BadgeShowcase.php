@@ -64,7 +64,7 @@ class BadgeShowcase
             domain: $rule->domain(),
             unit: $rule->unit(),
             medals: $tiers
-                ->map(fn (Badge $badge): BadgeMedal => BadgeMedal::fromBadge($badge, $rule->unit(), $ownedBadgeIds->has($badge->id)))
+                ->map(fn (Badge $badge): BadgeMedal => BadgeMedal::fromBadge($badge, $rule->unit(), $ownedBadgeIds->has($badge->id), $measure))
                 ->all(),
             currentValue: $measure,
             nextThreshold: $next === null ? null : (float) $next->threshold,

@@ -30,6 +30,14 @@ final readonly class BadgeFamilyProgress
     }
 
     /**
+     * Determine whether the live measure already reaches the next tier whose award the nightly pass has not granted yet.
+     */
+    public function isAwaitingUnlock(): bool
+    {
+        return $this->nextThreshold !== null && $this->currentValue >= $this->nextThreshold;
+    }
+
+    /**
      * Count the tiers of the family the user has earned.
      */
     public function earnedCount(): int

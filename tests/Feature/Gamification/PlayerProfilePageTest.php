@@ -239,6 +239,35 @@ class PlayerProfilePageTest extends TestCase
     }
 
     #[Test]
+    public function it_announces_a_reached_tier_that_unlocks_at_the_next_update_in_french(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(1500);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Atteint — débloqué à la prochaine mise à jour')
+            ->assertSee('aria-label="Argent : Atteint — débloqué à la prochaine mise à jour"', false)
+            ->assertSee('aria-label="Bronze : Obtenu"', false)
+            ->assertDontSee('aria-valuenow="100"', false);
+    }
+
+    #[Test]
+    public function it_announces_a_reached_tier_that_unlocks_at_the_next_update_in_english(): void
+    {
+        $this->app->setLocale('en');
+        $user = $this->userWithDistanceAndBronze(1500);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Reached — unlocks at the next update')
+            ->assertSee('aria-label="Silver: Reached — unlocks at the next update"', false)
+            ->assertDontSee('aria-valuenow="100"', false);
+    }
+
+    #[Test]
     public function it_renders_the_badge_showcase_in_english(): void
     {
         $this->app->setLocale('en');

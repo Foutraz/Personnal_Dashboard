@@ -133,24 +133,28 @@
                     </ul>
 
                     <div class="mt-5">
-                        <div
-                            role="progressbar"
-                            aria-label="{{ $family->name }}"
-                            aria-valuenow="{{ $family->roundedPercentage() }}"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            class="h-1.5 w-full overflow-hidden rounded-full bg-surface-2 {{ $family->domain->textClass() }}"
-                        >
+                        @unless ($family->isAwaitingUnlock())
                             <div
-                                class="h-full rounded-full bg-current"
-                                style="width: {{ $family->roundedPercentage() }}%; box-shadow: 0 0 10px currentColor;"
-                            ></div>
-                        </div>
+                                role="progressbar"
+                                aria-label="{{ $family->name }}"
+                                aria-valuenow="{{ $family->roundedPercentage() }}"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                class="h-1.5 w-full overflow-hidden rounded-full bg-surface-2 {{ $family->domain->textClass() }}"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-current"
+                                    style="width: {{ $family->roundedPercentage() }}%; box-shadow: 0 0 10px currentColor;"
+                                ></div>
+                            </div>
+                        @endunless
 
                         <div class="mt-2 flex items-center justify-between gap-2 text-xs">
                             <span class="text-muted">{{ __('gamification::badges.showcase.current', ['value' => $family->currentLabel()]) }}</span>
                             @if ($family->isComplete())
                                 <span class="font-medium {{ $family->domain->textClass() }}">{{ __('gamification::badges.showcase.completed') }}</span>
+                            @elseif ($family->isAwaitingUnlock())
+                                <span class="font-medium {{ $family->domain->textClass() }}">{{ __('gamification::badges.showcase.pending') }}</span>
                             @else
                                 <span class="text-faint">{{ __('gamification::badges.showcase.next', ['threshold' => $family->nextLabel()]) }}</span>
                             @endif

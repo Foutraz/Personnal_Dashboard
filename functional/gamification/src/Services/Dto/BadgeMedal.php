@@ -13,38 +13,46 @@ final readonly class BadgeMedal
         public string $description,
         public string $thresholdLabel,
         public bool $earned,
+        public bool $pending,
     ) {}
 
     /**
-     * Build the medal of a catalogue badge with its threshold expressed in the unit of its family.
+     * Build the medal of a catalogue badge with its threshold expressed in the unit of its family, pending when the live measure reaches an unawarded tier.
      */
-    public static function fromBadge(Badge $badge, BadgeUnit $unit, bool $earned): self
+    public static function fromBadge(Badge $badge, BadgeUnit $unit, bool $earned, float $measure): self
     {
         return new self(
             tier: $badge->tier,
             description: $badge->description(),
             thresholdLabel: $unit->format((float) $badge->threshold),
             earned: $earned,
+            pending: ! $earned && $measure >= (float) $badge->threshold,
         );
     }
 
     /**
-     * Get the text alternative announcing the tier and whether the medal is earned or locked.
+     * Get the text alternative announcing the tier and whether the medal is earned, reached or locked.
      */
     public function accessibleLabel(): string
     {
-        $state = $this->earned ? __('gamification::badges.showcase.earned') : __('gamification::badges.showcase.locked');
+        $state = match (true) {
+            $this->earned => __('gamification::badges.showcase.earned'),
+            $this->pending => __('gamification::badges.showcase.pending'),
+            default => __('gamification::badges.showcase.locked'),
+        };
 
         return __('gamification::badges.showcase.medal', ['tier' => $this->tier->label(), 'state' => $state]);
     }
 
     /**
-     * Get the Tailwind classes of the medal frame, lit with the tier accent once earned.
+     * Get the Tailwind classes of the medal frame, lit with the tier accent once earned and dashed while pending.
      */
     public function frameClass(): string
     {
-        return $this->earned
-            ? 'border-(color:--medal) bg-surface-2 text-(color:--medal) shadow-[0_0_14px_var(--medal)]'
-            : 'border-hairline bg-surface text-faint opacity-60';
+        return match (true) {
+            $this->earned => 'border-(color:--medal) bg-surface-2 text-(color:--medal) shadow-[0_0_14px_var(--medal)]',
+            $this->pending => 'border-dashed border-(color:--medal) bg-surface text-(color:--medal)',
+            default => 'border-hairline bg-surface text-faint opacity-60',
+        };
     }
 }

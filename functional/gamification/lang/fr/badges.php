@@ -52,6 +52,7 @@ return [
         'title' => 'Badges',
         'counter' => ':earned / :total',
         'locked' => 'Verrouillé',
+        'pending' => 'Atteint — débloqué à la prochaine mise à jour',
         'earned' => 'Obtenu',
         'medal' => ':tier : :state',
         'current' => 'Actuel : :value',

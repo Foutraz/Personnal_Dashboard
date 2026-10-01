@@ -89,6 +89,55 @@ class BadgeShowcaseTest extends TestCase
     }
 
     #[Test]
+    public function it_flags_a_family_whose_next_tier_is_reached_but_not_awarded_yet(): void
+    {
+        $user = $this->userWithDistance(150);
+
+        $family = $this->family($user, 'sport_distance');
+
+        $this->assertTrue($family->isAwaitingUnlock());
+        $this->assertSame([true, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
+    }
+
+    #[Test]
+    public function it_flags_only_the_reached_tiers_that_are_still_unawarded(): void
+    {
+        $user = $this->userWithDistance(1500);
+        $this->award($user, 'sport_distance_bronze');
+
+        $family = $this->family($user, 'sport_distance');
+
+        $this->assertTrue($family->isAwaitingUnlock());
+        $this->assertSame([false, true, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
+        $this->assertSame([true, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->earned, $family->medals));
+    }
+
+    #[Test]
+    public function it_does_not_flag_a_family_below_its_next_tier(): void
+    {
+        $user = $this->userWithDistance(50);
+
+        $family = $this->family($user, 'sport_distance');
+
+        $this->assertFalse($family->isAwaitingUnlock());
+        $this->assertSame([false, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
+    }
+
+    #[Test]
+    public function it_does_not_flag_a_completed_family(): void
+    {
+        $user = $this->userWithDistance(6000);
+        foreach (['bronze', 'silver', 'gold'] as $tier) {
+            $this->award($user, "sport_distance_{$tier}");
+        }
+
+        $family = $this->family($user, 'sport_distance');
+
+        $this->assertFalse($family->isAwaitingUnlock());
+        $this->assertSame([false, false, false], array_map(fn (BadgeMedal $medal): bool => $medal->pending, $family->medals));
+    }
+
+    #[Test]
     public function it_builds_one_family_per_tagged_rule_with_ordered_medals(): void
     {
         $user = User::factory()->create();
