@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Badges\Rules;
 
+use Carbon\CarbonInterface;
 use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeUnit;
 use Functional\Gamification\Enums\GamificationDomain;
@@ -48,7 +49,7 @@ class HealthMeasurementDaysBadgeRule implements BadgeRule
         return (float) BodyMeasurement::query()
             ->whereBelongsTo($user)
             ->pluck('measured_at')
-            ->map(fn ($measuredAt): string => $this->calendar->dayOf($measuredAt))
+            ->map(fn (CarbonInterface $measuredAt): string => $this->calendar->dayOf($measuredAt))
             ->unique()
             ->count();
     }
