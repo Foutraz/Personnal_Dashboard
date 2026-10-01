@@ -7,4 +7,5 @@ return [
     'remaining_xp' => ':xp XP before level :level',
     'monthly_xp' => ':xp XP this month',
     'hottest_streak' => ':domain streak: :count d',
+    'badges' => 'Badges: :earned / :total',
 ];

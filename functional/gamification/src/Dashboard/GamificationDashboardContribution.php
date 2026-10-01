@@ -49,7 +49,7 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             __('gamification::dashboard.total_xp', ['xp' => number_format($totalXp, 0, ',', ' ')]),
             __('gamification::dashboard.remaining_xp', ['xp' => number_format($remaining, 0, ',', ' '), 'level' => $level + 1]),
             __('gamification::dashboard.monthly_xp', ['xp' => number_format($monthlyXp, 0, ',', ' ')]),
-            __('gamification::badges.dashboard.line', [
+            __('gamification::dashboard.badges', [
                 'earned' => $this->badgeShowcase->earnedCount($user),
                 'total' => $this->badgeShowcase->totalCount(),
             ]),

@@ -69,7 +69,4 @@ return [
         'title' => 'Nouveau badge : :name (:tier)',
         'body' => 'Vous avez obtenu le badge :name (:tier) et gagné :xp XP.',
     ],
-    'dashboard' => [
-        'line' => 'Badges : :earned / :total',
-    ],
 ];

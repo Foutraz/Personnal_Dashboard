@@ -33,4 +33,14 @@ class GamificationTranslationsTest extends TestCase
         $this->assertSame('Joueur', __('gamification::player.title'));
         $this->assertSame('Record : 12', __('gamification::player.streak_best', ['count' => 12]));
     }
+
+    #[Test]
+    public function it_keeps_the_badge_dashboard_line_in_the_dashboard_file(): void
+    {
+        $this->app->setLocale('en');
+
+        $this->assertArrayNotHasKey('dashboard', require base_path('functional/gamification/lang/en/badges.php'));
+        $this->assertArrayNotHasKey('dashboard', require base_path('functional/gamification/lang/fr/badges.php'));
+        $this->assertSame('Badges: 3 / 30', __('gamification::dashboard.badges', ['earned' => 3, 'total' => 30]));
+    }
 }
