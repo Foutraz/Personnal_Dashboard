@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Database\Seeders\GamificationSeeder;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Services\GamificationCalendar;
@@ -27,5 +28,13 @@ class GamificationSeederTest extends TestCase
         $this->assertCount(count(GamificationDomain::streakDomains()), $streaks);
         $this->assertTrue($streaks->contains(fn (Streak $streak): bool => $calendar->isStreakAlive($streak->last_activity_date)));
         $this->assertTrue($streaks->contains(fn (Streak $streak): bool => ! $calendar->isStreakAlive($streak->last_activity_date)));
+    }
+
+    #[Test]
+    public function it_seeds_the_full_badge_catalogue(): void
+    {
+        $this->seed(GamificationSeeder::class);
+
+        $this->assertSame(30, Badge::query()->count());
     }
 }
