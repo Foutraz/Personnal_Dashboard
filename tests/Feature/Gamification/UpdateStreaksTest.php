@@ -195,6 +195,23 @@ class UpdateStreaksTest extends TestCase
     }
 
     #[Test]
+    public function it_ignores_badge_award_entries_when_computing_active_days(): void
+    {
+        $user = User::factory()->create();
+        XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Sport,
+            'rule_key' => XpRuleKey::BadgeAward->value,
+            'source_type' => XpSourceType::Badge->value,
+            'occurred_at' => now(),
+        ]);
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $this->assertSame(0, Streak::query()->where('user_id', $user->id)->count());
+    }
+
+    #[Test]
     public function it_ignores_milestone_entries_when_computing_active_days(): void
     {
         $user = User::factory()->create();

@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migration creating the badge awards table.
+     */
+    public function up(): void
+    {
+        Schema::create('badge_awards', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('user_id')->constrained('users');
+            $table->foreignUlid('badge_id')->constrained('badges');
+            $table->timestamp('awarded_at');
+            $table->timestamps();
+            $table->unique(['user_id', 'badge_id']);
+        });
+    }
+
+    /**
+     * Reverse the migration dropping the badge awards table.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('badge_awards');
+    }
+};
