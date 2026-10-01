@@ -49,12 +49,20 @@ enum GamificationDomain: string
 
     public function textClass(): string
     {
-        return "text-{$this->color()}";
+        return match ($this) {
+            self::Sport => 'text-cyan',
+            self::Finance, self::Todo => 'text-lime',
+            self::Health, self::Moto, self::Exploration => 'text-violet',
+        };
     }
 
     public function softBackgroundClass(): string
     {
-        return "bg-{$this->color()}-soft";
+        return match ($this) {
+            self::Sport => 'bg-cyan-soft',
+            self::Finance, self::Todo => 'bg-lime-soft',
+            self::Health, self::Moto, self::Exploration => 'bg-violet-soft',
+        };
     }
 
     /**

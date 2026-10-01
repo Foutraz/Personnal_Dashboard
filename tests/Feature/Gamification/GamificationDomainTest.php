@@ -59,4 +59,13 @@ class GamificationDomainTest extends TestCase
         $this->assertNotContains(GamificationDomain::Finance, GamificationDomain::streakDomains());
         $this->assertCount(count(GamificationDomain::cases()) - 1, GamificationDomain::streakDomains());
     }
+
+    #[Test]
+    public function it_exposes_literal_accent_classes_matching_the_domain_color(): void
+    {
+        foreach (GamificationDomain::cases() as $domain) {
+            $this->assertSame("text-{$domain->color()}", $domain->textClass());
+            $this->assertSame("bg-{$domain->color()}-soft", $domain->softBackgroundClass());
+        }
+    }
 }
