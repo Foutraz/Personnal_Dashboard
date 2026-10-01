@@ -9,7 +9,6 @@ use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class AwardXp
 {
@@ -24,15 +23,13 @@ class AwardXp
     public function handle(User $user, Collection $awards, ?Collection $ruleKeys = null, ?Carbon $windowStart = null): LevelTransition
     {
         $ruleKeys ??= $awards->map(fn (XpAward $award): string => $award->ruleKey)->unique()->values();
-        $now = now();
 
-        return DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart, $now): LevelTransition {
+        return DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart): LevelTransition {
             $this->purgeWindow($user, $ruleKeys, $windowStart);
 
-            $awards->chunk(500)->each(function (Collection $chunk) use ($user, $now): void {
-                DB::table('xp_entries')->upsert(
+            $awards->chunk(500)->each(function (Collection $chunk) use ($user): void {
+                XpEntry::query()->upsert(
                     $chunk->map(fn (XpAward $award): array => [
-                        'id' => strtolower((string) Str::ulid()),
                         'user_id' => $user->id,
                         'domain' => $award->domain->value,
                         'rule_key' => $award->ruleKey,
@@ -40,11 +37,9 @@ class AwardXp
                         'source_id' => $award->sourceId,
                         'points' => $award->points,
                         'occurred_at' => $award->occurredAt,
-                        'created_at' => $now,
-                        'updated_at' => $now,
                     ])->all(),
                     ['user_id', 'rule_key', 'source_type', 'source_id'],
-                    ['points', 'occurred_at', 'updated_at'],
+                    ['points', 'occurred_at'],
                 );
             });
 

@@ -9,7 +9,6 @@ use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class UpdateStreaks
 {
@@ -93,31 +92,27 @@ class UpdateStreaks
             ->whereNotIn('domain', $runsByDomain->keys())
             ->delete();
 
-        $now = now();
-        $threshold = $now->copy()->subDay()->toDateString();
+        $threshold = now()->subDay()->toDateString();
 
-        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user, $now, $threshold): array {
+        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user, $threshold): array {
             $last = $runs->last();
             $lastDay = $last['start']->copy()->addDays($last['length'] - 1);
             $current = $lastDay->toDateString() >= $threshold ? $last['length'] : 0;
 
             return [
-                'id' => strtolower((string) Str::ulid()),
                 'user_id' => $user->id,
                 'domain' => $domain,
                 'current_count' => $current,
                 'best_count' => $runs->max('length'),
                 'last_activity_date' => $lastDay->toDateString(),
-                'created_at' => $now,
-                'updated_at' => $now,
             ];
         })->values();
 
         if ($rows->isNotEmpty()) {
-            DB::table('streaks')->upsert(
+            Streak::query()->upsert(
                 $rows->all(),
                 ['user_id', 'domain'],
-                ['current_count', 'best_count', 'last_activity_date', 'updated_at'],
+                ['current_count', 'best_count', 'last_activity_date'],
             );
         }
     }
@@ -131,13 +126,11 @@ class UpdateStreaks
     {
         /** @var array<int, int> $milestones */
         $milestones = config('gamification.streaks.milestones');
-        $now = now();
 
         $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => $runs->flatMap(
             fn (array $run): Collection => collect($milestones)
                 ->filter(fn (int $points, int $days): bool => $days <= $run['length'])
                 ->map(fn (int $points, int $days): array => [
-                    'id' => strtolower((string) Str::ulid()),
                     'user_id' => $user->id,
                     'domain' => $domain,
                     'rule_key' => Streak::MILESTONE_RULE_KEY,
@@ -145,8 +138,6 @@ class UpdateStreaks
                     'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
                     'points' => $points,
                     'occurred_at' => $run['start']->copy()->addDays($days - 1),
-                    'created_at' => $now,
-                    'updated_at' => $now,
                 ])->values()
         ))->values();
 
@@ -157,10 +148,10 @@ class UpdateStreaks
             ->delete();
 
         $rows->chunk(500)->each(function (Collection $chunk): void {
-            DB::table('xp_entries')->upsert(
+            XpEntry::query()->upsert(
                 $chunk->all(),
                 ['user_id', 'rule_key', 'source_type', 'source_id'],
-                ['points', 'occurred_at', 'updated_at'],
+                ['points', 'occurred_at'],
             );
         });
     }
