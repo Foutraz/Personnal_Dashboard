@@ -6,6 +6,7 @@ use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Exceptions\InvalidBadgeThresholdException;
 use Functional\Gamification\Exceptions\MissingBadgeThresholdException;
 use Functional\Gamification\Models\Badge;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -121,6 +122,29 @@ class SyncBadgeCatalogueTest extends TestCase
         $this->expectExceptionMessage('todo_streak');
 
         $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_a_threshold_is_not_numeric(): void
+    {
+        config(['gamification.badges.thresholds.sport_distance' => ['bronze' => 100, 'silver' => 'a lot', 'gold' => 5000]]);
+
+        $this->expectExceptionObject(new InvalidBadgeThresholdException('sport_distance', BadgeTier::Silver, 'a lot'));
+
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+    }
+
+    #[Test]
+    public function it_writes_nothing_when_a_threshold_is_not_numeric(): void
+    {
+        config(['gamification.badges.thresholds.moto_distance' => ['bronze' => 100, 'silver' => 1000, 'gold' => ['many']]]);
+
+        $this->assertThrows(
+            fn () => $this->app->make(SyncBadgeCatalogue::class)->handle(),
+            InvalidBadgeThresholdException::class,
+        );
+
+        $this->assertSame(0, Badge::query()->count());
     }
 
     #[Test]

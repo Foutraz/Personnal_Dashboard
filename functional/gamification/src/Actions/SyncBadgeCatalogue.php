@@ -4,6 +4,7 @@ namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Enums\BadgeTier;
+use Functional\Gamification\Exceptions\InvalidBadgeThresholdException;
 use Functional\Gamification\Exceptions\MissingBadgeThresholdException;
 use Functional\Gamification\Models\Badge;
 use Illuminate\Support\Collection;
@@ -13,7 +14,7 @@ class SyncBadgeCatalogue
     /**
      * Upsert one badge per tagged rule and tier by key, leaving badges of rules that are no longer tagged untouched.
      *
-     * @throws MissingBadgeThresholdException
+     * @throws MissingBadgeThresholdException|InvalidBadgeThresholdException
      */
     public function handle(): void
     {
@@ -32,7 +33,7 @@ class SyncBadgeCatalogue
     /**
      * @return array{key: string, rule_key: string, domain: string, tier: string, threshold: int|float|string, xp_reward: int}
      *
-     * @throws MissingBadgeThresholdException
+     * @throws MissingBadgeThresholdException|InvalidBadgeThresholdException
      */
     private function row(BadgeRule $rule, BadgeTier $tier): array
     {
@@ -40,6 +41,10 @@ class SyncBadgeCatalogue
 
         if ($threshold === null) {
             throw new MissingBadgeThresholdException($rule->key(), $tier);
+        }
+
+        if (! is_numeric($threshold)) {
+            throw new InvalidBadgeThresholdException($rule->key(), $tier, $threshold);
         }
 
         return [
