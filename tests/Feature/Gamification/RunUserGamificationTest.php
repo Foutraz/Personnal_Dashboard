@@ -3,7 +3,10 @@
 namespace Tests\Feature\Gamification;
 
 use Functional\Exploration\Models\ExploredCell;
+use Functional\Gamification\Actions\AwardXp;
+use Functional\Gamification\Actions\EvaluateBadges;
 use Functional\Gamification\Actions\RefreshPlayerProfile;
+use Functional\Gamification\Actions\RunChallengeCycle;
 use Functional\Gamification\Actions\RunUserGamification;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Actions\TransitionChallenge;
@@ -20,10 +23,13 @@ use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Gamification\Notifications\ChallengeCompletedNotification;
 use Functional\Gamification\Notifications\ChallengesProposedNotification;
+use Functional\Gamification\Services\Dto\ChallengeCycleOutcome;
 use Functional\Gamification\Services\Dto\LevelTransition;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Moto\Models\MotoRide;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Events\NotificationSending;
@@ -380,7 +386,7 @@ class RunUserGamificationTest extends TestCase
     }
 
     #[Test]
-    public function it_runs_the_challenge_cycle_after_the_badges_and_before_the_profile_refresh(): void
+    public function it_has_the_challenge_rows_in_place_when_the_profile_is_refreshed(): void
     {
         $user = User::factory()->create();
         $this->sportHistory($user);
@@ -396,6 +402,38 @@ class RunUserGamificationTest extends TestCase
         $this->app->make(RunUserGamification::class)->handle($user);
 
         $this->assertSame([1], $profileChallengeCounts);
+    }
+
+    #[Test]
+    public function it_runs_the_challenge_cycle_after_the_badges_and_before_the_profile_refresh(): void
+    {
+        $user = User::factory()->create();
+        $order = [];
+        $this->mock(AwardXp::class)->shouldReceive('handle')->andReturnUsing(function () use (&$order): void {
+            $order[] = 'xp';
+        });
+        $this->mock(UpdateStreaks::class)->shouldReceive('handle')->andReturnUsing(function () use (&$order): void {
+            $order[] = 'streaks';
+        });
+        $this->mock(EvaluateBadges::class)->shouldReceive('handle')->andReturnUsing(function () use (&$order): EloquentCollection {
+            $order[] = 'badges';
+
+            return new EloquentCollection;
+        });
+        $this->mock(RunChallengeCycle::class)->shouldReceive('handle')->andReturnUsing(function () use (&$order): ChallengeCycleOutcome {
+            $order[] = 'challenges';
+
+            return new ChallengeCycleOutcome($this->app->make(GamificationCalendar::class)->currentWeek(), collect(), collect());
+        });
+        $this->mock(RefreshPlayerProfile::class)->shouldReceive('handle')->andReturnUsing(function () use (&$order): LevelTransition {
+            $order[] = 'profile';
+
+            return new LevelTransition(1, 1);
+        });
+
+        $this->app->make(RunUserGamification::class)->handle($user);
+
+        $this->assertSame(['xp', 'streaks', 'badges', 'challenges', 'profile'], $order);
     }
 
     #[Test]
