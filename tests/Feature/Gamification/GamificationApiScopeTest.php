@@ -173,4 +173,71 @@ class GamificationApiScopeTest extends TestCase
         $this->assertFalse($user->can('create', PlayerProfile::class));
         $this->assertFalse($user->can('create', Streak::class));
     }
+
+    #[Test]
+    public function it_rejects_creating_streaks_through_the_api(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/streaks/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'create',
+                    'attributes' => ['domain' => 'sport', 'current_count' => 999, 'best_count' => 999],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $this->assertSame(0, Streak::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_deleting_own_streaks_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $streak = Streak::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/streaks', [
+            'resources' => [$streak->id],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertTrue(Streak::query()->whereKey($streak->id)->exists());
+    }
+
+    #[Test]
+    public function it_rejects_updating_another_users_streak_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $foreign = Streak::factory()->create(['current_count' => 2, 'best_count' => 5]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/streaks/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $foreign->id,
+                    'attributes' => ['current_count' => 999],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(2, $foreign->fresh()->current_count);
+    }
+
+    #[Test]
+    public function it_ignores_deleting_another_users_streak_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $foreign = Streak::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/streaks', [
+            'resources' => [$foreign->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame([], $response->json('data'));
+        $this->assertTrue(Streak::query()->whereKey($foreign->id)->exists());
+    }
 }
