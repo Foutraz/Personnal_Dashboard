@@ -8,8 +8,8 @@ use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Gamification\Services\Dto\LevelTransition;
 use Functional\Users\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RunUserGamification
@@ -39,19 +39,23 @@ class RunUserGamification
         $awards = $rules->flatMap(fn (XpRule $rule) => $rule->awards($user, $windowStart));
         $ruleKeys = $rules->map(fn (XpRule $rule): string => $rule->key())->values();
 
-        /** @var Collection<int, BadgeAward> $newBadgeAwards */
-        $newBadgeAwards = collect();
-
-        $transition = DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart, &$newBadgeAwards): LevelTransition {
+        return DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart): LevelTransition {
             $this->awardXp->handle($user, $awards, $ruleKeys, $windowStart);
             $this->updateStreaks->handle($user);
             $newBadgeAwards = $this->evaluateBadges->handle($user);
+            DB::afterCommit(fn () => $this->notifyBadges($user, $newBadgeAwards));
 
             return $this->refreshPlayerProfile->handle($user);
         });
+    }
 
+    /**
+     * Notify the user of each newly awarded badge.
+     *
+     * @param  Collection<int, BadgeAward>  $newBadgeAwards
+     */
+    private function notifyBadges(User $user, Collection $newBadgeAwards): void
+    {
         $newBadgeAwards->each(fn (BadgeAward $award) => $user->notify(new BadgeAwardedNotification($award->badge)));
-
-        return $transition;
     }
 }
