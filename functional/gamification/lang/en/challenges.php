@@ -73,6 +73,6 @@ return [
         'completed_body' => 'You reached :target and earned :xp XP.',
     ],
     'errors' => [
-        'not_respondable' => 'This challenge can no longer be accepted or declined.',
+        'not_respondable' => 'This challenge can no longer be accepted or skipped.',
     ],
 ];

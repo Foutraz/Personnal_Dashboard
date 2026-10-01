@@ -103,7 +103,7 @@ class GamificationTranslationsTest extends TestCase
         $this->assertSame('Ce défi ne peut plus être accepté ni refusé.', __('gamification::challenges.errors.not_respondable'));
 
         $this->app->setLocale('en');
-        $this->assertSame('This challenge can no longer be accepted or declined.', __('gamification::challenges.errors.not_respondable'));
+        $this->assertSame('This challenge can no longer be accepted or skipped.', __('gamification::challenges.errors.not_respondable'));
     }
 
     #[Test]

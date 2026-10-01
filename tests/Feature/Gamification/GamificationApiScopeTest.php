@@ -3,8 +3,11 @@
 namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\ChallengeStatus;
+use Functional\Gamification\Enums\ChallengeTemplateKey;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
@@ -167,6 +170,7 @@ class GamificationApiScopeTest extends TestCase
         $this->postJson('/api/streaks/search', ['search' => []])->assertUnauthorized();
         $this->postJson('/api/badges/search', ['search' => []])->assertUnauthorized();
         $this->postJson('/api/badge-awards/search', ['search' => []])->assertUnauthorized();
+        $this->postJson('/api/challenges/search', ['search' => []])->assertUnauthorized();
     }
 
     #[Test]
@@ -179,6 +183,7 @@ class GamificationApiScopeTest extends TestCase
         $this->assertFalse($user->can('create', Streak::class));
         $this->assertFalse($user->can('create', Badge::class));
         $this->assertFalse($user->can('create', BadgeAward::class));
+        $this->assertFalse($user->can('create', Challenge::class));
     }
 
     #[Test]
@@ -707,5 +712,227 @@ class GamificationApiScopeTest extends TestCase
         $response->assertOk();
         $this->assertSame([], $response->json('data'));
         $this->assertTrue(BadgeAward::query()->whereKey($foreign->id)->exists());
+    }
+
+    #[Test]
+    public function it_only_returns_the_authenticated_users_challenges(): void
+    {
+        $user = User::factory()->create();
+        $ownChallenges = collect([
+            Challenge::factory()->create(['user_id' => $user->id]),
+            Challenge::factory()->forTemplate(ChallengeTemplateKey::SportActivityCount)->create(['user_id' => $user->id]),
+        ]);
+        Challenge::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $returnedIds = collect($response->json('data'))->pluck('id')->sort()->values()->all();
+        $this->assertSame($ownChallenges->pluck('id')->sort()->values()->all(), $returnedIds);
+    }
+
+    #[Test]
+    public function it_exposes_exactly_the_documented_fields_of_a_challenge(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->accepted()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $exposedFields = array_keys($response->json('data.0'));
+        $documentedFields = [
+            'id',
+            'week_key',
+            'template_key',
+            'domain',
+            'metric',
+            'starts_at',
+            'ends_at',
+            'baseline_value',
+            'target_value',
+            'current_value',
+            'xp_reward',
+            'status',
+            'accepted_at',
+            'resolved_at',
+            'created_at',
+            'updated_at',
+        ];
+        sort($exposedFields);
+        sort($documentedFields);
+        $this->assertSame($documentedFields, $exposedFields);
+        $this->assertSame($challenge->id, $response->json('data.0.id'));
+        $this->assertSame($challenge->week_key, $response->json('data.0.week_key'));
+        $this->assertSame($challenge->template_key->value, $response->json('data.0.template_key'));
+        $this->assertSame($challenge->domain->value, $response->json('data.0.domain'));
+        $this->assertSame($challenge->metric->value, $response->json('data.0.metric'));
+        $this->assertSame(ChallengeStatus::Accepted->value, $response->json('data.0.status'));
+        $this->assertSame($challenge->xp_reward, $response->json('data.0.xp_reward'));
+    }
+
+    #[Test]
+    public function it_does_not_expose_the_user_of_a_challenge(): void
+    {
+        $user = User::factory()->create();
+        Challenge::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $this->assertArrayNotHasKey('user_id', $response->json('data.0'));
+        $this->assertArrayNotHasKey('user', $response->json('data.0'));
+        $this->assertStringNotContainsString($user->id, $response->getContent());
+    }
+
+    #[Test]
+    public function it_orders_challenges_by_the_latest_week_first(): void
+    {
+        $user = User::factory()->create();
+        $currentWeek = Challenge::factory()->create(['user_id' => $user->id]);
+        $previousWeek = Challenge::factory()->create([
+            'user_id' => $user->id,
+            'week_key' => '2026-W39',
+            'starts_at' => $currentWeek->starts_at->copy()->subWeek(),
+            'ends_at' => $currentWeek->ends_at->copy()->subWeek(),
+        ]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame([$currentWeek->id, $previousWeek->id], collect($response->json('data'))->pluck('id')->all());
+    }
+
+    #[Test]
+    public function it_refuses_filtering_challenges_on_their_user(): void
+    {
+        $user = User::factory()->create();
+        $foreign = Challenge::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [
+                'filters' => [['field' => 'user_id', 'value' => $foreign->user_id]],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.filters.0.field');
+        $this->assertStringNotContainsString($foreign->id, $response->getContent());
+    }
+
+    #[Test]
+    public function it_refuses_including_the_user_relation_of_challenges(): void
+    {
+        $user = User::factory()->create();
+        Challenge::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/search', [
+            'search' => [
+                'includes' => [['relation' => 'user']],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('search.includes.0.relation');
+    }
+
+    #[Test]
+    public function it_rejects_creating_challenges_through_the_api(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'create',
+                    'attributes' => [
+                        'week_key' => '2026-W40',
+                        'template_key' => ChallengeTemplateKey::SportDistance->value,
+                        'xp_reward' => faker()->number(1000, 9000),
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate');
+        $this->assertSame(0, Challenge::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_updating_own_challenges_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->accepted()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $challenge->id,
+                    'attributes' => ['status' => ChallengeStatus::Completed->value],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+    }
+
+    #[Test]
+    public function it_rejects_deleting_own_challenges_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/challenges', [
+            'resources' => [$challenge->id],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertTrue(Challenge::query()->whereKey($challenge->id)->exists());
+    }
+
+    #[Test]
+    public function it_rejects_updating_another_users_challenge_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $foreign = Challenge::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/challenges/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $foreign->id,
+                    'attributes' => ['status' => ChallengeStatus::Completed->value],
+                ],
+            ],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(ChallengeStatus::Proposed, $foreign->fresh()->status);
+    }
+
+    #[Test]
+    public function it_ignores_deleting_another_users_challenge_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $foreign = Challenge::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/challenges', [
+            'resources' => [$foreign->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame([], $response->json('data'));
+        $this->assertTrue(Challenge::query()->whereKey($foreign->id)->exists());
     }
 }
