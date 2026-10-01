@@ -57,7 +57,7 @@ return [
         'completed' => 'Famille complétée',
     ],
     'notification' => [
-        'title' => 'Nouveau badge',
+        'title' => 'Nouveau badge : :name (:tier)',
         'body' => 'Vous avez obtenu le badge :name (:tier) et gagné :xp XP.',
     ],
     'dashboard' => [

@@ -3,10 +3,13 @@
 namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Contracts\XpRule;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Gamification\Services\Dto\LevelTransition;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RunUserGamification
@@ -14,11 +17,12 @@ class RunUserGamification
     public function __construct(
         private AwardXp $awardXp,
         private UpdateStreaks $updateStreaks,
+        private EvaluateBadges $evaluateBadges,
         private RefreshPlayerProfile $refreshPlayerProfile,
     ) {}
 
     /**
-     * Run every tagged xp rule then the streaks in one transaction and refresh the profile once, widening to the full history when the ledger is empty.
+     * Run every tagged xp rule, the streaks and the badges in one transaction, refresh the profile once and notify the new badges after the commit.
      */
     public function handle(User $user, ?Carbon $since = null): LevelTransition
     {
@@ -32,11 +36,19 @@ class RunUserGamification
         $awards = $rules->flatMap(fn (XpRule $rule) => $rule->awards($user, $windowStart));
         $ruleKeys = $rules->map(fn (XpRule $rule): string => $rule->key())->values();
 
-        return DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart): LevelTransition {
+        /** @var Collection<int, BadgeAward> $newBadgeAwards */
+        $newBadgeAwards = collect();
+
+        $transition = DB::transaction(function () use ($user, $awards, $ruleKeys, $windowStart, &$newBadgeAwards): LevelTransition {
             $this->awardXp->handle($user, $awards, $ruleKeys, $windowStart);
             $this->updateStreaks->handle($user);
+            $newBadgeAwards = $this->evaluateBadges->handle($user);
 
             return $this->refreshPlayerProfile->handle($user);
         });
+
+        $newBadgeAwards->each(fn (BadgeAward $award) => $user->notify(new BadgeAwardedNotification($award->badge)));
+
+        return $transition;
     }
 }

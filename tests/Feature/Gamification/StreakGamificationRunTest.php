@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
@@ -72,7 +73,8 @@ class StreakGamificationRunTest extends TestCase
         ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
 
         $this->assertSame(['sport:7'], $this->milestones($user)->pluck('source_id')->all());
-        $expected = 14 * 60 + config('gamification.streaks.milestones.7');
+        $distanceCountAndStreakBadges = 3 * BadgeTier::Bronze->xpReward();
+        $expected = 14 * 60 + config('gamification.streaks.milestones.7') + $distanceCountAndStreakBadges;
         $this->assertSame($expected, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
     }
 

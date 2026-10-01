@@ -2,16 +2,21 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Actions\RefreshPlayerProfile;
 use Functional\Gamification\Actions\RunUserGamification;
 use Functional\Gamification\Actions\UpdateStreaks;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -35,7 +40,8 @@ class RunUserGamificationTest extends TestCase
 
         $this->app->make(RunUserGamification::class)->handle($user);
 
-        $expected = 7 * 60 + config('gamification.streaks.milestones.7');
+        $distanceAndStreakBadges = 2 * BadgeTier::Bronze->xpReward();
+        $expected = 7 * 60 + config('gamification.streaks.milestones.7') + $distanceAndStreakBadges;
         $this->assertSame($expected, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
     }
 
@@ -92,6 +98,81 @@ class RunUserGamificationTest extends TestCase
         );
 
         $this->assertSame($ledgerIds, XpEntry::query()->whereBelongsTo($user)->pluck('id')->sort()->values()->all());
+    }
+
+    #[Test]
+    public function it_notifies_each_new_badge_once_after_the_pass(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+        $run = $this->app->make(RunUserGamification::class);
+
+        $run->handle($user);
+        $run->handle($user);
+
+        Notification::assertSentToTimes($user, BadgeAwardedNotification::class, 1);
+        Notification::assertSentTo(
+            $user,
+            BadgeAwardedNotification::class,
+            fn (BadgeAwardedNotification $notification): bool => $notification->badge->key === 'sport_activity_count_bronze',
+        );
+    }
+
+    #[Test]
+    public function it_awards_the_streak_badge_from_the_projection_computed_in_the_same_pass(): void
+    {
+        $user = User::factory()->create();
+        $this->activitiesOver($user, 7);
+
+        $this->app->make(RunUserGamification::class)->handle($user);
+
+        $this->assertTrue(
+            BadgeAward::query()->whereBelongsTo($user)->whereHas('badge', fn ($query) => $query->where('key', 'sport_streak_bronze'))->exists(),
+        );
+    }
+
+    #[Test]
+    public function it_includes_the_badge_xp_in_the_refreshed_profile_in_the_same_pass(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        $this->app->make(RunUserGamification::class)->handle($user);
+
+        $ledgerSum = (int) XpEntry::query()->whereBelongsTo($user)->sum('points');
+        $this->assertSame(BadgeTier::Bronze->xpReward(), (int) XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->sum('points'));
+        $this->assertSame($ledgerSum, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_awards_no_badge_and_sends_no_notification_when_a_later_step_fails(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        $this->mock(RefreshPlayerProfile::class)
+            ->shouldReceive('handle')
+            ->andThrow(new QueryException('sqlite', 'insert into player_profiles', [], new PDOException('no such table: player_profiles')));
+
+        $this->assertThrows(
+            fn () => $this->app->make(RunUserGamification::class)->handle($user),
+            QueryException::class,
+        );
+
+        $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, XpEntry::query()->whereBelongsTo($user)->count());
+        Notification::assertNothingSent();
+    }
+
+    private function smallActivities(User $user, int $count): void
+    {
+        SportActivity::factory()->count($count)->create([
+            'user_id' => $user->id,
+            'distance' => 1000.0,
+            'started_at' => now()->subDays(2)->setTime(8, 0),
+        ]);
     }
 
     private function activitiesOver(User $user, int $days): void

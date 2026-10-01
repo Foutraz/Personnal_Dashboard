@@ -6,8 +6,11 @@ use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
@@ -89,7 +92,7 @@ class ProcessUserGamificationJobTest extends TestCase
         ProcessUserGamificationJob::dispatchSync($user->id);
 
         $position = Position::factory()->create(['user_id' => $user->id]);
-        InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'executed_at' => $month->copy()->addDays(5)]);
+        InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'quantity' => 1, 'unit_price' => 100, 'executed_at' => $month->copy()->addDays(5)]);
 
         ProcessUserGamificationJob::dispatchSync($user->id);
 
@@ -216,5 +219,79 @@ class ProcessUserGamificationJobTest extends TestCase
 
         $streak = Streak::query()->where('user_id', $user->id)->where('domain', GamificationDomain::Sport->value)->sole();
         $this->assertSame(2, $streak->current_count);
+    }
+
+    #[Test]
+    public function it_keeps_the_badge_xp_through_windowed_and_full_passes_and_totals_the_ledger(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $badgeEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->sole();
+        $this->assertSame(BadgeTier::Bronze->xpReward(), $badgeEntry->points);
+        $this->assertSame(1, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_keeps_the_badge_xp_after_a_full_recalculation_purge(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        XpEntry::query()->whereBelongsTo($user)->delete();
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(1, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->count());
+        $this->assertSame(1, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_stores_one_database_notification_with_the_translated_title_per_new_badge(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $notification = $user->notifications()->get()->sole();
+        $this->assertSame('Nouveau badge : Assiduité sportive (Bronze)', $notification->data['title']);
+        $this->assertSame('sport_activity_count_bronze', $notification->data['badge_key']);
+        $this->assertSame(BadgeTier::Bronze->xpReward(), $notification->data['xp_reward']);
+    }
+
+    #[Test]
+    public function it_awards_no_badge_to_a_user_without_data(): void
+    {
+        $user = User::factory()->create();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, $user->notifications()->count());
+        $this->assertSame(0, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
+    }
+
+    private function smallActivities(User $user, int $count): void
+    {
+        SportActivity::factory()->count($count)->create([
+            'user_id' => $user->id,
+            'distance' => 1000.0,
+            'started_at' => now()->subDays(2)->setTime(8, 0),
+        ]);
     }
 }
