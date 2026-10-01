@@ -56,9 +56,18 @@ class EvaluateBadges
             ])
             ->values();
 
+        if ($rows->isEmpty()) {
+            return new Collection;
+        }
+
         BadgeAward::query()->insertOrIgnore($rows->all());
 
-        return BadgeAward::query()->with('badge')->whereIn('id', $rows->pluck('id'))->get();
+        return BadgeAward::query()
+            ->with('badge')
+            ->whereIn('id', $rows->pluck('id'))
+            ->get()
+            ->sort(fn (BadgeAward $first, BadgeAward $second): int => [$first->badge->tier->rank(), $first->badge->key] <=> [$second->badge->tier->rank(), $second->badge->key])
+            ->values();
     }
 
     /**

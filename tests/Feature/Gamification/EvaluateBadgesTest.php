@@ -16,6 +16,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -94,6 +95,46 @@ class EvaluateBadgesTest extends TestCase
             collect(BadgeTier::cases())->sum(fn (BadgeTier $tier): int => $tier->xpReward()),
             (int) $this->badgeEntries($user)->sum('points'),
         );
+    }
+
+    #[Test]
+    public function it_returns_the_new_awards_ordered_by_tier_then_key(): void
+    {
+        config([
+            'gamification.badges.thresholds.sport_activity_count' => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
+            'gamification.badges.thresholds.sport_distance' => ['bronze' => 1, 'silver' => 2, 'gold' => 3],
+        ]);
+        $user = User::factory()->create();
+        $this->activities($user, 3);
+
+        $awards = $this->evaluate($user);
+
+        $this->assertSame(
+            [
+                'sport_activity_count_bronze',
+                'sport_distance_bronze',
+                'sport_activity_count_silver',
+                'sport_distance_silver',
+                'sport_activity_count_gold',
+                'sport_distance_gold',
+            ],
+            $awards->map(fn (BadgeAward $award): string => $award->badge->key)->all(),
+        );
+    }
+
+    #[Test]
+    public function it_skips_the_empty_re_read_of_the_awards_when_nothing_was_inserted(): void
+    {
+        $user = User::factory()->create();
+        $this->activities($user, 10);
+        $this->evaluate($user);
+        DB::enableQueryLog();
+
+        $awards = $this->app->make(EvaluateBadges::class)->handle($user);
+
+        $emptyReads = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_contains($query['query'], 'badge_awards') && str_contains($query['query'], '0 = 1'));
+        $this->assertTrue($awards->isEmpty());
+        $this->assertTrue($emptyReads->isEmpty());
     }
 
     #[Test]
