@@ -11,6 +11,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -18,6 +19,13 @@ use Tests\TestCase;
 class RunUserGamificationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(Carbon::parse('2026-07-10 12:00', 'Europe/Paris')->utc());
+    }
 
     #[Test]
     public function it_includes_the_milestone_points_in_the_refreshed_profile(): void
@@ -49,7 +57,6 @@ class RunUserGamificationTest extends TestCase
     #[Test]
     public function it_keeps_the_milestone_and_the_level_timestamp_across_a_windowed_rerun(): void
     {
-        $this->travelTo(now()->setDate(2026, 7, 10)->setTime(10, 0));
         $user = User::factory()->create();
         $this->activitiesOver($user, 8);
         $run = $this->app->make(RunUserGamification::class);

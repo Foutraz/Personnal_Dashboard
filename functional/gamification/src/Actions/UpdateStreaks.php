@@ -27,7 +27,7 @@ class UpdateStreaks
     }
 
     /**
-     * Group the distinct non-milestone ledger days by domain, sorted ascending.
+     * Group the distinct non-milestone ledger days, bucketed in the gamification timezone, by domain and sorted ascending.
      *
      * @return Collection<string, Collection<int, string>>
      */
@@ -36,10 +36,15 @@ class UpdateStreaks
         return XpEntry::query()
             ->whereBelongsTo($user)
             ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
-            ->selectRaw('DISTINCT domain, DATE(occurred_at) as day')
-            ->get()
+            ->distinct()
+            ->get(['domain', 'occurred_at'])
+            ->toBase()
             ->groupBy(fn (XpEntry $entry): string => $entry->domain->value)
-            ->map(fn (Collection $entries): Collection => $entries->map(fn (XpEntry $entry): string => (string) $entry->getAttribute('day'))->sort()->values());
+            ->map(fn (Collection $entries): Collection => $entries
+                ->map(fn (XpEntry $entry): string => $this->calendar->dayOf($entry->occurred_at))
+                ->unique()
+                ->sort()
+                ->values());
     }
 
     /**

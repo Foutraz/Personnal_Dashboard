@@ -10,6 +10,7 @@ use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Services\Dto\StreakCard;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,6 +19,13 @@ use Tests\TestCase;
 class PlayerProfilePageTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(Carbon::parse('2026-07-10 12:00', 'Europe/Paris')->utc());
+    }
 
     #[Test]
     public function it_renders_the_player_profile_for_the_authenticated_user(): void

@@ -12,12 +12,20 @@ use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class UpdateStreaksTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->travelTo(Carbon::parse('2026-07-10 12:00', 'Europe/Paris')->utc());
+    }
 
     #[Test]
     public function it_builds_a_streak_from_consecutive_active_days(): void
@@ -287,6 +295,60 @@ class UpdateStreaksTest extends TestCase
         $this->app->make(UpdateStreaks::class)->handle($user);
 
         $this->assertSame(['sport:7', 'todo:7'], $this->milestones($user)->pluck('source_id')->sort()->values()->all());
+    }
+
+    #[Test]
+    public function it_buckets_an_activity_at_half_past_one_in_paris_on_the_paris_day(): void
+    {
+        $user = User::factory()->create();
+        $this->entryAt($user, '2026-07-09 12:00');
+        $this->entryAt($user, '2026-07-10 01:30');
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $streak = Streak::query()->whereBelongsTo($user)->sole();
+        $this->assertSame(2, $streak->current_count);
+        $this->assertSame('2026-07-10', $streak->last_activity_date->toDateString());
+    }
+
+    #[Test]
+    public function it_breaks_the_streak_once_the_paris_day_after_yesterday_has_started(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-11 00:30', 'Europe/Paris')->utc());
+        $user = User::factory()->create();
+        $this->entryAt($user, '2026-07-08 18:00');
+        $this->entryAt($user, '2026-07-09 18:00');
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $streak = Streak::query()->whereBelongsTo($user)->sole();
+        $this->assertSame(0, $streak->current_count);
+        $this->assertSame(2, $streak->best_count);
+    }
+
+    #[Test]
+    public function it_follows_the_configured_gamification_timezone(): void
+    {
+        config(['gamification.timezone' => 'UTC']);
+        $user = User::factory()->create();
+        $this->entryAt($user, '2026-07-09 12:00');
+        $this->entryAt($user, '2026-07-10 01:30');
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $streak = Streak::query()->whereBelongsTo($user)->sole();
+        $this->assertSame(1, $streak->current_count);
+        $this->assertSame('2026-07-09', $streak->last_activity_date->toDateString());
+    }
+
+    private function entryAt(User $user, string $parisTime): XpEntry
+    {
+        return XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Sport,
+            'points' => 10,
+            'occurred_at' => Carbon::parse($parisTime, 'Europe/Paris')->utc(),
+        ]);
     }
 
     /**
