@@ -7,13 +7,13 @@ use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
-use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 
 class EvaluateBadges
 {
+    public function __construct(private ReconvergeBonusXp $reconvergeBonusXp) {}
+
     /**
      * Award the badges of the already synced catalogue whose threshold the tagged rules now reach, reconverge the badge ledger entries and return the new awards.
      *
@@ -75,33 +75,20 @@ class EvaluateBadges
      */
     private function reconvergeLedger(User $user): void
     {
-        $rows = BadgeAward::query()
+        $entries = BadgeAward::query()
             ->with('badge')
             ->whereBelongsTo($user)
             ->get()
             ->map(fn (BadgeAward $award): array => [
-                'user_id' => $user->id,
                 'domain' => $award->badge->domain->value,
-                'rule_key' => XpRuleKey::BadgeAward->value,
                 'source_type' => XpSourceType::Badge->value,
                 'source_id' => $award->badge->key,
                 'points' => $award->badge->xp_reward,
                 'occurred_at' => $award->awarded_at,
             ])
-            ->values();
+            ->values()
+            ->all();
 
-        XpEntry::query()
-            ->whereBelongsTo($user)
-            ->where('rule_key', XpRuleKey::BadgeAward->value)
-            ->whereNotIn('source_id', $rows->pluck('source_id'))
-            ->delete();
-
-        $rows->chunk(500)->each(function (SupportCollection $chunk): void {
-            XpEntry::query()->upsert(
-                $chunk->all(),
-                ['user_id', 'rule_key', 'source_type', 'source_id'],
-                ['domain', 'points', 'occurred_at'],
-            );
-        });
+        $this->reconvergeBonusXp->handle($user, XpRuleKey::BadgeAward, $entries, ['domain', 'points', 'occurred_at']);
     }
 }
