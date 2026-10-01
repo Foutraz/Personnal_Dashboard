@@ -51,7 +51,9 @@ multi-semaines, badges « défis réussis » et digest de notifications (G6), d�
 Réglages globaux (config `gamification.challenges`) : `history_weeks` = 4, `min_active_weeks` = 2,
 `stretch_ratio` = 0,10, `closing_grace_hours` = 48, `xp_reward` = 50. Chaque valeur est validée à la lecture
 (exceptions nommées `InvalidChallengeConfigException`, `MissingChallengeTemplateConfigException`) ;
-`xp_reward` est borné à 65 535 car `xp_entries.points` est un `unsignedSmallInteger`.
+`history_weeks` est borné à 1..52 (il fixe le nombre de requêtes de l'historique), `min_active_weeks` à
+1..`history_weeks`, `closing_grace_hours` à 0..168 et `xp_reward` à 1..65 535 car `xp_entries.points` est un
+`unsignedSmallInteger`.
 
 ## 4. Semaine de jeu et calcul de la cible
 
