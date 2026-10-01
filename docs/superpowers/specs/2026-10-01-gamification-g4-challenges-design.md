@@ -306,13 +306,24 @@ borne ce qu'un joueur peut extraire :
 - **Cible issue de son propre historique** : la médiane absorbe une semaine aberrante (vraie ou fausse) dans un
   sens comme dans l'autre ; le plancher empêche une cible triviale obtenue en levant le pied plusieurs semaines
   (« sandbagging ») ; le plafond borne une cible absurde issue d'une donnée erronée.
-- **Éligibilité** : 2 semaines actives sur 4, pas de défi sur un domaine découvert la veille.
+- **Éligibilité** : 2 semaines actives sur 4, mesurées sur la date déclarée des données (`started_at`,
+  `first_seen_at`). Faille connue : en moto et en exploration ces dates sont saisissables par l'API et
+  antidatables, donc l'éligibilité n'empêche pas un défi sur un domaine découvert la veille ; antidater, valider
+  le défi puis supprimer les preuves garde l'XP du défi, soit au plus 50 XP par domaine et par semaine et
+  150 XP par semaine.
 - **Récompense fixe et plafonnée** : un défi par domaine et par semaine, 50 XP chacun, donc 150 XP au plus par
   semaine, indépendamment du volume ; l'échec est gratuit, donc accepter tôt domine et attendre d'avoir atteint
   la cible ne rapporte rien de plus.
 - **Ensemble figé** : passer un défi n'en propose pas un plus facile ; régénérer ne relance pas la rotation.
 - **Réussite définitive** : créer une fausse sortie, valider le défi puis la supprimer garde 50 XP (l'XP de base
   de la sortie disparaît avec elle). Risque accepté, borné par le plafond hebdomadaire.
+
+Durcissement à planifier avant G5 (modules moto et exploration, hors périmètre de G4) :
+
+- `before_or_equal:now` sur `started_at` (sorties moto) et `first_seen_at` (cellules explorées) ;
+- historique tenant compte de `created_at` : une donnée créée après la semaine qu'elle prétend couvrir ne compte
+  pas comme activité de cette semaine ;
+- leaderboard excluant ou auditant les clés d'XP bonus.
 
 Pour G5 : l'XP de défi est la composante la plus équitable entre joueurs (cibles relatives à chacun, plafond
 commun), mais le leaderboard devra décider s'il agrège les clés bonus et traiter la confiance des sources
