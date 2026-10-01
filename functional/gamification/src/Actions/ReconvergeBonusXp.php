@@ -3,6 +3,7 @@
 namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Exceptions\NonBonusXpRuleKeyException;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Support\Collection;
@@ -16,9 +17,15 @@ class ReconvergeBonusXp
      *
      * @param  array<int, array<string, mixed>>  $entries
      * @param  list<string>  $refreshedColumns
+     *
+     * @throws NonBonusXpRuleKeyException
      */
     public function handle(User $user, XpRuleKey $ruleKey, array $entries, array $refreshedColumns): void
     {
+        if (! $ruleKey->isBonus()) {
+            throw NonBonusXpRuleKeyException::for($ruleKey);
+        }
+
         $entries = collect($entries);
 
         XpEntry::query()

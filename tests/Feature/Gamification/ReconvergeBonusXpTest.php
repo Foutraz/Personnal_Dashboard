@@ -6,10 +6,12 @@ use Functional\Gamification\Actions\ReconvergeBonusXp;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
+use Functional\Gamification\Exceptions\NonBonusXpRuleKeyException;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -92,6 +94,39 @@ class ReconvergeBonusXpTest extends TestCase
         $this->reconverge($user, XpRuleKey::BadgeAward, $entries);
 
         $this->assertSame(501, XpEntry::query()->whereBelongsTo($user)->count());
+    }
+
+    /**
+     * @return array<string, array{XpRuleKey}>
+     */
+    public static function nonBonusRuleKeys(): array
+    {
+        $nonBonusRuleKeys = array_filter(XpRuleKey::cases(), fn (XpRuleKey $ruleKey): bool => ! $ruleKey->isBonus());
+
+        return array_combine(
+            array_map(fn (XpRuleKey $ruleKey): string => $ruleKey->value, $nonBonusRuleKeys),
+            array_map(fn (XpRuleKey $ruleKey): array => [$ruleKey], $nonBonusRuleKeys),
+        );
+    }
+
+    #[Test]
+    #[DataProvider('nonBonusRuleKeys')]
+    public function it_refuses_a_rule_key_that_is_not_a_bonus_and_keeps_its_entries(XpRuleKey $ruleKey): void
+    {
+        $user = User::factory()->create();
+        $earned = $this->ledgerEntry($user, $ruleKey, 'earned-by-the-rule');
+
+        $this->assertThrows(fn () => $this->reconverge($user, $ruleKey, []), NonBonusXpRuleKeyException::class);
+
+        $this->assertTrue(XpEntry::query()->whereKey($earned->id)->exists());
+    }
+
+    #[Test]
+    public function it_names_the_refused_rule_key_in_the_exception(): void
+    {
+        $exception = NonBonusXpRuleKeyException::for(XpRuleKey::SportActivity);
+
+        $this->assertSame(XpRuleKey::SportActivity, $exception->ruleKey);
     }
 
     /**
