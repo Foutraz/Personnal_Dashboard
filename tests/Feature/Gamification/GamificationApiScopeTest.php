@@ -360,7 +360,7 @@ class GamificationApiScopeTest extends TestCase
                 [
                     'operation' => 'create',
                     'attributes' => [
-                        'key' => faker()->unique()->words(2),
+                        'key' => faker()->words(2),
                         'rule_key' => 'sport_distance',
                         'domain' => 'sport',
                         'tier' => 'gold',
@@ -372,6 +372,7 @@ class GamificationApiScopeTest extends TestCase
         ]);
 
         $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate');
         $this->assertSame(0, Badge::query()->count());
     }
 
@@ -511,6 +512,7 @@ class GamificationApiScopeTest extends TestCase
         ]);
 
         $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate');
         $this->assertSame(0, BadgeAward::query()->count());
     }
 
