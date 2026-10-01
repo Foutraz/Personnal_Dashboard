@@ -26,7 +26,7 @@ interface BadgeRule
     public function unit(): BadgeUnit;
 
     /**
-     * Measure the user's progress with a single scoped aggregation.
+     * Measure the user's progress, aggregating in the database when possible and loading rows where the rule needs timezone day buckets or the finance capital calculator.
      */
     public function measure(User $user): float;
 }
