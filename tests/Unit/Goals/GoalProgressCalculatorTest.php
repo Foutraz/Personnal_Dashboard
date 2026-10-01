@@ -386,6 +386,33 @@ class GoalProgressCalculatorTest extends TestCase
         $this->assertSame(4.0, $measured);
     }
 
+    /**
+     * @return array<string, array{GoalMetric}>
+     */
+    public static function everyMetric(): array
+    {
+        return array_combine(
+            array_map(fn (GoalMetric $metric): string => $metric->value, GoalMetric::cases()),
+            array_map(fn (GoalMetric $metric): array => [$metric], GoalMetric::cases()),
+        );
+    }
+
+    #[Test]
+    #[DataProvider('everyMetric')]
+    public function it_resolves_the_current_value_of_every_metric_for_an_account_without_data(GoalMetric $metric): void
+    {
+        $goal = Goal::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => $metric->type(),
+            'metric' => $metric,
+            'starts_at' => Carbon::parse('2026-09-27 22:00:00', 'UTC'),
+            'deadline' => Carbon::parse('2026-10-04 21:59:59', 'UTC'),
+            'manual_current_value' => null,
+        ]);
+
+        $this->assertSame(0.0, $this->calculator->currentValue($goal));
+    }
+
     #[Test]
     public function it_refuses_to_measure_a_metric_that_has_no_period(): void
     {

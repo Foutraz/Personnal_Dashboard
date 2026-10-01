@@ -58,7 +58,14 @@ class GoalProgressCalculator
             GoalMetric::FinancePortfolioValue => $this->performance->globalPerformance($this->financePositions($goal->user_id))->currentValue,
             GoalMetric::Manual => (float) ($goal->manual_current_value ?? 0),
             GoalMetric::TodoCompletionRate => $this->taskCompletion->completionRate($this->tasks($goal->user_id)),
-            default => $this->measure($goal->metric, $goal->user_id, $goal->starts_at, $goal->deadline),
+            GoalMetric::SportDistance,
+            GoalMetric::SportElevation,
+            GoalMetric::SportActivityCount,
+            GoalMetric::SportMovingTime,
+            GoalMetric::FinanceInvestedCapital,
+            GoalMetric::MotoDistance,
+            GoalMetric::MotoRideCount,
+            GoalMetric::ExplorationCells => $this->measure($goal->metric, $goal->user_id, $goal->starts_at, $goal->deadline),
         };
     }
 
