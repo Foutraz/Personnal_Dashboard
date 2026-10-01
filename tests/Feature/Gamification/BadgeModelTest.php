@@ -6,9 +6,11 @@ use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Users\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
@@ -101,13 +103,29 @@ class BadgeModelTest extends TestCase
     }
 
     #[Test]
-    public function it_deletes_the_awards_but_keeps_the_catalogue_when_the_user_is_deleted(): void
+    public function it_deletes_the_awards_and_badge_notifications_but_keeps_the_catalogue_when_the_user_is_deleted(): void
     {
         $award = BadgeAward::factory()->create();
+        $user = $award->user;
+        $user->notify(new BadgeAwardedNotification($award->badge));
+        $this->assertSame(1, DatabaseNotification::query()->count());
+
+        $user->delete();
+
+        $this->assertSame(0, BadgeAward::query()->count());
+        $this->assertSame(0, DatabaseNotification::query()->count());
+        $this->assertTrue(Badge::query()->whereKey($award->badge_id)->exists());
+    }
+
+    #[Test]
+    public function it_keeps_the_badge_notifications_of_the_other_users_when_a_user_is_deleted(): void
+    {
+        $award = BadgeAward::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherUser->notify(new BadgeAwardedNotification($award->badge));
 
         $award->user->delete();
 
-        $this->assertSame(0, BadgeAward::query()->count());
-        $this->assertTrue(Badge::query()->whereKey($award->badge_id)->exists());
+        $this->assertSame(1, DatabaseNotification::query()->whereMorphedTo('notifiable', $otherUser)->count());
     }
 }
