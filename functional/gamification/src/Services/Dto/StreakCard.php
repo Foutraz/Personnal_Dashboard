@@ -27,6 +27,9 @@ final readonly class StreakCard
         );
     }
 
+    /**
+     * Get the Tailwind text class of the current count, muted once the streak is dead.
+     */
     public function countClass(): string
     {
         return $this->isAlive ? $this->domain->textClass() : 'text-muted';
