@@ -20,6 +20,7 @@
 
 ## Révisions post-revue (PR #33)
 
+- **Passage atomique.** `RunUserGamification` ouvre une seule transaction autour de `AwardXp` puis `UpdateStreaks` et rafraîchit le profil une seule fois à la fin ; `AwardXp::purgeWindow` ne supprime plus les entrées `streak_milestone`. Remplace la note de la Task 5 (purge des milestones « voulue ») : elle faisait perdre l'XP du palier si la seconde transaction échouait et réécrivait `level_reached_at`.
 - **Palier attribué une seule fois (décision produit).** Un bonus de palier (7/30/100 jours) est gagné une seule fois par user, par domaine et par palier : jamais réattribué après une rupture, jamais retiré par une sync tardive qui fusionne deux séries. Clé `source_id = "{domain}:{days}"`, `occurred_at` = jour où la première série atteint le palier ; le bonus ne disparaît que si plus aucune série du ledger n'atteint le palier.
 - **Jours découpés dans le fuseau d'affichage.** Les jours actifs et le test « série vivante » (dernier jour actif = aujourd'hui ou hier) utilisent tous deux `config('gamification.timezone')` (défaut `Europe/Paris`, surcharge `GAMIFICATION_TIMEZONE`) via le service `GamificationCalendar`, et non plus `DATE(occurred_at)` en UTC côté base.
 - **Pas de série Finance.** La règle Finance n'écrit qu'une entrée par mois : une série quotidienne y serait toujours morte. `GamificationDomain::tracksStreaks()` exclut Finance du calcul.
