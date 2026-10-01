@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\UpdateStreaks;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
@@ -125,7 +126,7 @@ class UpdateStreaksTest extends TestCase
 
         $milestone = XpEntry::query()
             ->where('user_id', $user->id)
-            ->where('rule_key', Streak::MILESTONE_RULE_KEY)
+            ->where('rule_key', XpRuleKey::StreakMilestone->value)
             ->sole();
         $this->assertSame(config('gamification.streaks.milestones.7'), $milestone->points);
         $this->assertSame(GamificationDomain::Sport, $milestone->domain);
@@ -144,7 +145,7 @@ class UpdateStreaksTest extends TestCase
         $action->handle($user);
         $action->handle($user);
 
-        $this->assertSame(1, XpEntry::query()->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+        $this->assertSame(1, XpEntry::query()->where('rule_key', XpRuleKey::StreakMilestone->value)->count());
     }
 
     #[Test]
@@ -159,12 +160,12 @@ class UpdateStreaksTest extends TestCase
 
         XpEntry::query()
             ->where('user_id', $user->id)
-            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
+            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
             ->where('occurred_at', '>=', now()->subDays(3)->startOfDay())
             ->delete();
         $action->handle($user);
 
-        $this->assertSame(0, XpEntry::query()->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+        $this->assertSame(0, XpEntry::query()->where('rule_key', XpRuleKey::StreakMilestone->value)->count());
     }
 
     #[Test]
@@ -226,12 +227,12 @@ class UpdateStreaksTest extends TestCase
 
         XpEntry::query()
             ->where('user_id', $user->id)
-            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
+            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
             ->whereDate('occurred_at', now()->subDay()->toDateString())
             ->delete();
         $action->handle($user);
 
-        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', Streak::MILESTONE_RULE_KEY)->count());
+        $this->assertSame(0, XpEntry::query()->where('user_id', $user->id)->where('rule_key', XpRuleKey::StreakMilestone->value)->count());
         $streak = Streak::query()->where('user_id', $user->id)->sole();
         $this->assertSame(1, $streak->current_count);
         $this->assertSame(6, $streak->best_count);

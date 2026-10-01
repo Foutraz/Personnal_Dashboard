@@ -4,6 +4,7 @@ namespace Functional\Gamification\Xp\Rules;
 
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Health\Models\BodyMeasurement;
 use Functional\Users\Models\User;
@@ -17,7 +18,7 @@ class HealthMeasurementDayXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'health_measurement_day';
+        return XpRuleKey::HealthMeasurementDay->value;
     }
 
     /**

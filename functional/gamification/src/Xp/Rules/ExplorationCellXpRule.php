@@ -5,6 +5,7 @@ namespace Functional\Gamification\Xp\Rules;
 use Functional\Exploration\Models\ExploredCell;
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
@@ -17,7 +18,7 @@ class ExplorationCellXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'exploration_daily_cells';
+        return XpRuleKey::ExplorationDailyCells->value;
     }
 
     /**

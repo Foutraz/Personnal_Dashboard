@@ -7,6 +7,7 @@ use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
@@ -19,7 +20,7 @@ class FinanceMonthlyXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'finance_month';
+        return XpRuleKey::FinanceMonth->value;
     }
 
     /**

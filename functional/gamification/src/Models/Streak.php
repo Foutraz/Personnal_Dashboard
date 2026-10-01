@@ -29,8 +29,6 @@ class Streak extends Model
     /** @use HasFactory<StreakFactory> */
     use HasControl, HasFactory, HasUlids;
 
-    public const MILESTONE_RULE_KEY = 'streak_milestone';
-
     /**
      * The attributes that are mass assignable.
      *

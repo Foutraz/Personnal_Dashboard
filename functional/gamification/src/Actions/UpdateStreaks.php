@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Actions;
 
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Services\Dto\LevelTransition;
@@ -38,7 +39,7 @@ class UpdateStreaks
     {
         return XpEntry::query()
             ->where('user_id', $user->id)
-            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
+            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
             ->selectRaw('DISTINCT domain, DATE(occurred_at) as day')
             ->get()
             ->groupBy(fn (XpEntry $entry): string => $entry->domain->value)
@@ -133,7 +134,7 @@ class UpdateStreaks
                 ->map(fn (int $points, int $days): array => [
                     'user_id' => $user->id,
                     'domain' => $domain,
-                    'rule_key' => Streak::MILESTONE_RULE_KEY,
+                    'rule_key' => XpRuleKey::StreakMilestone->value,
                     'source_type' => Streak::class,
                     'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
                     'points' => $points,
@@ -143,7 +144,7 @@ class UpdateStreaks
 
         XpEntry::query()
             ->where('user_id', $user->id)
-            ->where('rule_key', Streak::MILESTONE_RULE_KEY)
+            ->where('rule_key', XpRuleKey::StreakMilestone->value)
             ->whereNotIn('source_id', $rows->pluck('source_id'))
             ->delete();
 
