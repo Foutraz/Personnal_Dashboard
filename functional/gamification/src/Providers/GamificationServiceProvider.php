@@ -4,6 +4,16 @@ namespace Functional\Gamification\Providers;
 
 use Functional\Exploration\Events\CoverageRebuilt;
 use Functional\Finance\Events\BankTransactionsSynced;
+use Functional\Gamification\Badges\Rules\ExplorationCellsBadgeRule;
+use Functional\Gamification\Badges\Rules\FinanceInvestedCapitalBadgeRule;
+use Functional\Gamification\Badges\Rules\HealthMeasurementDaysBadgeRule;
+use Functional\Gamification\Badges\Rules\HealthStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\MotoDistanceBadgeRule;
+use Functional\Gamification\Badges\Rules\SportActivityCountBadgeRule;
+use Functional\Gamification\Badges\Rules\SportDistanceBadgeRule;
+use Functional\Gamification\Badges\Rules\SportStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\TodoStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\TodoTasksCompletedBadgeRule;
 use Functional\Gamification\Console\BackfillGamification;
 use Functional\Gamification\Console\RecalculateGamification;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
@@ -80,6 +90,19 @@ class GamificationServiceProvider extends OsddServiceProvider
             TodoTaskCompletedXpRule::class,
             ExplorationCellXpRule::class,
         ], 'gamification.xp_rules');
+
+        $this->app->tag([
+            SportDistanceBadgeRule::class,
+            SportActivityCountBadgeRule::class,
+            SportStreakBadgeRule::class,
+            HealthMeasurementDaysBadgeRule::class,
+            HealthStreakBadgeRule::class,
+            FinanceInvestedCapitalBadgeRule::class,
+            MotoDistanceBadgeRule::class,
+            TodoTasksCompletedBadgeRule::class,
+            TodoStreakBadgeRule::class,
+            ExplorationCellsBadgeRule::class,
+        ], 'gamification.badge_rules');
 
         $this->app->tag(GamificationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
