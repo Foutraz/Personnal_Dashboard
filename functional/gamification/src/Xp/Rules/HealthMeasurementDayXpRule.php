@@ -4,6 +4,8 @@ namespace Functional\Gamification\Xp\Rules;
 
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Health\Models\BodyMeasurement;
 use Functional\Users\Models\User;
@@ -17,7 +19,7 @@ class HealthMeasurementDayXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'health_measurement_day';
+        return XpRuleKey::HealthMeasurementDay->value;
     }
 
     /**
@@ -45,7 +47,7 @@ class HealthMeasurementDayXpRule implements XpRule
             ->map(fn (Collection $measurements, string $day): XpAward => new XpAward(
                 domain: $this->domain(),
                 ruleKey: $this->key(),
-                sourceType: 'period',
+                sourceType: XpSourceType::Period->value,
                 sourceId: $day,
                 points: $config['measurement_day'],
                 occurredAt: Carbon::parse($day),

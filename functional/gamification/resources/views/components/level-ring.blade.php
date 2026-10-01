@@ -56,7 +56,7 @@
     </svg>
     <div class="absolute inset-0 grid place-items-center">
         <div class="text-center">
-            <p class="text-[0.6rem] font-medium uppercase tracking-[0.25em] text-faint">Niveau</p>
+            <p class="text-[0.6rem] font-medium uppercase tracking-[0.25em] text-faint">{{ __('gamification::player.level') }}</p>
             <p class="font-display text-4xl font-bold leading-none" style="color: {{ $stroke }};">{{ $level }}</p>
         </div>
     </div>

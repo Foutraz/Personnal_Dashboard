@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'title' => 'Player',
+    'eyebrow' => 'Player module — Gamification',
+    'headline_lead' => 'Your life,',
+    'headline_highlight' => 'converted into XP',
+    'intro' => 'Every sport activity, completed task, weigh-in, motorcycle ride, positive savings month and explored area feeds your progression. Compete against yourself.',
+    'level' => 'Level',
+    'xp_amount' => ':xp XP',
+    'xp_unit' => 'XP',
+    'remaining_lead' => 'Still',
+    'remaining_tail' => 'to reach level :level.',
+    'weekly_label' => 'XP this week',
+    'weekly_trend' => 'Last 7 days',
+    'monthly_label' => 'XP this month',
+    'monthly_trend' => 'Since the 1st of the month',
+    'streaks_title' => 'Streaks',
+    'streaks_subtitle' => 'Your consecutive days of activity per domain.',
+    'day_unit' => 'd',
+    'streak_alive' => 'Streak in progress',
+    'streak_best' => 'Best: :count',
+    'daily_title' => 'XP per day',
+    'daily_subtitle' => 'Your experience gains over the last :days days.',
+    'domains_title' => 'XP per domain',
+];

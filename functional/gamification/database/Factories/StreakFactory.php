@@ -4,6 +4,7 @@ namespace Functional\Gamification\Database\Factories;
 
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -30,10 +31,18 @@ class StreakFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'domain' => faker()->randomElement(GamificationDomain::cases()),
+            'domain' => faker()->randomElement(GamificationDomain::streakDomains()),
             'current_count' => $current,
             'best_count' => $current + faker()->number(0, 40),
-            'last_activity_date' => now()->subDays(faker()->number(0, 5))->toDateString(),
+            'last_activity_date' => app(GamificationCalendar::class)->today()->subDays(faker()->number(0, 1))->toDateString(),
         ];
+    }
+
+    public function broken(): static
+    {
+        return $this->state(fn (): array => [
+            'current_count' => 0,
+            'last_activity_date' => app(GamificationCalendar::class)->today()->subDays(faker()->number(2, 30))->toDateString(),
+        ]);
     }
 }

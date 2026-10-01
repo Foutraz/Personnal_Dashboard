@@ -7,6 +7,8 @@ use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
@@ -19,7 +21,7 @@ class FinanceMonthlyXpRule implements XpRule
      */
     public function key(): string
     {
-        return 'finance_month';
+        return XpRuleKey::FinanceMonth->value;
     }
 
     /**
@@ -62,7 +64,7 @@ class FinanceMonthlyXpRule implements XpRule
             ->map(fn (int|string $month): XpAward => new XpAward(
                 domain: $this->domain(),
                 ruleKey: $this->key(),
-                sourceType: 'period',
+                sourceType: XpSourceType::Period->value,
                 sourceId: (string) $month,
                 points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains((string) $month), $config),
                 occurredAt: Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfDay(),

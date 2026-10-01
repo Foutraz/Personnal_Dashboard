@@ -2,48 +2,51 @@
 
 namespace Functional\Gamification\Actions;
 
+use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
+use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
-use Functional\Gamification\Services\Dto\LevelTransition;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class UpdateStreaks
 {
-    public function __construct(private RefreshPlayerProfile $refreshPlayerProfile) {}
+    public function __construct(private GamificationCalendar $calendar) {}
 
     /**
-     * Recompute the user's streak projections from the ledger and refresh the profile.
+     * Run outside a transaction, a failure between the projection and milestone writes leaves them out of sync.
      */
-    public function handle(User $user): LevelTransition
+    public function handle(User $user): void
     {
-        return DB::transaction(function () use ($user): LevelTransition {
-            $runsByDomain = $this->activeDaysByDomain($user)->map(fn (Collection $days): Collection => $this->runs($days));
+        $runsByDomain = $this->activeDaysByDomain($user)->map(fn (Collection $days): Collection => $this->runs($days));
 
-            $this->syncProjections($user, $runsByDomain);
-            $this->syncMilestones($user, $runsByDomain);
-
-            return $this->refreshPlayerProfile->handle($user);
-        });
+        $this->syncProjections($user, $runsByDomain);
+        $this->syncMilestones($user, $runsByDomain);
     }
 
     /**
-     * Group the distinct non-milestone ledger days by domain, sorted ascending.
+     * Group the distinct non-milestone ledger days of the streak domains, bucketed in the gamification timezone, by domain and sorted ascending.
      *
      * @return Collection<string, Collection<int, string>>
      */
     private function activeDaysByDomain(User $user): Collection
     {
         return XpEntry::query()
-            ->where('user_id', $user->id)
-            ->where('rule_key', '!=', Streak::MILESTONE_RULE_KEY)
-            ->selectRaw('DISTINCT domain, DATE(occurred_at) as day')
-            ->get()
+            ->whereBelongsTo($user)
+            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
+            ->whereIn('domain', GamificationDomain::streakDomains())
+            ->distinct()
+            ->get(['domain', 'occurred_at'])
+            ->toBase()
             ->groupBy(fn (XpEntry $entry): string => $entry->domain->value)
-            ->map(fn (Collection $entries): Collection => $entries->map(fn (XpEntry $entry): string => (string) $entry->getAttribute('day'))->sort()->values());
+            ->map(fn (Collection $entries): Collection => $entries
+                ->map(fn (XpEntry $entry): string => $this->calendar->dayOf($entry->occurred_at))
+                ->unique()
+                ->sort()
+                ->values());
     }
 
     /**
@@ -89,41 +92,35 @@ class UpdateStreaks
     private function syncProjections(User $user, Collection $runsByDomain): void
     {
         Streak::query()
-            ->where('user_id', $user->id)
+            ->whereBelongsTo($user)
             ->whereNotIn('domain', $runsByDomain->keys())
             ->delete();
 
-        $now = now();
-        $threshold = $now->copy()->subDay()->toDateString();
-
-        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user, $now, $threshold): array {
+        $rows = $runsByDomain->map(function (Collection $runs, string $domain) use ($user): array {
             $last = $runs->last();
             $lastDay = $last['start']->copy()->addDays($last['length'] - 1);
-            $current = $lastDay->toDateString() >= $threshold ? $last['length'] : 0;
+            $current = $this->calendar->isStreakAlive($lastDay) ? $last['length'] : 0;
 
             return [
-                'id' => strtolower((string) Str::ulid()),
                 'user_id' => $user->id,
                 'domain' => $domain,
                 'current_count' => $current,
                 'best_count' => $runs->max('length'),
                 'last_activity_date' => $lastDay->toDateString(),
-                'created_at' => $now,
-                'updated_at' => $now,
             ];
         })->values();
 
         if ($rows->isNotEmpty()) {
-            DB::table('streaks')->upsert(
+            Streak::query()->upsert(
                 $rows->all(),
                 ['user_id', 'domain'],
-                ['current_count', 'best_count', 'last_activity_date', 'updated_at'],
+                ['current_count', 'best_count', 'last_activity_date'],
             );
         }
     }
 
     /**
-     * Upsert the reached milestone awards and drop the ones no run reaches anymore.
+     * Upsert one award per domain and reached threshold, dated on the first run reaching it, and drop the thresholds no run reaches anymore.
      *
      * @param  Collection<string, Collection<int, array{start: Carbon, length: int}>>  $runsByDomain
      */
@@ -131,37 +128,48 @@ class UpdateStreaks
     {
         /** @var array<int, int> $milestones */
         $milestones = config('gamification.streaks.milestones');
-        $now = now();
 
-        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => $runs->flatMap(
-            fn (array $run): Collection => collect($milestones)
-                ->filter(fn (int $points, int $days): bool => $days <= $run['length'])
-                ->map(fn (int $points, int $days): array => [
-                    'id' => strtolower((string) Str::ulid()),
-                    'user_id' => $user->id,
-                    'domain' => $domain,
-                    'rule_key' => Streak::MILESTONE_RULE_KEY,
-                    'source_type' => Streak::class,
-                    'source_id' => $domain.':'.$run['start']->toDateString().':'.$days,
-                    'points' => $points,
-                    'occurred_at' => $run['start']->copy()->addDays($days - 1),
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ])->values()
-        ))->values();
+        $rows = $runsByDomain->flatMap(fn (Collection $runs, string $domain): Collection => collect($milestones)
+            ->map(fn (int $points, int $days): ?array => $this->milestoneRow($user, $domain, $runs, $days, $points))
+            ->filter()
+            ->values()
+        )->values();
 
         XpEntry::query()
-            ->where('user_id', $user->id)
-            ->where('rule_key', Streak::MILESTONE_RULE_KEY)
+            ->whereBelongsTo($user)
+            ->where('rule_key', XpRuleKey::StreakMilestone->value)
             ->whereNotIn('source_id', $rows->pluck('source_id'))
             ->delete();
 
         $rows->chunk(500)->each(function (Collection $chunk): void {
-            DB::table('xp_entries')->upsert(
+            XpEntry::query()->upsert(
                 $chunk->all(),
                 ['user_id', 'rule_key', 'source_type', 'source_id'],
-                ['points', 'occurred_at', 'updated_at'],
+                ['points', 'occurred_at'],
             );
         });
+    }
+
+    /**
+     * @param  Collection<int, array{start: Carbon, length: int}>  $runs
+     * @return array<string, mixed>|null
+     */
+    private function milestoneRow(User $user, string $domain, Collection $runs, int $days, int $points): ?array
+    {
+        $firstReachingRun = $runs->first(fn (array $run): bool => $run['length'] >= $days);
+
+        if ($firstReachingRun === null) {
+            return null;
+        }
+
+        return [
+            'user_id' => $user->id,
+            'domain' => $domain,
+            'rule_key' => XpRuleKey::StreakMilestone->value,
+            'source_type' => XpSourceType::StreakMilestone->value,
+            'source_id' => "{$domain}:{$days}",
+            'points' => $points,
+            'occurred_at' => $firstReachingRun['start']->copy()->addDays($days - 1),
+        ];
     }
 }

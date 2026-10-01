@@ -16,14 +16,7 @@ enum GamificationDomain: string
      */
     public function label(): string
     {
-        return match ($this) {
-            self::Sport => 'Sport',
-            self::Health => 'Santé',
-            self::Finance => 'Finance',
-            self::Moto => 'Moto',
-            self::Todo => 'Tâches',
-            self::Exploration => 'Exploration',
-        };
+        return __("gamification::domains.{$this->value}");
     }
 
     /**
@@ -39,6 +32,29 @@ enum GamificationDomain: string
             self::Todo => 'lime',
             self::Exploration => 'violet',
         };
+    }
+
+    public function tracksStreaks(): bool
+    {
+        return $this !== self::Finance;
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function streakDomains(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $domain): bool => $domain->tracksStreaks()));
+    }
+
+    public function textClass(): string
+    {
+        return "text-{$this->color()}";
+    }
+
+    public function softBackgroundClass(): string
+    {
+        return "bg-{$this->color()}-soft";
     }
 
     /**
