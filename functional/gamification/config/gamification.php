@@ -42,4 +42,23 @@ return [
             100 => 400,
         ],
     ],
+    'badges' => [
+        'tier_xp' => [
+            'bronze' => 50,
+            'silver' => 150,
+            'gold' => 500,
+        ],
+        'thresholds' => [
+            'sport_distance' => ['bronze' => 100, 'silver' => 1000, 'gold' => 5000],
+            'sport_activity_count' => ['bronze' => 10, 'silver' => 100, 'gold' => 500],
+            'sport_streak' => ['bronze' => 7, 'silver' => 30, 'gold' => 100],
+            'health_measurement_days' => ['bronze' => 7, 'silver' => 60, 'gold' => 365],
+            'health_streak' => ['bronze' => 7, 'silver' => 30, 'gold' => 100],
+            'finance_invested_capital' => ['bronze' => 1000, 'silver' => 10000, 'gold' => 50000],
+            'moto_distance' => ['bronze' => 500, 'silver' => 5000, 'gold' => 20000],
+            'todo_tasks_completed' => ['bronze' => 25, 'silver' => 250, 'gold' => 1000],
+            'todo_streak' => ['bronze' => 7, 'silver' => 30, 'gold' => 100],
+            'exploration_cells' => ['bronze' => 100, 'silver' => 1000, 'gold' => 5000],
+        ],
+    ],
 ];

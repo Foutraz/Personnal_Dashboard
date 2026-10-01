@@ -2,8 +2,13 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
+use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Models\BadgeAward;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Users\Models\User;
@@ -76,7 +81,7 @@ class GamificationDashboardContributionTest extends TestCase
 
         $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
 
-        $this->assertCount(3, $summary->secondaryLines);
+        $this->assertCount(4, $summary->secondaryLines);
     }
 
     #[Test]
@@ -107,6 +112,7 @@ class GamificationDashboardContributionTest extends TestCase
     {
         $this->app->setLocale('en');
         $user = User::factory()->create();
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
         Streak::factory()->create([
             'user_id' => $user->id,
             'domain' => GamificationDomain::Todo,
@@ -120,5 +126,30 @@ class GamificationDashboardContributionTest extends TestCase
         $this->assertSame('lvl', $summary->metricUnit);
         $this->assertContains('0 XP in total', $summary->secondaryLines);
         $this->assertContains('Tasks streak: 9 d', $summary->secondaryLines);
+        $this->assertContains('Badges: 0 / 30', $summary->secondaryLines);
+    }
+
+    #[Test]
+    public function it_shows_the_earned_and_total_badges_on_the_summary(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze))->sole())->create();
+
+        $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
+
+        $this->assertContains('Badges : 1 / 30', $summary->secondaryLines);
+    }
+
+    #[Test]
+    public function it_shows_zero_of_zero_badges_with_an_empty_catalogue(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+
+        $summary = $this->app->make(GamificationDashboardContribution::class)->dashboardSummary($user);
+
+        $this->assertContains('Badges : 0 / 0', $summary->secondaryLines);
     }
 }

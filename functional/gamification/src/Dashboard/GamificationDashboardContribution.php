@@ -4,6 +4,7 @@ namespace Functional\Gamification\Dashboard;
 
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\BadgeShowcase;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
@@ -22,10 +23,11 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
         private LevelCurve $levelCurve,
         private XpLedger $xpLedger,
         private GamificationCalendar $calendar,
+        private BadgeShowcase $badgeShowcase,
     ) {}
 
     /**
-     * Summarise the user's player level and experience.
+     * Summarise the user's player level, experience, badges and hottest streak.
      */
     public function dashboardSummary(Authenticatable $user): DashboardSummary
     {
@@ -47,6 +49,10 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             __('gamification::dashboard.total_xp', ['xp' => number_format($totalXp, 0, ',', ' ')]),
             __('gamification::dashboard.remaining_xp', ['xp' => number_format($remaining, 0, ',', ' '), 'level' => $level + 1]),
             __('gamification::dashboard.monthly_xp', ['xp' => number_format($monthlyXp, 0, ',', ' ')]),
+            __('gamification::dashboard.badges', [
+                'earned' => $this->badgeShowcase->earnedCount($user),
+                'total' => $this->badgeShowcase->totalCount(),
+            ]),
         ];
 
         if ($hottest !== null) {

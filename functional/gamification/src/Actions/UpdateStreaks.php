@@ -28,7 +28,7 @@ class UpdateStreaks
     }
 
     /**
-     * Group the distinct non-milestone ledger days of the streak domains, bucketed in the gamification timezone, by domain and sorted ascending.
+     * Group the distinct non-bonus ledger days of the streak domains, bucketed in the gamification timezone, by domain and sorted ascending.
      *
      * @return Collection<string, Collection<int, string>>
      */
@@ -36,7 +36,7 @@ class UpdateStreaks
     {
         return XpEntry::query()
             ->whereBelongsTo($user)
-            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
+            ->whereNotIn('rule_key', XpRuleKey::bonusKeys())
             ->whereIn('domain', GamificationDomain::streakDomains())
             ->distinct()
             ->get(['domain', 'occurred_at'])

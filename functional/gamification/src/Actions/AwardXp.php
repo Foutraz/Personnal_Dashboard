@@ -51,7 +51,7 @@ class AwardXp
 
         XpEntry::query()
             ->whereBelongsTo($user)
-            ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
+            ->whereNotIn('rule_key', XpRuleKey::bonusKeys())
             ->when($windowStart, fn ($query) => $query->where('occurred_at', '>=', $windowStart))
             ->delete();
     }

@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Database\Seeders;
 
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
@@ -11,10 +12,12 @@ use Illuminate\Database\Seeder;
 class GamificationSeeder extends Seeder
 {
     /**
-     * Seed a player profile with a spread of ledger entries and one live or broken streak per streak domain.
+     * Seed the badge catalogue then a player profile with a spread of ledger entries and one live or broken streak per streak domain.
      */
     public function run(): void
     {
+        app(SyncBadgeCatalogue::class)->handle();
+
         $profile = PlayerProfile::factory()->create();
 
         XpEntry::factory()->count(12)->create(['user_id' => $profile->user_id]);
