@@ -431,6 +431,19 @@ class ChallengeBoardTest extends TestCase
     }
 
     #[Test]
+    public function it_does_not_announce_a_pending_closing_on_a_proposed_challenge_of_last_week(): void
+    {
+        $user = User::factory()->create();
+        Challenge::factory()->for($user)->forWeek($this->lastWeek())->create();
+
+        Livewire::actingAs($user)
+            ->test(ChallengeBoard::class)
+            ->assertSee('Semaine dernière')
+            ->assertSee('Proposé')
+            ->assertDontSee('Clôture en attente des dernières synchronisations');
+    }
+
+    #[Test]
     public function it_hides_the_last_week_section_when_there_was_no_challenge(): void
     {
         $user = User::factory()->create();

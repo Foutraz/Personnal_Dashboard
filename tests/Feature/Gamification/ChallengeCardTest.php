@@ -229,6 +229,28 @@ class ChallengeCardTest extends TestCase
     }
 
     /**
+     * @return array<string, array{string, bool}>
+     */
+    public static function statusesWithTheirClosureWait(): array
+    {
+        return [
+            'proposed' => ['proposed', false],
+            'accepted' => ['accepted', true],
+            'completed' => ['completed', false],
+            'failed' => ['failed', false],
+            'declined' => ['declined', false],
+            'expired' => ['expired', false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('statusesWithTheirClosureWait')]
+    public function it_awaits_the_closure_only_while_an_accepted_challenge_is_unresolved(string $state, bool $isAwaitingClosure): void
+    {
+        $this->assertSame($isAwaitingClosure, $this->card([], state: $state)->isAwaitingClosure());
+    }
+
+    /**
      * @param  array<string, mixed>  $attributes
      */
     private function card(array $attributes = [], ChallengeTemplateKey $template = ChallengeTemplateKey::SportDistance, string $state = 'proposed'): ChallengeCard

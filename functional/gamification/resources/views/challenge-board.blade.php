@@ -40,13 +40,13 @@
                                 </div>
 
                                 <div class="flex items-center gap-3">
-                                    @if ($card->isClosed())
+                                    @if ($card->isAwaitingClosure())
+                                        <span class="text-xs text-faint">{{ __('gamification::challenges.board.grace_pending') }}</span>
+                                    @else
                                         @if ($card->hasEarnedReward())
                                             <span class="text-xs font-medium {{ $card->domain->textClass() }}">{{ $card->rewardLabel() }}</span>
                                         @endif
                                         <span class="shrink-0 rounded-full border px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider {{ $card->chipClass() }}">{{ $card->statusLabel() }}</span>
-                                    @else
-                                        <span class="text-xs text-faint">{{ __('gamification::challenges.board.grace_pending') }}</span>
                                     @endif
                                 </div>
                             </div>

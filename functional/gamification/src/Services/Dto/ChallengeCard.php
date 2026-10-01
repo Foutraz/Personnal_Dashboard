@@ -98,6 +98,11 @@ final readonly class ChallengeCard
         return ! in_array($this->status, ChallengeStatus::open(), true);
     }
 
+    public function isAwaitingClosure(): bool
+    {
+        return $this->status === ChallengeStatus::Accepted;
+    }
+
     public function name(): string
     {
         return $this->template->label();
