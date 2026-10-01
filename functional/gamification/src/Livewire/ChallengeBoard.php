@@ -15,11 +15,13 @@ use Functional\Gamification\Services\WeeklyChallenges;
 use Functional\Users\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Throwable;
 
 class ChallengeBoard extends Component
 {
+    #[Locked]
     public string $announcement = '';
 
     public function accept(string $challengeId, RespondToChallenge $respond): void

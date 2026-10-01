@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -286,6 +287,15 @@ class ChallengeBoardTest extends TestCase
 
         $this->assertSame(ChallengeStatus::Proposed, $challenge->fresh()->status);
         Queue::assertNothingPushed();
+    }
+
+    #[Test]
+    public function it_refuses_a_client_update_of_the_announcement(): void
+    {
+        $this->assertThrows(
+            fn () => Livewire::actingAs(User::factory()->create())->test(ChallengeBoard::class)->set('announcement', 'Défi accepté : injecté'),
+            CannotUpdateLockedPropertyException::class,
+        );
     }
 
     #[Test]
