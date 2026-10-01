@@ -31,7 +31,7 @@ class StreakFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'domain' => faker()->randomElement(GamificationDomain::cases()),
+            'domain' => faker()->randomElement(GamificationDomain::streakDomains()),
             'current_count' => $current,
             'best_count' => $current + faker()->number(0, 40),
             'last_activity_date' => app(GamificationCalendar::class)->today()->subDays(faker()->number(0, 1))->toDateString(),

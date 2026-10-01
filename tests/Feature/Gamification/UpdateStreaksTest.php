@@ -341,6 +341,21 @@ class UpdateStreaksTest extends TestCase
         $this->assertSame('2026-07-09', $streak->last_activity_date->toDateString());
     }
 
+    #[Test]
+    public function it_tracks_no_streak_for_the_monthly_finance_domain(): void
+    {
+        $user = User::factory()->create();
+        Streak::factory()->create(['user_id' => $user->id, 'domain' => GamificationDomain::Finance]);
+        foreach (range(6, 0) as $daysAgo) {
+            $this->entryOn($user, GamificationDomain::Finance, $daysAgo);
+        }
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $this->assertSame(0, Streak::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, $this->milestones($user)->count());
+    }
+
     private function entryAt(User $user, string $parisTime): XpEntry
     {
         return XpEntry::factory()->create([

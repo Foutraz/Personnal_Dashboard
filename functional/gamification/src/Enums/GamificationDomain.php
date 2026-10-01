@@ -41,6 +41,19 @@ enum GamificationDomain: string
         };
     }
 
+    public function tracksStreaks(): bool
+    {
+        return $this !== self::Finance;
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function streakDomains(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $domain): bool => $domain->tracksStreaks()));
+    }
+
     public function textClass(): string
     {
         return "text-{$this->color()}";

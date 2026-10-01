@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Actions;
 
+use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\Streak;
@@ -27,7 +28,7 @@ class UpdateStreaks
     }
 
     /**
-     * Group the distinct non-milestone ledger days, bucketed in the gamification timezone, by domain and sorted ascending.
+     * Group the distinct non-milestone ledger days of the streak domains, bucketed in the gamification timezone, by domain and sorted ascending.
      *
      * @return Collection<string, Collection<int, string>>
      */
@@ -36,6 +37,7 @@ class UpdateStreaks
         return XpEntry::query()
             ->whereBelongsTo($user)
             ->where('rule_key', '!=', XpRuleKey::StreakMilestone->value)
+            ->whereIn('domain', GamificationDomain::streakDomains())
             ->distinct()
             ->get(['domain', 'occurred_at'])
             ->toBase()

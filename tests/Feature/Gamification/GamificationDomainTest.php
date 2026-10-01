@@ -37,4 +37,11 @@ class GamificationDomainTest extends TestCase
             $this->assertNotSame('', $domain->icon());
         }
     }
+
+    #[Test]
+    public function it_tracks_streaks_on_every_daily_domain_but_finance(): void
+    {
+        $this->assertNotContains(GamificationDomain::Finance, GamificationDomain::streakDomains());
+        $this->assertCount(count(GamificationDomain::cases()) - 1, GamificationDomain::streakDomains());
+    }
 }
