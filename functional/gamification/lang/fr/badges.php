@@ -52,9 +52,17 @@ return [
         'title' => 'Badges',
         'counter' => ':earned / :total',
         'locked' => 'Verrouillé',
+        'earned' => 'Obtenu',
+        'medal' => ':tier : :state',
         'current' => 'Actuel : :value',
         'next' => 'Prochain palier : :threshold',
         'completed' => 'Famille complétée',
+    ],
+    'units' => [
+        'km' => ':value km',
+        'count' => ':value',
+        'days' => ':value j',
+        'eur' => ':value €',
     ],
     'notification' => [
         'title' => 'Nouveau badge : :name (:tier)',

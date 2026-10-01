@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Number;
 use Lomkit\Access\Controls\HasControl;
 
 /**
@@ -82,7 +83,7 @@ class Badge extends Model
     public function description(): string
     {
         return __("gamification::badges.rules.{$this->rule_key}.description", [
-            'threshold' => number_format((float) $this->threshold, 0, ',', ' '),
+            'threshold' => Number::format((float) $this->threshold, locale: app()->getLocale()),
         ]);
     }
 }

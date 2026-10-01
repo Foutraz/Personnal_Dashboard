@@ -16,6 +16,7 @@ use Functional\Gamification\Badges\Rules\TodoStreakBadgeRule;
 use Functional\Gamification\Badges\Rules\TodoTasksCompletedBadgeRule;
 use Functional\Gamification\Console\BackfillGamification;
 use Functional\Gamification\Console\RecalculateGamification;
+use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
 use Functional\Gamification\Database\Seeders\GamificationSeeder;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
@@ -108,7 +109,7 @@ class GamificationServiceProvider extends OsddServiceProvider
             TodoTasksCompletedBadgeRule::class,
             TodoStreakBadgeRule::class,
             ExplorationCellsBadgeRule::class,
-        ], 'gamification.badge_rules');
+        ], BadgeRule::TAG);
 
         $this->app->tag(GamificationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }

@@ -39,7 +39,7 @@ class EvaluateBadges
      */
     private function award(User $user): Collection
     {
-        $measures = collect(app()->tagged('gamification.badge_rules'))
+        $measures = collect(app()->tagged(BadgeRule::TAG))
             ->mapWithKeys(fn (BadgeRule $rule): array => [$rule->key() => $rule->measure($user)]);
 
         $ownedBadgeIds = BadgeAward::query()->whereBelongsTo($user)->pluck('badge_id');

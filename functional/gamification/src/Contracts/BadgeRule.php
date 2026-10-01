@@ -8,6 +8,8 @@ use Functional\Users\Models\User;
 
 interface BadgeRule
 {
+    public const TAG = 'gamification.badge_rules';
+
     /**
      * Get the badge family key matching the configured thresholds.
      */

@@ -5,6 +5,7 @@ namespace Functional\Gamification\Livewire;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\BadgeShowcase;
 use Functional\Gamification\Services\Dto\StreakCard;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
@@ -20,10 +21,10 @@ class PlayerProfilePage extends Component
     private const DAILY_SERIES_DAYS = 30;
 
     /**
-     * Render the player profile with level ring, domain totals and daily xp chart.
+     * Render the player profile with level ring, domain totals, daily xp chart and badge showcase.
      */
     #[Layout('layouts.app')]
-    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar): View
+    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar, BadgeShowcase $badgeShowcase): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -56,6 +57,9 @@ class PlayerProfilePage extends Component
                 ->orderByDesc('current_count')
                 ->get()
                 ->map(fn (Streak $streak): StreakCard => StreakCard::fromStreak($streak, $calendar->isStreakAlive($streak->last_activity_date))),
+            'badgeFamilies' => $badgeShowcase->families($user),
+            'badgesEarned' => $badgeShowcase->earnedCount($user),
+            'badgesTotal' => $badgeShowcase->totalCount(),
         ])->title(__('gamification::player.title'));
     }
 }

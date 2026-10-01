@@ -75,6 +75,32 @@ class BadgeModelTest extends TestCase
     }
 
     #[Test]
+    public function it_groups_the_description_threshold_digits_the_french_way(): void
+    {
+        $this->app->setLocale('fr');
+        $badge = Badge::factory()->create([
+            'rule_key' => 'sport_distance',
+            'tier' => BadgeTier::Silver,
+            'threshold' => 1000,
+        ]);
+
+        $this->assertSame("Cumulez 1\u{202F}000 km en activité sportive.", $badge->description());
+    }
+
+    #[Test]
+    public function it_groups_the_description_threshold_digits_the_english_way(): void
+    {
+        $this->app->setLocale('en');
+        $badge = Badge::factory()->create([
+            'rule_key' => 'sport_distance',
+            'tier' => BadgeTier::Silver,
+            'threshold' => 1000,
+        ]);
+
+        $this->assertSame('Cover 1,000 km in sport activities.', $badge->description());
+    }
+
+    #[Test]
     public function it_deletes_the_awards_but_keeps_the_catalogue_when_the_user_is_deleted(): void
     {
         $award = BadgeAward::factory()->create();

@@ -17,7 +17,7 @@ class SyncBadgeCatalogue
      */
     public function handle(): void
     {
-        $rows = collect(app()->tagged('gamification.badge_rules'))
+        $rows = collect(app()->tagged(BadgeRule::TAG))
             ->flatMap(fn (BadgeRule $rule): Collection => collect(BadgeTier::cases())
                 ->map(fn (BadgeTier $tier): array => $this->row($rule, $tier)))
             ->all();
