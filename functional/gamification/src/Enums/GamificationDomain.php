@@ -34,12 +34,17 @@ enum GamificationDomain: string
         };
     }
 
+    /**
+     * Determine whether the domain produces daily activity worth a streak.
+     */
     public function tracksStreaks(): bool
     {
         return $this !== self::Finance;
     }
 
     /**
+     * Get the domains that track daily streaks.
+     *
      * @return list<self>
      */
     public static function streakDomains(): array
@@ -47,14 +52,28 @@ enum GamificationDomain: string
         return array_values(array_filter(self::cases(), fn (self $domain): bool => $domain->tracksStreaks()));
     }
 
+    /**
+     * Get the Tailwind text class of the domain accent.
+     */
     public function textClass(): string
     {
-        return "text-{$this->color()}";
+        return match ($this) {
+            self::Sport => 'text-cyan',
+            self::Finance, self::Todo => 'text-lime',
+            self::Health, self::Moto, self::Exploration => 'text-violet',
+        };
     }
 
+    /**
+     * Get the Tailwind soft background class of the domain accent.
+     */
     public function softBackgroundClass(): string
     {
-        return "bg-{$this->color()}-soft";
+        return match ($this) {
+            self::Sport => 'bg-cyan-soft',
+            self::Finance, self::Todo => 'bg-lime-soft',
+            self::Health, self::Moto, self::Exploration => 'bg-violet-soft',
+        };
     }
 
     /**

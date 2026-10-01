@@ -6,6 +6,7 @@
 @source '../**/*.js';
 @source '../../technical/**/resources/**/*.blade.php';
 @source '../../functional/**/resources/**/*.blade.php';
+@source '../../functional/**/src/**/*.php';
 
 @theme {
     --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',

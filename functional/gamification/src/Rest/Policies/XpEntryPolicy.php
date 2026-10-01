@@ -17,6 +17,14 @@ class XpEntryPolicy extends ControlledPolicy
     protected string $control = XpEntryControl::class;
 
     /**
+     * Forbid creating ledger-derived records through the API.
+     */
+    public function create(Model $user): bool
+    {
+        return false;
+    }
+
+    /**
      * Forbid updating the append-only ledger through the API.
      */
     public function update(Model $user, Model $model): bool

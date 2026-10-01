@@ -9,6 +9,7 @@ use Functional\Gamification\Enums\XpSourceType;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -386,6 +387,20 @@ class UpdateStreaksTest extends TestCase
 
         $this->assertSame(0, Streak::query()->whereBelongsTo($user)->count());
         $this->assertSame(0, $this->milestones($user)->count());
+    }
+
+    #[Test]
+    public function it_falls_back_to_the_application_timezone_when_the_configured_one_is_invalid(): void
+    {
+        config(['gamification.timezone' => 'Mars/Olympus_Mons', 'app.timezone' => 'UTC']);
+        $user = User::factory()->create();
+        $this->entryAt($user, '2026-07-09 12:00');
+        $this->entryAt($user, '2026-07-10 01:30');
+
+        $this->app->make(UpdateStreaks::class)->handle($user);
+
+        $this->assertSame('UTC', $this->app->make(GamificationCalendar::class)->timezone());
+        $this->assertSame('2026-07-09', Streak::query()->whereBelongsTo($user)->sole()->last_activity_date->toDateString());
     }
 
     private function entryAt(User $user, string $parisTime): XpEntry

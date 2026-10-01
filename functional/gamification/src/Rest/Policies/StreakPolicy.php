@@ -17,6 +17,14 @@ class StreakPolicy extends ControlledPolicy
     protected string $control = StreakControl::class;
 
     /**
+     * Forbid creating ledger-derived records through the API.
+     */
+    public function create(Model $user): bool
+    {
+        return false;
+    }
+
+    /**
      * Forbid updating the recomputed projection through the API.
      */
     public function update(Model $user, Model $model): bool
