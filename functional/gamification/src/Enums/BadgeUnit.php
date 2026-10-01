@@ -16,10 +16,10 @@ enum BadgeUnit: string
     /**
      * Format a measure with the locale digit grouping and the unit of the family.
      */
-    public function format(float $value): string
+    public function format(float $measure): string
     {
         return __("gamification::badges.units.{$this->value}", [
-            'value' => Number::format($value, maxPrecision: self::MAX_DECIMALS, locale: app()->getLocale()),
+            'measure' => Number::format($measure, maxPrecision: self::MAX_DECIMALS, locale: app()->getLocale()),
         ]);
     }
 }

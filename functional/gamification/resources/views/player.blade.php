@@ -150,7 +150,7 @@
                         @endunless
 
                         <div class="mt-2 flex items-center justify-between gap-2 text-xs">
-                            <span class="text-muted">{{ __('gamification::badges.showcase.current', ['value' => $family->currentLabel()]) }}</span>
+                            <span class="text-muted">{{ __('gamification::badges.showcase.current', ['measure' => $family->currentLabel()]) }}</span>
                             @if ($family->isComplete())
                                 <span class="font-medium {{ $family->domain->textClass() }}">{{ __('gamification::badges.showcase.completed') }}</span>
                             @elseif ($family->isAwaitingUnlock())

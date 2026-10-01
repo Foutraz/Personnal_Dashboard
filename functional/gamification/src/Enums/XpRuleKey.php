@@ -27,8 +27,8 @@ enum XpRuleKey: string
     public static function bonusKeys(): array
     {
         return array_values(array_map(
-            fn (self $key): string => $key->value,
-            array_filter(self::cases(), fn (self $key): bool => $key->isBonus()),
+            fn (self $ruleKey): string => $ruleKey->value,
+            array_filter(self::cases(), fn (self $ruleKey): bool => $ruleKey->isBonus()),
         ));
     }
 }

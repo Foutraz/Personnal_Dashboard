@@ -39,4 +39,18 @@ class BadgeUnitTest extends TestCase
         $this->assertSame('150.4 km', BadgeUnit::Kilometers->format(150.37));
         $this->assertSame('150 km', BadgeUnit::Kilometers->format(150.0));
     }
+
+    #[Test]
+    public function it_exposes_the_measure_placeholder_in_every_unit_and_showcase_translation(): void
+    {
+        foreach (['fr', 'en'] as $locale) {
+            $this->app->setLocale($locale);
+
+            foreach (BadgeUnit::cases() as $unit) {
+                $this->assertStringContainsString('12', __("gamification::badges.units.{$unit->value}", ['measure' => '12']), "{$locale}.{$unit->value}");
+            }
+
+            $this->assertStringContainsString('12', __('gamification::badges.showcase.current', ['measure' => '12']), "{$locale}.current");
+        }
+    }
 }
