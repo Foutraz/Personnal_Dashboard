@@ -90,7 +90,25 @@ class ChallengeSettingsTest extends TestCase
     {
         config(['gamification.challenges.history_weeks' => 0]);
 
-        $this->expectExceptionObject(InvalidChallengeConfigException::integerAtLeast('gamification.challenges.history_weeks', 0, 1));
+        $this->expectExceptionObject(InvalidChallengeConfigException::integerBetween('gamification.challenges.history_weeks', 0, 1, 52));
+
+        ChallengeSettings::fromConfig();
+    }
+
+    #[Test]
+    public function it_accepts_the_longest_history_the_queries_can_afford(): void
+    {
+        config(['gamification.challenges.history_weeks' => 52]);
+
+        $this->assertSame(52, ChallengeSettings::fromConfig()->historyWeeks);
+    }
+
+    #[Test]
+    public function it_refuses_a_history_longer_than_a_year(): void
+    {
+        config(['gamification.challenges.history_weeks' => 53]);
+
+        $this->expectExceptionObject(InvalidChallengeConfigException::integerBetween('gamification.challenges.history_weeks', 53, 1, 52));
 
         ChallengeSettings::fromConfig();
     }
@@ -128,7 +146,25 @@ class ChallengeSettingsTest extends TestCase
     {
         config(['gamification.challenges.closing_grace_hours' => -1]);
 
-        $this->expectExceptionObject(InvalidChallengeConfigException::integerAtLeast('gamification.challenges.closing_grace_hours', -1, 0));
+        $this->expectExceptionObject(InvalidChallengeConfigException::integerBetween('gamification.challenges.closing_grace_hours', -1, 0, 168));
+
+        ChallengeSettings::fromConfig();
+    }
+
+    #[Test]
+    public function it_accepts_a_grace_of_one_week(): void
+    {
+        config(['gamification.challenges.closing_grace_hours' => 168]);
+
+        $this->assertSame(168, ChallengeSettings::fromConfig()->closingGraceHours);
+    }
+
+    #[Test]
+    public function it_refuses_a_grace_longer_than_one_week(): void
+    {
+        config(['gamification.challenges.closing_grace_hours' => 169]);
+
+        $this->expectExceptionObject(InvalidChallengeConfigException::integerBetween('gamification.challenges.closing_grace_hours', 169, 0, 168));
 
         ChallengeSettings::fromConfig();
     }
@@ -146,7 +182,7 @@ class ChallengeSettingsTest extends TestCase
     {
         config(['gamification.challenges.history_weeks' => null]);
 
-        $this->expectExceptionObject(InvalidChallengeConfigException::integerAtLeast('gamification.challenges.history_weeks', null, 1));
+        $this->expectExceptionObject(InvalidChallengeConfigException::integerBetween('gamification.challenges.history_weeks', null, 1, 52));
 
         ChallengeSettings::fromConfig();
     }

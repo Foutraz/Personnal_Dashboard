@@ -10,6 +10,10 @@ final readonly class ChallengeSettings
 
     private const MAX_XP_REWARD = 65535;
 
+    private const MAX_HISTORY_WEEKS = 52;
+
+    private const MAX_CLOSING_GRACE_HOURS = 168;
+
     public function __construct(
         public int $historyWeeks,
         public int $minActiveWeeks,
@@ -23,27 +27,15 @@ final readonly class ChallengeSettings
      */
     public static function fromConfig(): self
     {
-        $historyWeeks = self::integerAtLeast('history_weeks', 1);
+        $historyWeeks = self::integerBetween('history_weeks', 1, self::MAX_HISTORY_WEEKS);
 
         return new self(
             historyWeeks: $historyWeeks,
             minActiveWeeks: self::integerBetween('min_active_weeks', 1, $historyWeeks),
             stretchRatio: self::stretchRatio(),
-            closingGraceHours: self::integerAtLeast('closing_grace_hours', 0),
+            closingGraceHours: self::integerBetween('closing_grace_hours', 0, self::MAX_CLOSING_GRACE_HOURS),
             xpReward: self::integerBetween('xp_reward', 1, self::MAX_XP_REWARD),
         );
-    }
-
-    private static function integerAtLeast(string $setting, int $minimum): int
-    {
-        $configPath = self::CONFIG_PREFIX.".{$setting}";
-        $configured = config($configPath);
-
-        if (! is_int($configured) || $configured < $minimum) {
-            throw InvalidChallengeConfigException::integerAtLeast($configPath, $configured, $minimum);
-        }
-
-        return $configured;
     }
 
     private static function integerBetween(string $setting, int $minimum, int $maximum): int

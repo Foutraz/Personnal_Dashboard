@@ -23,11 +23,6 @@ class InvalidChallengeConfigException extends RuntimeException
         return new self($configPath, $configured, 'a number at least equal to the floor');
     }
 
-    public static function integerAtLeast(string $configPath, mixed $configured, int $minimum): self
-    {
-        return new self($configPath, $configured, "an integer of at least {$minimum}");
-    }
-
     public static function integerBetween(string $configPath, mixed $configured, int $minimum, int $maximum): self
     {
         return new self($configPath, $configured, "an integer between {$minimum} and {$maximum}");
