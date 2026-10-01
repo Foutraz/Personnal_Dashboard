@@ -6,7 +6,7 @@
 
     @if ($currentCards->isEmpty())
         <x-ui.glass-card padding="p-5" class="mt-4">
-            <p class="text-sm text-muted">{{ __('gamification::challenges.board.empty', ['weeks' => $historyWeeks]) }}</p>
+            <p class="text-sm text-muted">{{ trans_choice('gamification::challenges.board.empty', $historyWeeks, ['weeks' => $historyWeeks]) }}</p>
         </x-ui.glass-card>
     @else
         <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -139,7 +139,8 @@ class GamificationTranslationsTest extends TestCase
         $this->assertSame('Défi accepté : Distance sportive', __('gamification::challenges.board.accepted_announcement', ['name' => 'Distance sportive']));
         $this->assertSame('Défi passé : Distance sportive', __('gamification::challenges.board.declined_announcement', ['name' => 'Distance sportive']));
         $this->assertSame('Semaine dernière', __('gamification::challenges.board.previous_title'));
-        $this->assertSame('Aucun défi cette semaine. Les défis sont proposés chaque lundi à partir de vos 4 dernières semaines d\'activité.', __('gamification::challenges.board.empty', ['weeks' => 4]));
+        $this->assertSame('Aucun défi cette semaine. Les défis sont proposés chaque lundi à partir de vos 4 dernières semaines d\'activité.', trans_choice('gamification::challenges.board.empty', 4, ['weeks' => 4]));
+        $this->assertSame('Aucun défi cette semaine. Les défis sont proposés chaque lundi à partir de votre dernière semaine d\'activité.', trans_choice('gamification::challenges.board.empty', 1, ['weeks' => 1]));
     }
 
     #[Test]
@@ -151,7 +152,8 @@ class GamificationTranslationsTest extends TestCase
         $this->assertSame('Take on the challenge: Sport distance', __('gamification::challenges.board.accept_label', ['name' => 'Sport distance']));
         $this->assertSame('Skip the challenge: Sport distance', __('gamification::challenges.board.decline_label', ['name' => 'Sport distance']));
         $this->assertSame('Challenge accepted: Sport distance', __('gamification::challenges.board.accepted_announcement', ['name' => 'Sport distance']));
-        $this->assertSame('No challenges this week. Challenges are proposed every Monday from your last 6 weeks of activity.', __('gamification::challenges.board.empty', ['weeks' => 6]));
+        $this->assertSame('No challenges this week. Challenges are proposed every Monday from your last 6 weeks of activity.', trans_choice('gamification::challenges.board.empty', 6, ['weeks' => 6]));
+        $this->assertSame('No challenges this week. Challenges are proposed every Monday from your last week of activity.', trans_choice('gamification::challenges.board.empty', 1, ['weeks' => 1]));
     }
 
     #[Test]

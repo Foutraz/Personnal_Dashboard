@@ -62,7 +62,7 @@ return [
         'already_reached' => 'Target already reached: take on the challenge to validate it',
         'previous_title' => 'Last week',
         'grace_pending' => 'Closing is waiting for the latest syncs',
-        'empty' => 'No challenges this week. Challenges are proposed every Monday from your last :weeks weeks of activity.',
+        'empty' => '{1} No challenges this week. Challenges are proposed every Monday from your last week of activity.|[2,*] No challenges this week. Challenges are proposed every Monday from your last :weeks weeks of activity.',
         'accepted_announcement' => 'Challenge accepted: :name',
         'declined_announcement' => 'Challenge skipped: :name',
     ],

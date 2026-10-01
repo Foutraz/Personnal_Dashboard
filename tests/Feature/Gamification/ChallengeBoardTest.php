@@ -486,6 +486,29 @@ class ChallengeBoardTest extends TestCase
     }
 
     #[Test]
+    public function it_speaks_of_the_last_week_when_the_history_window_is_a_single_week(): void
+    {
+        config(['gamification.challenges.history_weeks' => 1, 'gamification.challenges.min_active_weeks' => 1]);
+
+        Livewire::actingAs(User::factory()->create())
+            ->test(ChallengeBoard::class)
+            ->assertSee('à partir de votre dernière semaine d\'activité')
+            ->assertDontSee('vos 1 dernières semaines');
+    }
+
+    #[Test]
+    public function it_speaks_of_the_last_week_in_english_when_the_history_window_is_a_single_week(): void
+    {
+        $this->app->setLocale('en');
+        config(['gamification.challenges.history_weeks' => 1, 'gamification.challenges.min_active_weeks' => 1]);
+
+        Livewire::actingAs(User::factory()->create())
+            ->test(ChallengeBoard::class)
+            ->assertSee('from your last week of activity')
+            ->assertDontSee('last 1 weeks');
+    }
+
+    #[Test]
     public function it_shows_the_empty_state_in_english(): void
     {
         $this->app->setLocale('en');
