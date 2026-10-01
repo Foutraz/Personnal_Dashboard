@@ -127,4 +127,23 @@ class PlayerProfilePageTest extends TestCase
             ->assertSee('Health')
             ->assertDontSee('gamification::');
     }
+
+    #[Test]
+    public function it_shows_a_zero_current_count_on_a_streak_that_is_no_longer_alive(): void
+    {
+        $user = User::factory()->create();
+        Streak::factory()->create([
+            'user_id' => $user->id,
+            'domain' => GamificationDomain::Sport,
+            'current_count' => 6,
+            'best_count' => 8,
+            'last_activity_date' => now()->subDays(3)->toDateString(),
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(PlayerProfilePage::class)
+            ->assertViewHas('streakCards', fn (Collection $cards): bool => $cards->sole()->currentCount === 0
+                && $cards->sole()->bestCount === 8
+                && ! $cards->sole()->isAlive);
+    }
 }

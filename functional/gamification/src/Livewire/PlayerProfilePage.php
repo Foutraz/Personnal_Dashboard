@@ -55,12 +55,7 @@ class PlayerProfilePage extends Component
                 ->whereBelongsTo($user)
                 ->orderByDesc('current_count')
                 ->get()
-                ->map(fn (Streak $streak): StreakCard => new StreakCard(
-                    domain: $streak->domain,
-                    currentCount: $streak->current_count,
-                    bestCount: $streak->best_count,
-                    isAlive: $calendar->isStreakAlive($streak->last_activity_date),
-                )),
+                ->map(fn (Streak $streak): StreakCard => StreakCard::fromStreak($streak, $calendar->isStreakAlive($streak->last_activity_date))),
         ])->title(__('gamification::player.title'));
     }
 }
