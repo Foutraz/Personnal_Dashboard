@@ -11,15 +11,19 @@ use Functional\Gamification\Exceptions\StaleChallengeStatusException;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Livewire\ChallengeBoard;
 use Functional\Gamification\Models\Challenge;
+use Functional\Gamification\Rest\Policies\ChallengePolicy;
 use Functional\Gamification\Services\Dto\ChallengeCard;
 use Functional\Gamification\Services\Dto\GamificationWeek;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Users\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
@@ -261,6 +265,30 @@ class ChallengeBoardTest extends TestCase
     }
 
     #[Test]
+    public function it_accepts_the_challenge_of_the_authenticated_user_over_http(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->for($user)->create();
+
+        $this->respondOverHttp($user, 'accept', $challenge->id)->assertOk();
+
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+    }
+
+    #[Test]
+    public function it_answers_forbidden_when_the_policy_refuses_the_response_of_an_owned_challenge(): void
+    {
+        Gate::policy(Challenge::class, RefusingChallengePolicy::class);
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->for($user)->create();
+
+        $this->respondOverHttp($user, 'accept', $challenge->id)->assertForbidden();
+
+        $this->assertSame(ChallengeStatus::Proposed, $challenge->fresh()->status);
+        Queue::assertNothingPushed();
+    }
+
+    #[Test]
     public function it_answers_not_found_when_accepting_the_challenge_of_another_user(): void
     {
         $challenge = Challenge::factory()->create();
@@ -334,7 +362,7 @@ class ChallengeBoardTest extends TestCase
     }
 
     #[Test]
-    public function it_turns_a_lost_race_into_a_conflict_without_announcing_anything(): void
+    public function it_turns_a_lost_race_into_an_unreported_conflict_without_announcing_anything(): void
     {
         $user = User::factory()->create();
         $challenge = Challenge::factory()->for($user)->create();
@@ -346,12 +374,15 @@ class ChallengeBoardTest extends TestCase
             }
         });
 
+        Exceptions::fake();
+
         Livewire::actingAs($user)
             ->test(ChallengeBoard::class)
             ->call('accept', $challenge->id)
             ->assertStatus(Response::HTTP_CONFLICT)
             ->assertSet('announcement', '');
 
+        Exceptions::assertNotReported(StaleChallengeStatusException::class);
         Queue::assertNothingPushed();
     }
 
@@ -594,5 +625,13 @@ class ChallengeBoardTest extends TestCase
     private function lastWeek(): GamificationWeek
     {
         return $this->app->make(GamificationCalendar::class)->currentWeek()->previous();
+    }
+}
+
+final class RefusingChallengePolicy extends ChallengePolicy
+{
+    public function respond(Model $user, Model $model): bool
+    {
+        return false;
     }
 }
