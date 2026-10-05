@@ -134,7 +134,7 @@
                                 <span>{{ $task->status->label() }}</span>
                                 @if ($task->due_at)
                                     <span aria-hidden="true">•</span>
-                                    <span>{{ $task->due_at->copy()->setTimezone($displayTimezone)->format('d/m/Y H:i') }}</span>
+                                    <span>{{ $task->due_at->inDisplayTimezone()->format('d/m/Y H:i') }}</span>
                                 @endif
                             </div>
                         </div>

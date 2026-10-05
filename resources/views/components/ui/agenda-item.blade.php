@@ -7,7 +7,7 @@
         'lime'   => ['text' => 'text-lime',    'bg' => 'bg-lime-soft',   'bar' => 'bg-lime'],
     ];
     $a = $accents[$item->accent] ?? $accents['cyan'];
-    $startsAt = $item->allDay ? $item->startsAt : app(\Technical\Application\Time\DisplayTimezone::class)->toDisplayTime($item->startsAt);
+    $startsAt = $item->allDay ? $item->startsAt : $item->startsAt->inDisplayTimezone();
 @endphp
 
 <a href="{{ $item->href ?? '#' }}" class="group glass glass-hover relative flex items-center gap-4 overflow-hidden p-4">

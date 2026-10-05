@@ -228,7 +228,6 @@ class MotoDashboard extends Component
             'condition' => $condition?->toArray(),
             'slots' => $slots,
             'rides' => $rides,
-            'displayTimezone' => $displayTimezone->name(),
             'stats' => [
                 'count' => $ridingStatsCalculator->rideCount($rides),
                 'distance' => $ridingStatsCalculator->totalDistance($rides),

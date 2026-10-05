@@ -235,9 +235,9 @@
                                 <span class="font-display text-lg font-bold">{{ $slot['score'] }}</span>
                             </div>
                             <p class="text-xs text-muted">
-                                {{ \Illuminate\Support\Carbon::parse($slot['starts_at'])->setTimezone($displayTimezone)->translatedFormat('D d M, H\h') }}
+                                {{ \Illuminate\Support\Carbon::parse($slot['starts_at'])->inDisplayTimezone()->translatedFormat('D d M, H\h') }}
                                 →
-                                {{ \Illuminate\Support\Carbon::parse($slot['ends_at'])->setTimezone($displayTimezone)->format('H\h') }}
+                                {{ \Illuminate\Support\Carbon::parse($slot['ends_at'])->inDisplayTimezone()->format('H\h') }}
                             </p>
                         </div>
                     @empty
@@ -299,7 +299,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium">{{ $ride->title }}</p>
                             <div class="mt-0.5 flex items-center gap-2 text-xs text-faint">
-                                <span>{{ $ride->started_at->copy()->setTimezone($displayTimezone)->translatedFormat('d/m/Y H\h') }}</span>
+                                <span>{{ $ride->started_at->inDisplayTimezone()->translatedFormat('d/m/Y H\h') }}</span>
                                 <span aria-hidden="true">•</span>
                                 <span>{{ number_format((int) round($ride->duration / 60)) }} min</span>
                                 @if ($ride->weather_label)

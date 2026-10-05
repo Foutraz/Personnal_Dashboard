@@ -160,11 +160,10 @@ class TodoBoard extends Component
      */
     #[Layout('layouts.app')]
     #[Title('To-Do')]
-    public function render(DisplayTimezone $displayTimezone): View
+    public function render(): View
     {
         return view('todo::todo', [
             'tasks' => $this->tasks(),
-            'displayTimezone' => $displayTimezone->name(),
             'priorities' => TaskPriority::cases(),
             'statuses' => TaskStatus::cases(),
         ]);
