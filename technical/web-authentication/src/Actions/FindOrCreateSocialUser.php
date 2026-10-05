@@ -56,6 +56,8 @@ class FindOrCreateSocialUser
     }
 
     /**
+     * Ensure Google itself vouches for the email of the signing-in identity.
+     *
      * @throws UnverifiedGoogleEmailException
      */
     private function assertEmailVerifiedByGoogle(SocialUser $socialUser): void
@@ -68,6 +70,8 @@ class FindOrCreateSocialUser
     }
 
     /**
+     * Ensure the matching account has not been soft-deleted.
+     *
      * @throws DeletedAccountSignInException
      */
     private function assertNotDeleted(User $user): void
@@ -77,6 +81,9 @@ class FindOrCreateSocialUser
         }
     }
 
+    /**
+     * Create the local user for a new Google identity with its email marked as verified.
+     */
     private function createVerifiedUser(SocialUser $socialUser): User
     {
         $user = new User([
