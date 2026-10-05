@@ -10,6 +10,7 @@ use Laravel\Socialite\Two\User as GoogleUser;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\WebAuthentication\Actions\FindOrCreateSocialUser;
+use Technical\WebAuthentication\Exceptions\DeletedAccountSignInException;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
@@ -233,5 +234,56 @@ class GoogleAccountLinkingTest extends TestCase
         $this->get('/auth/google/callback')->assertRedirect('/dashboard');
 
         $this->assertSame($linked->id, Auth::guard('web')->id());
+    }
+
+    #[Test]
+    public function it_refuses_a_google_identity_held_by_a_soft_deleted_account(): void
+    {
+        $deleted = User::factory()->verified()->create([
+            'email' => 'former@example.com',
+            'google_id' => self::VICTIM_GOOGLE_ID,
+            'deleted_at' => now(),
+        ]);
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL);
+
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email' => __('web-authentication::auth.social_link_refused')]);
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertSoftDeleted('users', ['id' => $deleted->id]);
+        $this->assertSame(1, User::query()->withTrashed()->count());
+    }
+
+    #[Test]
+    public function it_refuses_an_email_held_by_a_soft_deleted_account(): void
+    {
+        $deleted = User::factory()->verified()->create([
+            'email' => self::VICTIM_EMAIL,
+            'deleted_at' => now(),
+        ]);
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL);
+
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email' => __('web-authentication::auth.social_link_refused')]);
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertSoftDeleted('users', ['id' => $deleted->id]);
+        $this->assertNull(User::query()->withTrashed()->findOrFail($deleted->id)->google_id);
+        $this->assertSame(1, User::query()->withTrashed()->count());
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_the_matching_account_is_soft_deleted(): void
+    {
+        User::factory()->verified()->create([
+            'email' => self::VICTIM_EMAIL,
+            'deleted_at' => now(),
+        ]);
+
+        $this->expectException(DeletedAccountSignInException::class);
+
+        app(FindOrCreateSocialUser::class)($this->googleUser(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL));
     }
 }

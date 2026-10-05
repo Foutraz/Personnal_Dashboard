@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialUser;
 use Laravel\Socialite\Two\User as GoogleUser;
+use Technical\WebAuthentication\Exceptions\DeletedAccountSignInException;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
@@ -19,22 +20,27 @@ class FindOrCreateSocialUser
      * @throws UnverifiedAccountLinkException
      * @throws GoogleIdentityMismatchException
      * @throws UnverifiedGoogleEmailException
+     * @throws DeletedAccountSignInException
      */
     public function __invoke(SocialUser $socialUser): User
     {
-        $linkedUser = User::query()->where('google_id', $socialUser->getId())->first();
+        $linkedUser = User::query()->withTrashed()->where('google_id', $socialUser->getId())->first();
 
         if ($linkedUser !== null) {
+            $this->assertNotDeleted($linkedUser);
+
             return $linkedUser;
         }
 
         $this->assertEmailVerifiedByGoogle($socialUser);
 
-        $existingUser = User::query()->where('email', $socialUser->getEmail())->first();
+        $existingUser = User::query()->withTrashed()->where('email', $socialUser->getEmail())->first();
 
         if ($existingUser === null) {
             return $this->createVerifiedUser($socialUser);
         }
+
+        $this->assertNotDeleted($existingUser);
 
         if ($existingUser->email_verified_at === null) {
             throw new UnverifiedAccountLinkException($existingUser->id);
@@ -58,6 +64,16 @@ class FindOrCreateSocialUser
 
         if (! $isVerified) {
             throw new UnverifiedGoogleEmailException((string) $socialUser->getId());
+        }
+    }
+
+    /**
+     * @throws DeletedAccountSignInException
+     */
+    private function assertNotDeleted(User $user): void
+    {
+        if ($user->trashed()) {
+            throw new DeletedAccountSignInException($user->id);
         }
     }
 
