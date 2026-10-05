@@ -24,18 +24,27 @@ Inclus :
 - Validation d'entrée dans les modules sources, **ressources REST Lomkit et formulaires Livewire** qui créent les mêmes
   lignes : dates jamais futures, bornes plausibles, champs synchronisés par Strava non modifiables, identifiant et
   horodatages réservés au serveur.
+- Protection commune de **toutes** les ressources REST (§4.1) : identifiant et horodatages réservés au serveur par une
+  règle par défaut de la classe de base (`rules()` renvoie `serverManagedFieldRules()`), `trip-routes` sans aucune écriture
+  possible, plafond de 100 opérations par requête `mutate` et limite de débit nommée sur toutes les routes REST.
+- Activités Strava synchronisées : ni suppression, ni restauration, ni suppression définitive par l'API ; la
+  synchronisation restaure et met à jour une activité supprimée au lieu d'échouer.
 - Cellules explorées : API en lecture seule, reconstruction de couverture convergente.
 - Tâches : `completed_at` posé par le serveur.
 - Règle d'enregistrement à temps (antidatage) pour l'historique et la progression des défis.
 - Provenance : `badge_awards.measured_value`.
-- Décision de la règle d'XP du classement G5 (implémentée en G5).
+- Décision de la règle d'XP du classement G5 (implémentée en G5) et pré-requis de durcissement des sources synchronisées
+  (§16).
+- XP finance mensuelle : un mois ne compte que par un montant net acheté minimum et jamais avant l'existence du compte et
+  de la position (§12).
 - Suivis G4 : instant de clôture figé par défi (`challenges.closes_at`, migration + backfill) et historique de
   proposition agrégé en SQL (une requête groupée par template), `Goal::currentValue` inchangé.
 
 Exclus : le classement, le profil public et les défis entre joueurs eux-mêmes (G5) ; une colonne de source par ligne
-(décision 9) ; la détection des activités Strava manuelles (le SDK `foutraz/strava` n'expose pas `manual`) ; les autres
-ressources Lomkit (positions, objectifs, utilisateurs, événements), qui partagent le risque du §4.1 mais ne nourrissent
-pas le jeu ; le fuseau du formulaire moto (§11) ; un plafond d'XP par jour ; la révocation de badges ; toute nouvelle
+(décision 9) ; la détection des activités Strava manuelles et des pesées Withings saisies à la main (les SDK
+`foutraz/strava` et `foutraz/withings` ne les exposent pas : pré-requis G5, §16) ; la validation métier des autres
+ressources Lomkit (positions, objectifs, utilisateurs, événements), qui ne nourrissent pas le jeu : seules les protections
+communes du §4.1 s'y appliquent ; le fuseau du formulaire moto (§11) ; un plafond d'XP par jour ; la révocation de badges ; toute nouvelle
 dépendance Composer / npm.
 
 ## 3. Failles traitées
@@ -48,13 +57,17 @@ dépendance Composer / npm.
 | 4 | Activité Strava dont le propriétaire porte la distance à 5 000 km | `SportActivityResource::rules()` : `distance` modifiable malgré `strava_id` | champs Strava interdits (§4.4) |
 | 5 | Vente à 0 €, quantités qui débordent la colonne | `InvestmentTransactionResource` : `quantity` / `unit_price` `min:0` sans max | `gt:0` et plafonds (§4.3) |
 | 6 | `completed_at` antidaté : séries Tâches de 100 jours, badges | `TaskResource::rules()` : `completed_at` `date` libre | horodatage serveur (§4.6) |
-| 7 | `created_at` et `id` forgeables par toute mutation | `PerformMutation::mutateModel()` fait `forceFill($attributes)` sur chaque champ de `fields()` | `prohibited` (§4.1) |
+| 7 | `created_at` et `id` forgeables par toute mutation | `PerformMutation::mutateModel()` fait `forceFill($attributes)` sur chaque champ de `fields()` | `missing` (§4.1) |
 | 8 | Aucune trace de la mesure qui a valu un badge | `badge_awards` sans valeur mesurée | `measured_value` (§6) |
 | 9 | Délai de grâce relu en config à la résolution | `ResolveChallenges::handle()` lit `ChallengeSettings::fromConfig()` | `closes_at` figé (§8.1) |
 | 10 | Historique de proposition : jusqu'à 36 requêtes et lignes hydratées | `ProposeWeeklyChallenges::hasHistory()` / `weeklyValues()`, chargeurs de `GoalProgressCalculator` | une requête groupée par template (§8.2) |
 | 11 | Une sortie ancienne, modifiée ensuite, sert de jeton d'antidatage réutilisable | modifier `started_at` ou `distance` garde le `created_at` d'origine, donc `created_at < closes_at` reste vrai | `moto_rides.recorded_at`, posé par le serveur à la création et à chaque changement de `started_at` ou `distance` (§4.2, §5) |
 | 12 | Un décalage horaire passe la validation puis est perdu au stockage (`+14:00` : jusqu'à 14 h dans le futur, donc dans la semaine de jeu suivante ; `-14:00` en 1970 : hors de la plage `TIMESTAMP` MySQL) | `before_or_equal:now` compare des instants, le cast `datetime` formate l'heure murale du `Carbon` reçu | cast `Technical\Osdd\Casts\UtcDatetime` sur `started_at` et `executed_at` (§4.2) |
 | 13 | Une chaîne de chiffres validée comme date calendaire mais stockée comme timestamp (`01800041970` : `date` la lit 1970-01-04, le cast la stockait 2027-01-15) | `date` et `before_or_equal` passent par `strtotime`, le cast `datetime` lit toute chaîne numérique comme un timestamp | forme ISO stricte `Technical\Osdd\Rules\IsoDatetime` devant `date`, et `UtcDatetime` ne lit comme timestamp que les entiers et flottants (§4.2) |
+| 14 | Une valeur plus fine que la colonne est stockée 0 (vente à `unit_price` `1e-9`, `1e-400` : `gt:0` l'accepte, la colonne `decimal(18, 8)` l'arrondit à 0), et la règle `decimal` de Laravel refuse à tort les nombres JSON inférieurs à 0,0001 (`5.0E-5`) | `gt:0` et `max` comparent des valeurs exactes, pas l'échelle de stockage | règle `Technical\Osdd\Rules\WithinScale` (§4.2, §4.3) |
+| 15 | Une activité synchronisée peut être supprimée (puis restaurée) par son propriétaire : la base d'un défi baisse ; supprimer puis resynchroniser levait une violation d'unicité qui interrompait tout le job | `SportActivityPolicy` hérite de `delete` / `restore` / `forceDelete` du contrôle ; `UpsertStravaActivity` ignorait les lignes supprimées | politique `false` pour les trois opérations, upsert sur `withTrashed()` qui restaure (§4.4) |
+| 16 | Un lot `mutate` de milliers d'opérations tient une transaction de plusieurs dizaines de secondes ; aucune limite de débit sur `/api` | aucun plafond ni throttle sur les contrôleurs REST | 100 opérations par requête et limite nommée `rest` (§4.1) |
+| 17 | L'XP finance mensuelle se fabrique avec 680 achats de 0,01 € antidatés (6 800 XP) | `FinanceMonthlyXpRule` comptait tout mois contenant un achat, sans montant ni antériorité | montant net minimum, compte et position déjà existants (§12) |
 
 La faille 7 est nouvelle : Lomkit valide les clés d'attributs contre `fields()` puis appelle `forceFill()`. Un
 `created_at` fourni reste « dirty » et Eloquent ne le remplace pas à l'insertion ; un `id` fourni en mise à jour
@@ -65,10 +78,33 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 ### 4.1 Principes communs
 
 - **Identifiant et horodatages réservés au serveur.** La classe de base `Technical\Osdd\Rest\Resources\Resource` expose
-  `serverManagedFieldRules(RestRequest)`, qui renvoie `['prohibited']` pour `id`, `created_at` et `updated_at`
+  `serverManagedFieldRules(RestRequest)`, qui renvoie `['missing']` pour `id`, `created_at` et `updated_at`
   **restreints aux champs que la ressource déclare dans `fields()`** (aucune règle morte sur un champ absent). Les
-  ressources modifiables des modules sources (`moto-rides`, `investment-transactions`, `tasks`, `sport-activities`) la
-  fusionnent dans `rules()`. Les champs restent lisibles en recherche.
+  champs restent lisibles en recherche.
+- **`missing` et non `prohibited`.** Sous Laravel 12.62, `prohibited` n'est que l'inverse de `required` : une valeur `null`
+  ou une chaîne vide passe, puis Lomkit la `forceFill` (horodatages effacés, `id: null` en mise à jour → erreur 500).
+  `missing` refuse la clé dès qu'elle est présente, `null` et chaîne vide compris ; c'est la règle de tout champ que le
+  client ne doit pas envoyer (champs serveur, champs synchronisés par Strava, `completed_at` d'une tâche, champs calculés
+  d'un objectif).
+- **Défaut sur la classe de base.** `Resource::rules()` renvoie `serverManagedFieldRules()` : une ressource sans `rules()`
+  propre (cellules explorées, ressources de gamification, en lecture seule) est protégée sans rien écrire ; une
+  ressource qui définit ses règles fusionne l'assistant (`...$this->serverManagedFieldRules($request)`), ce que font
+  toutes celles qui déclarent `id`, `created_at` ou `updated_at` (`moto-rides`, `investment-transactions`, `positions`,
+  `tasks`, `sport-activities`, `trip-routes`, `goals`, `recurring-expenses`, `calendar-events`).
+  `Tests\Feature\Lomkit\ServerManagedFieldsArchitectureTest` parcourt les ressources enregistrées sur le routeur REST
+  et échoue si l'une d'elles déclare l'un de ces champs sans le protéger ; un second test vérifie que ce parcours
+  découvre bien toutes les ressources routées.
+- **`trip-routes`** (ressource sur le modèle `SportActivity`) garde sa route `mutate` mais n'autorise aucune écriture :
+  chaque champ déclaré est `missing` (création : 422 ; tout attribut : 422 ; mutation sans attribut : 200 sans effet).
+  La route reste déclarée parce que `PreventsApiCreationTest` l'attend, et elle ne peut plus réécrire une activité
+  synchronisée.
+- **Lots et débit.** `Technical\Osdd\Rest\Controllers\Controller`, parent de tous les contrôleurs REST, enregistre deux
+  middlewares de contrôleur (donc avant la validation Lomkit, et sans toucher au vendor) : la limite nommée `rest`
+  (`Technical\Osdd\Rest\Throttle\RestRateLimit`, 120 requêtes par minute et par utilisateur, repli sur l'adresse IP,
+  429 au-delà) sur toutes les routes, et `Technical\Osdd\Rest\Middleware\LimitMutateOperations` sur la route `mutate`
+  (100 opérations, imbriquées comprises ; 422 sur la clé `mutate` au-delà). Les deux valeurs sont dans
+  `technical/osdd/config/osdd.php` (`rest.max_mutate_operations`, `rest.requests_per_minute`). Le middleware vit sur le
+  contrôleur de base et non dans `beforeMutate`, que `RejectsApiCreation` redéfinit.
 - **Dates déclarées** : `['date', 'after:1970-01-01', 'before_or_equal:now']`. Le futur est refusé ; le plancher est la
   limite basse d'une colonne `TIMESTAMP` MySQL (une date antérieure passe sous SQLite et lève une erreur 500 en
   production). Le passé reste libre : saisir une sortie d'il y a trois semaines est un usage légitime.
@@ -95,9 +131,9 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 | Champ | API (`MotoRideResource`) | Livewire (`MotoDashboard::logRide`) |
 |---|---|---|
 | départ | `started_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now` | `rideStartedAt` : `required` + mêmes règles |
-| distance (km) | `distance` : `numeric`, `gt:0`, `max:2000` | `rideDistance` : `required` + mêmes règles |
+| distance (km) | `distance` : `numeric`, `WithinScale(2)`, `gt:0`, `max:2000` | `rideDistance` : `required` + mêmes règles |
 | durée | `duration` (s) : `integer`, `min:60`, `max:86400` | `rideDuration` (min) : `required`, `numeric`, `min:1`, `max:1440` |
-| serveur | `id`, `created_at`, `updated_at` : `prohibited` | — (création Eloquent) |
+| serveur | `id`, `created_at`, `updated_at` : `missing` | — (création Eloquent) |
 | enregistrement | `recorded_at` : hors de `fields()` donc refusé (422) pour toute valeur, `null` et chaîne vide compris | — (non remplissable) |
 
 2 000 km est au-delà du « SaddleSore 1000 » (1 609 km en 24 h) ; une sortie dure au plus 24 h (un voyage de plusieurs
@@ -122,6 +158,14 @@ dans la semaine de jeu suivante ; `1970-01-01T00:00:00-14:00` passait `after:197
 `2026-10-01 09:00:00` et `1970-01-01 14:00:00`, et `2026-10-02T00:00:01+14:00` (10:00:01 UTC) reste refusé. Un `Carbon`
 déjà converti dans un fuseau d'affichage (formulaire moto) est traité de même.
 
+**Échelle des nombres.** `Technical\Osdd\Rules\WithinScale(int $scale)` refuse tout nombre qui a plus de `$scale`
+décimales (2 pour la distance moto, 8 pour la quantité et le prix unitaire, l'échelle des colonnes). Les décimales sont
+comptées exactement sur la représentation décimale (chaîne telle que reçue, flottant par sa plus courte représentation
+aller-retour, notation exponentielle comptée arithmétiquement) et jamais par conversion en flottant : `1e-400` ou `4e-324`
+devenaient `0.0`, passaient `gt:0` (comparaison exacte) et étaient stockés `0`, alors que la règle `decimal` de Laravel
+refuse à tort un nombre JSON comme `0.00005` (converti en `5.0E-5`). Un fuzz de la chaîne de règles n'a trouvé aucun
+contournement sur 228 000 évaluations ni aucun refus à tort sur 800 000.
+
 **Forme ISO stricte.** La règle `Technical\Osdd\Rules\IsoDatetime` précède `date` sur `started_at` et `executed_at` :
 seule une chaîne `AAAA-MM-JJ`, éventuellement suivie de `[T ]HH:MM[:SS[.fraction]]` et d'un décalage (`Z`, `+HH:MM`,
 `+HHMM`) est acceptée. Elle refuse les chaînes de chiffres (`01800041970`, `202609301010`, `20260930`), les nombres JSON,
@@ -137,10 +181,10 @@ passe tel quel par le cast (la règle ne voit que les entrées du client).
 
 | Champ | API (`InvestmentTransactionResource`) | Livewire (`PortfolioOverview::recordTransaction`) |
 |---|---|---|
-| quantité | `quantity` : `numeric`, `gt:0`, `max:1000000000` | `txQuantity` : `required` + mêmes règles |
-| prix unitaire | `unit_price` : `numeric`, `gt:0`, `max:10000000` | `txUnitPrice` : `required` + mêmes règles |
+| quantité | `quantity` : `numeric`, `WithinScale(8)`, `gt:0`, `max:1000000000` | `txQuantity` : `required` + mêmes règles |
+| prix unitaire | `unit_price` : `numeric`, `WithinScale(8)`, `gt:0`, `max:10000000` | `txUnitPrice` : `required` + mêmes règles |
 | exécution | `executed_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now`, stocké en UTC (cast `UtcDatetime`, §4.2) | posé à `now()` par le composant (inchangé) |
-| serveur | `id`, `created_at`, `updated_at` : `prohibited` | — |
+| serveur | `id`, `created_at`, `updated_at` : `missing` | — |
 
 Les plafonds suivent la capacité des colonnes `decimal(18, 8)` (10¹⁰) avec une marge plausible (un titre au-delà de
 10 M€ l'unité n'existe pas ; 10⁹ unités couvre les cryptomonnaies à très bas prix). Ils bornent l'absurde, **pas la
@@ -150,12 +194,18 @@ déclarative ; G5 la tient hors des surfaces publiques (§7).
 ### 4.4 Sport (Strava)
 
 `strava_id` et `integration_connection_id` sont `NOT NULL` et la création API est déjà refusée : toute activité est
-synchronisée. `SportActivityResource::rules()` interdit donc **sans condition** (`prohibited`) : `id` (par
+synchronisée. `SportActivityResource::rules()` interdit donc **sans condition** (`missing`) : `id` (par
 `serverManagedFieldRules()`, seul champ serveur que la ressource déclare), `strava_id`,
 `distance`, `moving_time`, `elapsed_time`, `total_elevation_gain`, `average_speed`, `max_speed`, `average_heartrate`,
 `max_heartrate`, `kilojoules`, `started_at`. Restent modifiables `name` (`string`, `max:255`) et `sport_type`
 (`Rule::enum(SportType::class)`), qui ne nourrissent aucune mesure. Strava reste la source : la synchronisation
 suivante réécrit aussi ces deux champs.
+
+`SportActivityPolicy` renvoie `false` pour `delete`, `restore` et `forceDelete` (comme `ExploredCellPolicy`) : supprimer
+une activité synchronisée ferait baisser la base d'un défi, et la restaurer ou la resynchroniser ne doit pas dépendre du
+client. `UpsertStravaActivity` cherche sur `withTrashed()` : une activité supprimée localement (avant l'interdiction
+de la suppression par l'API, ou à la main) est restaurée et mise à jour par la synchronisation, au lieu de lever une violation de la clé
+`(integration_connection_id, strava_id)` qui interrompait `SyncStravaActivitiesJob` pour toutes les activités suivantes.
 
 ### 4.5 Exploration
 
@@ -171,7 +221,7 @@ main est par construction une contrefaçon :
 
 ### 4.6 Tâches
 
-- `TaskResource::rules()` : `completed_at` → `prohibited` ; `id`, `created_at`, `updated_at` → `prohibited`.
+- `TaskResource::rules()` : `completed_at` → `missing` ; `id`, `created_at`, `updated_at` → `missing`.
 - Listener `Functional\Todo\Listeners\StampTaskCompletion`, branché par
   `Task::saving(StampTaskCompletion::class)` dans `TodoServiceProvider::boot()` : statut `Done` sans `completed_at` →
   `now()` ; tout autre statut → `null`. Un `completed_at` déjà posé côté serveur (factory, seeder, `TodoBoard`) est
@@ -277,6 +327,10 @@ tâches sont en `SoftDeletes` : une preuve supprimée reste en base. Un audit re
 G5 portera la décision par une méthode d'enum (`XpRuleKey::countsTowardsLeaderboard()`) ; elle n'est pas créée ici
 faute d'appelant.
 
+« Synchronisée » n'est pas « vérifiée » : une pesée Withings saisie à la main, un téléversement ou une activité Strava
+manuelle, un même athlète relié à plusieurs comptes, une activité ancienne importée après coup alimentent les trois clés
+du classement. Les pré-requis qui comblent ces écarts sont décidés au §16 et conditionnent G5.
+
 Orientations pour G5, à confirmer à sa conception :
 
 - une surface publique ne montre jamais un chiffre que la règle exclut : XP et niveau publics calculés sur la même XP
@@ -366,7 +420,7 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 
 ## 10. Flux
 
-- **Mutation REST** (sortie, transaction, tâche) : validation Lomkit (`rules()` + `serverManagedFieldRules()`) →
+- **Mutation REST** (sortie, transaction, tâche) : limite de débit `rest` → plafond de 100 opérations → validation Lomkit (`rules()` + `serverManagedFieldRules()`) →
   `forceFill` des seuls champs autorisés → `creating` (propriétaire) → `saving` (`StampTaskCompletion` pour une tâche, `StampRideRecording` pour une sortie)
   → `created_at` posé par Eloquent.
 - **Formulaire Livewire** : mêmes bornes via la classe `Validation` du module, création Eloquent.
@@ -416,8 +470,8 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 - **Données déclaratives de la semaine en cours** : créer une fausse sortie, valider le défi puis la supprimer garde
   50 XP ; borné à 50 XP par domaine et par semaine, auditable (§6.2), exclu du classement.
 - **Badges des familles déclaratives** : plusieurs lignes plausibles suffisent (10 sorties de 2 000 km pour l'Or moto,
-  un achat de 50 000 € pour l'Or finance, 1 000 tâches cochées au fil des jours) ; hub privé seulement, hors surfaces
-  publiques G5.
+  un achat de 50 000 € pour l'Or finance, 1 000 tâches passées à `Done`, ce que le plafond de 100 opérations par requête
+  et les 120 requêtes par minute ralentissent sans l'empêcher) ; hub privé seulement, hors surfaces publiques G5.
 - **Séries moto antidatées** : 100 sorties sur 100 jours passés valent 525 XP de paliers ; hub privé seulement.
 - **Activités Strava manuelles** : déclaratives côté Strava, indiscernables sans le champ `manual` du SDK ; comptées
   comme synchronisées. Si le SDK `foutraz/strava` l'expose un jour, G5 pourra les exclure.
@@ -431,6 +485,9 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
   l'XP déjà versée pour un mois désormais exclu disparaît au prochain passage complet (`gamification:recalculate`).
   Risque résiduel accepté : 10 € nets achetés chaque mois depuis l'ouverture du compte valent 10 XP par mois ; hub privé
   seulement, `finance_month` reste hors du classement G5 (§7).
+- **`UserResource`** : elle déclare un champ `ulid` alors que la clé primaire est `id` (toute écriture, filtre ou tri sur
+  `ulid` échoue en 500) et n'utilise pas l'assistant du §4.1 ; elle ne déclare ni `id` ni horodatages, donc aucun champ
+  serveur n'est inscriptible. Correction à part (déclarer `id`, fusionner l'assistant), hors du jeu.
 
 ## 13. Tests
 
@@ -444,8 +501,12 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
   `tests/Feature/Finance/TransactionDateTimezoneTest.php` (décalages).
 - Cast et règle : `tests/Unit/Osdd/UtcDatetimeTest.php`, `tests/Unit/Osdd/IsoDatetimeTest.php`.
 - Tâches : `tests/Feature/Todo/TaskCompletionStampTest.php`, ajouts dans `TaskValidationTest`.
-- Sport / exploration : ajouts dans `ActivitiesApiScopeTest`, `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`,
-  `RebuildCoverageTest`.
+- Sport / exploration : ajouts dans `ActivitiesApiScopeTest` (suppression, restauration et suppression définitive
+  refusées au propriétaire), `SyncActivitiesJobTest` (activité supprimée restaurée, le job continue),
+  `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`, `RebuildCoverageTest`.
+- API REST commune : `tests/Feature/Lomkit/MutateOperationsCapTest.php` (plafond, imbriqué, configurable, présent sur
+  toutes les routes `mutate`), `RestRateLimitTest.php` (429, seaux par utilisateur, repli IP, présent sur toutes les
+  routes), `ServerManagedFieldsArchitectureTest.php`.
 - Objectifs : `tests/Feature/Goals/GoalMetricAggregatorTest.php`, ajouts dans `tests/Unit/Goals/GoalProgressCalculatorTest.php` ;
   tous les tests Objectifs existants restent verts sans modification.
 - Gamification : `tests/Feature/Gamification/ChallengeClosesAtMigrationTest.php`,
@@ -468,10 +529,13 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
    (Lomkit porte la validation des ressources) ; règles recopiées dans la ressource et le composant (c'est cette
    divergence qui a laissé passer les failles) ; une règle commune dans un layer technique (couplage inter-layers pour
    trois lignes).
-2. **Identifiant et horodatages en `prohibited`, via `serverManagedFieldRules()` restreint aux champs déclarés.**
-   Rejeté : retirer `id` / `created_at` de `fields()` (casse la recherche et le tri des clients) ; les réinitialiser
-   dans le hook `mutating` de la ressource (réparation silencieuse, le client croit avoir écrit) ; l'appliquer à toutes
-   les ressources dans ce lot (hors du jeu, à généraliser séparément).
+2. **Identifiant et horodatages en `missing`, via `serverManagedFieldRules()` restreint aux champs déclarés, par défaut
+   sur la classe de base.**
+   Rejeté : `prohibited` (laisse passer `null` et chaîne vide, que Lomkit `forceFill` ensuite) ; retirer `id` /
+   `created_at` de `fields()` (casse la recherche et le tri des clients) ; les réinitialiser dans le hook `mutating` de la
+   ressource (réparation silencieuse, le client croit avoir écrit) ; l'appliquer ressource par ressource sans défaut ni
+   test d'architecture (la revue de sécurité a trouvé `trip-routes` oubliée, avec une écriture complète sur les activités
+   synchronisées).
 3. **Dates : `before_or_equal:now` et `after:1970-01-01`, passé libre.** Rejeté : une tolérance de quelques minutes
    (aucun client ne la demande) ; une fenêtre d'antidatage (7 ou 30 jours) pour les saisies (interdirait de consigner
    une sortie ancienne, contraire au suivi d'abord).
@@ -532,3 +596,61 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
     part « apport » (elle récompense un geste réel) ; appliquer l'antériorité à la part « épargne » (les relevés bancaires
     d'avant l'ouverture du compte sont légitimes et non saisissables) ; un minimum en pourcentage du capital (dépend d'un
     montant déclaratif).
+
+## 15. Revues de sécurité et issues
+
+Trois revues de sécurité ont suivi l'implémentation ; chaque correction est épinglée par un test et revérifiée.
+
+**Revue des validations (tâches 1 à 4).**
+
+| Constat | Issue |
+|---|---|
+| Critique : `trip-routes` écrivait sur `sport_activities` sans garde (distance, `started_at`, tracé : 6 badges et de l'XP avec un tracé forgé) | tour A : route en écriture impossible, `Resource::rules()` par défaut et test d'architecture sur toutes les ressources (§4.1) |
+| Élevé : modifier `started_at` ou `distance` d'une sortie gardait son `created_at`, donc un jeton d'antidatage réutilisable | tour B : `moto_rides.recorded_at` posé par `StampRideRecording`, base de la règle d'enregistrement à temps (§4.2, §5) |
+| Moyen : décalage horaire (`+14:00`) stocké en heure murale, jusqu'à 14 h dans le futur | tour B : cast `UtcDatetime` sur `started_at` et `executed_at` (§4.2) |
+| Faible : l'assistant des champs serveur était optionnel par ressource | tour A : défaut sur la classe de base (§4.1) |
+| Faible : 1 000 tâches `Done` en une requête valent trois badges Tâches | accepté, borné par le plafond de lot (§12) |
+| Faible : `1e999` ou une chaîne commençant par un saut de page fait lever une exception aux règles `gt` / `max` (500, échec fermé, comportement antérieur) | non traité, sans effet sur le jeu |
+
+**Revue du tour B.** Une chaîne de chiffres (`01800041970`) passait `date` comme date calendaire et était stockée comme
+timestamp (jusqu'en 2038) ; le fuseau de session MySQL n'était pas fixé ; la migration `recorded_at` n'était pas ré-exécutable
+après une interruption. Tour C : forme ISO stricte `IsoDatetime` devant `date`, `UtcDatetime` qui lit toute chaîne comme une
+date, `recorded_at` posé inconditionnellement à la création (un `replicate()` ne porte plus un ancien instant),
+`DB_TIMEZONE` figé à `+00:00` dans la connexion `mysql`, migration ré-exécutable (`hasColumn`). Accepté : la reprise des
+`created_at` historiques par le backfill, les mises à jour sans modèle (`increment`, requêtes directes) qui ne reposent
+pas `recorded_at` (aucun appelant).
+
+**Revue de la tâche 2.** `WithinScale` (§4.2) est le résultat de trois tours : `decimal:0,N` refusait à tort les petits
+nombres JSON, puis le repli sur un flottant laissait passer `1e-400` ; le compte exact des décimales clôt le sujet.
+
+**Revue finale.** Aucun constat critique ni élevé. Moyen : « synchronisé » n'est pas « vérifié » (§16). Faibles :
+activités synchronisées supprimables (§4.4), XP finance fabricable (§12), données forgées avant le durcissement qui
+nourrissent encore les clés G5, absence de plafond de lot et de limite de débit (§4.1).
+
+**Livraison.** `DB_TIMEZONE=+00:00` change l'interprétation des colonnes `TIMESTAMP` existantes si la session MySQL de
+production tournait sur un autre fuseau (décalage de 1 à 2 h pour `Europe/Paris`) : exécuter
+`SELECT @@global.time_zone, @@system_time_zone;` sur la production **avant** de livrer, et, hors UTC, planifier une
+conversion unique ou accepter le décalage ; étape bloquante de la pull request. Après la livraison : une synchronisation
+Strava complète (réécrit les valeurs d'activités forgées avant le durcissement), `exploration:rebuild-coverage`, puis
+`gamification:recalculate` (retire l'XP des cellules et des mois finance forgés).
+
+## 16. Pré-requis G5 (décidés par Quentin, 2026-10-05)
+
+Décision : durcir les sources synchronisées **avant** G5, dans un chantier séparé qui suit la livraison de cette branche
+et de `fix/post-gamification-followups`. La spécification G5 reprend ces quatre points comme entrées de conception
+obligatoires ; aucun n'est livré ici, les changements de SDK étant hors périmètre de cette branche.
+
+1. **Withings : distinguer le mesuré du saisi.** `foutraz/withings` doit exposer l'attribution (`attrib`) et la catégorie
+   (`category`) de chaque groupe de mesures ; une pesée saisie à la main (attribution 2) ne compte ni pour
+   `health_measurement_day` au classement, ni pour les séries et badges publics.
+2. **Strava : distinguer l'activité enregistrée de la saisie.** `foutraz/strava` doit exposer les indicateurs de saisie manuelle
+   (`manual`) et de téléversement de l'API Strava ; l'activité manuelle ou téléversée ne compte pas pour `sport_activity` ni
+   `exploration_daily_cells` au classement (aujourd'hui acceptée comme synchronisée, §12).
+3. **Un compte fournisseur pour un compte du tableau de bord.** Unicité `(fournisseur, identifiant externe)` sur les
+   connexions d'intégration, vérifiée à la liaison : un même athlète ne peut pas alimenter plusieurs joueurs ni se
+   répartir sur plusieurs comptes.
+4. **Périodes de classement figées à la clôture.** Le classement d'une période close est écrit une fois à sa clôture ;
+   une activité ancienne importée ensuite (synchronisation tardive, backfill) ne déplace plus un classement passé.
+
+Tant que ces quatre points ne sont pas livrés, la règle du §7 reste une décision de principe : aucune surface publique
+ne s'ouvre.
