@@ -30,6 +30,7 @@ class WebAuthenticationServiceProvider extends OsddServiceProvider
     {
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'web-authentication');
+        $this->loadTranslationsFrom(__DIR__.'/../../lang', 'web-authentication');
 
         Livewire::component('dashboard', Dashboard::class);
 
