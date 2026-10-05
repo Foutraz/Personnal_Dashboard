@@ -10,6 +10,8 @@ use Lomkit\Access\Perimeters\Perimeter;
 
 class UserControl extends Control
 {
+    private const CREATE_METHOD = 'create';
+
     /**
      * The model the control refers to.
      *
@@ -18,7 +20,7 @@ class UserControl extends Control
     protected string $model = User::class;
 
     /**
-     * Restrict access to the authenticated user's own record.
+     * Restrict access to the authenticated user's own record and deny creating users.
      *
      * @return array<int, Perimeter>
      */
@@ -26,7 +28,7 @@ class UserControl extends Control
     {
         return [
             Perimeter::new()
-                ->allowed(fn (Model $user, string $method): bool => true)
+                ->allowed(fn (Model $user, string $method): bool => $method !== self::CREATE_METHOD)
                 ->query(fn (Builder $query, Model $user): Builder => $query->where($query->getModel()->getKeyName(), $user->getKey()))
                 ->should(fn (Model $user, Model $model): bool => $model->getKey() === $user->getKey()),
         ];
