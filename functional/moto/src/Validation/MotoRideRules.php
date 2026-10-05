@@ -8,6 +8,8 @@ final class MotoRideRules
 {
     public const MAX_DISTANCE_KM = 2000;
 
+    public const DISTANCE_SCALE = 2;
+
     public const MIN_DURATION_MINUTES = 1;
 
     public const MAX_DURATION_MINUTES = 1440;
@@ -27,7 +29,12 @@ final class MotoRideRules
      */
     public static function distance(): array
     {
-        return ['numeric', 'gt:0', sprintf('max:%d', self::MAX_DISTANCE_KM)];
+        return [
+            'numeric',
+            sprintf('decimal:0,%d', self::DISTANCE_SCALE),
+            'gt:0',
+            sprintf('max:%d', self::MAX_DISTANCE_KM),
+        ];
     }
 
     /**

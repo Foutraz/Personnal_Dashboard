@@ -142,7 +142,7 @@ class InvestmentTransactionValidationTest extends TestCase
     {
         return [
             'maximum' => [1000000000],
-            'smallest positive' => [0.00000001],
+            'smallest positive' => ['0.00000001'],
         ];
     }
 
@@ -151,6 +151,7 @@ class InvestmentTransactionValidationTest extends TestCase
         return [
             'zero' => [0],
             'above the maximum' => [1000000001],
+            'finer than the column scale' => ['0.000000001'],
         ];
     }
 
@@ -158,7 +159,8 @@ class InvestmentTransactionValidationTest extends TestCase
     {
         return [
             'maximum' => [10000000],
-            'smallest positive' => [0.01],
+            'cents' => [0.01],
+            'smallest positive' => ['0.00000001'],
         ];
     }
 
@@ -167,12 +169,13 @@ class InvestmentTransactionValidationTest extends TestCase
         return [
             'zero' => [0],
             'above the maximum' => [10000000.01],
+            'finer than the column scale' => ['0.000000001'],
         ];
     }
 
     #[Test]
     #[DataProvider('acceptedQuantities')]
-    public function it_accepts_a_buy_quantity_within_bounds(float|int $quantity): void
+    public function it_accepts_a_buy_quantity_within_bounds(float|int|string $quantity): void
     {
         $this->createTransaction(['type' => TransactionType::Buy->value, 'quantity' => $quantity])->assertOk();
 
@@ -181,7 +184,7 @@ class InvestmentTransactionValidationTest extends TestCase
 
     #[Test]
     #[DataProvider('rejectedQuantities')]
-    public function it_rejects_a_buy_quantity_out_of_bounds(float|int $quantity): void
+    public function it_rejects_a_buy_quantity_out_of_bounds(float|int|string $quantity): void
     {
         $response = $this->createTransaction(['type' => TransactionType::Buy->value, 'quantity' => $quantity]);
 
@@ -192,7 +195,7 @@ class InvestmentTransactionValidationTest extends TestCase
 
     #[Test]
     #[DataProvider('acceptedUnitPrices')]
-    public function it_accepts_a_sell_unit_price_within_bounds(float|int $unitPrice): void
+    public function it_accepts_a_sell_unit_price_within_bounds(float|int|string $unitPrice): void
     {
         $this->createTransaction(['type' => TransactionType::Sell->value, 'unit_price' => $unitPrice])->assertOk();
 
@@ -201,7 +204,7 @@ class InvestmentTransactionValidationTest extends TestCase
 
     #[Test]
     #[DataProvider('rejectedUnitPrices')]
-    public function it_rejects_a_sell_unit_price_out_of_bounds(float|int $unitPrice): void
+    public function it_rejects_a_sell_unit_price_out_of_bounds(float|int|string $unitPrice): void
     {
         $response = $this->createTransaction(['type' => TransactionType::Sell->value, 'unit_price' => $unitPrice]);
 

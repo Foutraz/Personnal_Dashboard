@@ -107,6 +107,7 @@ class MotoRideValidationTest extends TestCase
         return [
             'zero' => [0],
             'above the maximum' => [2000.01],
+            'finer than the column scale' => [0.004],
         ];
     }
 

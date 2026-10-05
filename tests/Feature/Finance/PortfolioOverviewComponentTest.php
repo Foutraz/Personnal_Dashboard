@@ -11,6 +11,7 @@ use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -170,5 +171,39 @@ class PortfolioOverviewComponentTest extends TestCase
         $this->assertEquals(2.0, (float) $transaction->quantity);
         $this->assertEquals(150.5, (float) $transaction->unit_price);
         $this->assertEquals(2.0, (float) $position->fresh()->quantity);
+    }
+
+    public static function transactionFields(): array
+    {
+        return [
+            'quantity' => ['txQuantity'],
+            'unit price' => ['txUnitPrice'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_accepts_a_transaction_value_at_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '0.00000001'])
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_rejects_a_transaction_value_finer_than_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '0.000000001'])
+            ->assertHasErrors([$field => 'decimal']);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
     }
 }

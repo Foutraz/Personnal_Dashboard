@@ -8,6 +8,10 @@ final class InvestmentTransactionRules
 
     public const MAX_UNIT_PRICE = 10000000;
 
+    public const QUANTITY_SCALE = 8;
+
+    public const UNIT_PRICE_SCALE = 8;
+
     public const EARLIEST_EXECUTION = '1970-01-01';
 
     /**
@@ -15,7 +19,12 @@ final class InvestmentTransactionRules
      */
     public static function quantity(): array
     {
-        return ['numeric', 'gt:0', sprintf('max:%d', self::MAX_QUANTITY)];
+        return [
+            'numeric',
+            sprintf('decimal:0,%d', self::QUANTITY_SCALE),
+            'gt:0',
+            sprintf('max:%d', self::MAX_QUANTITY),
+        ];
     }
 
     /**
@@ -23,7 +32,12 @@ final class InvestmentTransactionRules
      */
     public static function unitPrice(): array
     {
-        return ['numeric', 'gt:0', sprintf('max:%d', self::MAX_UNIT_PRICE)];
+        return [
+            'numeric',
+            sprintf('decimal:0,%d', self::UNIT_PRICE_SCALE),
+            'gt:0',
+            sprintf('max:%d', self::MAX_UNIT_PRICE),
+        ];
     }
 
     /**
