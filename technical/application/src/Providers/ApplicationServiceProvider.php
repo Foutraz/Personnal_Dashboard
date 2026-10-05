@@ -2,12 +2,16 @@
 
 namespace Technical\Application\Providers;
 
+use Illuminate\Support\Facades\RateLimiter;
+use Technical\Application\RateLimiting\AuthenticationAttemptsLimiter;
 use Technical\Osdd\Providers\OsddServiceProvider;
 
 class ApplicationServiceProvider extends OsddServiceProvider
 {
     public function boot(): void
     {
+        RateLimiter::for(AuthenticationAttemptsLimiter::NAME, (new AuthenticationAttemptsLimiter)(...));
+
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
         }
