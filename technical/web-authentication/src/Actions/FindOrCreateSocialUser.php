@@ -10,6 +10,7 @@ use Laravel\Socialite\Two\User as GoogleUser;
 use Technical\WebAuthentication\Exceptions\BlankGoogleIdentityException;
 use Technical\WebAuthentication\Exceptions\DeletedAccountSignInException;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
+use Technical\WebAuthentication\Exceptions\SocialSignInRefusedException;
 use Technical\WebAuthentication\Exceptions\UnlistedGoogleEmailException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
@@ -22,12 +23,7 @@ class FindOrCreateSocialUser
     /**
      * Resolve the local user matching the social account, linking or creating it as needed.
      *
-     * @throws BlankGoogleIdentityException
-     * @throws UnverifiedAccountLinkException
-     * @throws GoogleIdentityMismatchException
-     * @throws UnverifiedGoogleEmailException
-     * @throws DeletedAccountSignInException
-     * @throws UnlistedGoogleEmailException
+     * @throws SocialSignInRefusedException
      */
     public function __invoke(SocialUser $socialUser): User
     {
