@@ -4,6 +4,7 @@ namespace Functional\Finance\Rest\Resource;
 
 use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\InvestmentTransaction;
+use Functional\Finance\Validation\InvestmentTransactionRules;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -47,11 +48,12 @@ class InvestmentTransactionResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'position_id' => ['string', Rule::exists('positions', 'id')->where('user_id', Auth::id())],
             'type' => [Rule::enum(TransactionType::class)],
-            'quantity' => ['numeric', 'min:0'],
-            'unit_price' => ['numeric', 'min:0'],
-            'executed_at' => ['date'],
+            'quantity' => InvestmentTransactionRules::quantity(),
+            'unit_price' => InvestmentTransactionRules::unitPrice(),
+            'executed_at' => InvestmentTransactionRules::executedAt(),
             'note' => ['nullable', 'string', 'max:1000'],
         ];
     }
