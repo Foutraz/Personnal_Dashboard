@@ -23,6 +23,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
  * @property string $email
  * @property string|null $google_id
  * @property Carbon|null $email_verified_at
+ * @property Carbon|null $created_at
  */
 #[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements JWTSubject

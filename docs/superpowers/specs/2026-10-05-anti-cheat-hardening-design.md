@@ -421,6 +421,16 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 - **Séries moto antidatées** : 100 sorties sur 100 jours passés valent 525 XP de paliers ; hub privé seulement.
 - **Activités Strava manuelles** : déclaratives côté Strava, indiscernables sans le champ `manual` du SDK ; comptées
   comme synchronisées. Si le SDK `foutraz/strava` l'expose un jour, G5 pourra les exclure.
+- **XP finance mensuelle (décision de Quentin, 2026-10-05)** : la part « apport » de `finance_month` (10 XP) ne compte un
+  mois que si le montant net acheté de ce mois (achats moins ventes, `quantité × prix unitaire`) atteint
+  `gamification.xp.finance.investment_minimum_net_bought` (10 € par défaut, configuration validée par
+  `FinanceXpSettings`, strictement positive) et si ce mois n'est antérieur ni au mois de création du compte ni à celui de la
+  position de la transaction (chaque transaction est écartée individuellement). Sans ce garde-fou, 680 achats de 0,01 €
+  antidatés valaient 6 800 XP. La part « épargne » (relevés GoCardless, non saisissables) est inchangée, y compris pour un
+  mois antérieur au compte. Un historique saisi après coup reste visible partout, il ne rapporte simplement pas d'XP ;
+  l'XP déjà versée pour un mois désormais exclu disparaît au prochain passage complet (`gamification:recalculate`).
+  Risque résiduel accepté : 10 € nets achetés chaque mois depuis l'ouverture du compte valent 10 XP par mois ; hub privé
+  seulement, `finance_month` reste hors du classement G5 (§7).
 
 ## 13. Tests
 
@@ -438,13 +448,17 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
   `RebuildCoverageTest`.
 - Objectifs : `tests/Feature/Goals/GoalMetricAggregatorTest.php`, ajouts dans `tests/Unit/Goals/GoalProgressCalculatorTest.php` ;
   tous les tests Objectifs existants restent verts sans modification.
-- Gamification : `tests/Feature/Gamification/ChallengeClosesAtMigrationTest.php`, ajouts dans `GamificationWeekTest`,
+- Gamification : `tests/Feature/Gamification/ChallengeClosesAtMigrationTest.php`,
+  `FinanceMonthInvestmentXpTest.php` et `FinanceXpSettingsTest.php` (XP finance mensuelle), ajouts dans `GamificationWeekTest`,
   `ChallengeModelTest`, `ProposeWeeklyChallengesTest`, `ResolveChallengesTest`, `WeeklyMetricMeterTest`,
   `EvaluateBadgesTest`, `BadgeModelTest`, `GamificationApiScopeTest`.
 - Tests existants adaptés, et eux seuls : `ExploredCellsApiScopeTest::it_allows_the_owner_to_update_their_explored_cell`
   (le comportement s'inverse), `RunChallengeCycleTest::it_reads_the_closing_grace_on_every_call` (idem),
   `GamificationWeekTest` (`isPastGrace` remplacé par `closesAt`), `WeeklyMetricMeterTest` (signature),
-  `ProposeWeeklyChallengesTest::it_measures_the_weeks_of_the_templates_with_data_only` (budget de requêtes).
+  `ProposeWeeklyChallengesTest::it_measures_the_weeks_of_the_templates_with_data_only` (budget de requêtes),
+  `XpRulesTest::it_adds_an_investment_bonus_to_the_month` et
+  `ProcessUserGamificationJobTest::it_updates_a_period_award_when_the_month_data_changes` (le compte et la position
+  doivent exister avant le mois de l'achat pour que la part « apport » compte, §12).
 
 ## 14. Décisions prises
 
@@ -513,3 +527,8 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
     impose en plus une forme ISO stricte (`IsoDatetime`) : rejeté, garder `date` seule (elle accepte des chaînes de
     chiffres, des phrases relatives et des noms de fuseau que le stockage ne lit pas comme la validation) ; accepter les
     noms de fuseau (aucun client n'en envoie, un décalage numérique suffit).
+18. **XP finance mensuelle : montant net minimum et antériorité du compte et de la position (décision de Quentin).**
+    Rejeté : un plafond du nombre de mois par utilisateur (un historique réel plus long serait pénalisé) ; supprimer la
+    part « apport » (elle récompense un geste réel) ; appliquer l'antériorité à la part « épargne » (les relevés bancaires
+    d'avant l'ouverture du compte sont légitimes et non saisissables) ; un minimum en pourcentage du capital (dépend d'un
+    montant déclaratif).

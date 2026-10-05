@@ -93,13 +93,13 @@ class ProcessUserGamificationJobTest extends TestCase
     #[Test]
     public function it_updates_a_period_award_when_the_month_data_changes(): void
     {
-        $user = User::factory()->create();
         $month = now()->subMonth()->startOfMonth();
+        $user = User::factory()->create(['created_at' => $month->copy()->subMonths(2)]);
         BankTransaction::factory()->create(['user_id' => $user->id, 'amount' => 500, 'booked_at' => $month->copy()->addDays(3)]);
 
         ProcessUserGamificationJob::dispatchSync($user->id);
 
-        $position = Position::factory()->create(['user_id' => $user->id]);
+        $position = Position::factory()->create(['user_id' => $user->id, 'created_at' => $month->copy()->subMonth()]);
         InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'quantity' => 1, 'unit_price' => 100, 'executed_at' => $month->copy()->addDays(5)]);
 
         ProcessUserGamificationJob::dispatchSync($user->id);
