@@ -2,6 +2,8 @@
 
 namespace Functional\Finance\Validation;
 
+use Technical\Osdd\Rules\WithinScale;
+
 final class InvestmentTransactionRules
 {
     public const MAX_QUANTITY = 1000000000;
@@ -15,26 +17,26 @@ final class InvestmentTransactionRules
     public const EARLIEST_EXECUTION = '1970-01-01';
 
     /**
-     * @return list<string>
+     * @return list<string|WithinScale>
      */
     public static function quantity(): array
     {
         return [
             'numeric',
-            sprintf('decimal:0,%d', self::QUANTITY_SCALE),
+            new WithinScale(self::QUANTITY_SCALE),
             'gt:0',
             sprintf('max:%d', self::MAX_QUANTITY),
         ];
     }
 
     /**
-     * @return list<string>
+     * @return list<string|WithinScale>
      */
     public static function unitPrice(): array
     {
         return [
             'numeric',
-            sprintf('decimal:0,%d', self::UNIT_PRICE_SCALE),
+            new WithinScale(self::UNIT_PRICE_SCALE),
             'gt:0',
             sprintf('max:%d', self::MAX_UNIT_PRICE),
         ];

@@ -13,6 +13,7 @@ use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Technical\Osdd\Rules\WithinScale;
 use Tests\TestCase;
 
 class PortfolioOverviewComponentTest extends TestCase
@@ -202,7 +203,7 @@ class PortfolioOverviewComponentTest extends TestCase
         $position = Position::factory()->for($user)->create();
 
         $this->recordTransactionWith($user, $position, [$field => '0.000000001'])
-            ->assertHasErrors([$field => 'decimal']);
+            ->assertHasErrors([$field => WithinScale::class]);
 
         $this->assertSame(0, InvestmentTransaction::query()->count());
     }

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Config;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Technical\Osdd\Rules\WithinScale;
 use Tests\TestCase;
 
 class MotoDashboardComponentTest extends TestCase
@@ -180,7 +181,7 @@ class MotoDashboardComponentTest extends TestCase
         $user = User::factory()->create();
 
         $this->logRideAt($user, ['rideDistance' => '0.004'])
-            ->assertHasErrors(['rideDistance' => 'decimal']);
+            ->assertHasErrors(['rideDistance' => WithinScale::class]);
 
         $this->assertSame(0, MotoRide::query()->count());
     }

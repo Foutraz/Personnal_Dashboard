@@ -18,6 +18,11 @@ class OsddServiceProvider extends LayerServiceProvider
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/rest.php', 'rest');
     }
 
+    public function boot(): void
+    {
+        $this->loadTranslationsFrom(__DIR__.'/../../lang', 'osdd');
+    }
+
     /**
      * @throws BindingResolutionException
      */

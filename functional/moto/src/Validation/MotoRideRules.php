@@ -3,6 +3,7 @@
 namespace Functional\Moto\Validation;
 
 use Carbon\CarbonInterface;
+use Technical\Osdd\Rules\WithinScale;
 
 final class MotoRideRules
 {
@@ -25,13 +26,13 @@ final class MotoRideRules
     }
 
     /**
-     * @return list<string>
+     * @return list<string|WithinScale>
      */
     public static function distance(): array
     {
         return [
             'numeric',
-            sprintf('decimal:0,%d', self::DISTANCE_SCALE),
+            new WithinScale(self::DISTANCE_SCALE),
             'gt:0',
             sprintf('max:%d', self::MAX_DISTANCE_KM),
         ];

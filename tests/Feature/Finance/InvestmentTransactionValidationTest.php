@@ -143,6 +143,8 @@ class InvestmentTransactionValidationTest extends TestCase
         return [
             'maximum' => [1000000000],
             'smallest positive' => ['0.00000001'],
+            'smallest positive as a number' => [0.00000001],
+            'tiny crypto quantity as a number' => [0.00005],
         ];
     }
 
@@ -152,6 +154,7 @@ class InvestmentTransactionValidationTest extends TestCase
             'zero' => [0],
             'above the maximum' => [1000000001],
             'finer than the column scale' => ['0.000000001'],
+            'finer than the column scale as a number' => [0.000000001],
         ];
     }
 
@@ -161,6 +164,8 @@ class InvestmentTransactionValidationTest extends TestCase
             'maximum' => [10000000],
             'cents' => [0.01],
             'smallest positive' => ['0.00000001'],
+            'smallest positive as a number' => [0.00000001],
+            'tiny price as a number' => [0.00005],
         ];
     }
 
@@ -170,6 +175,7 @@ class InvestmentTransactionValidationTest extends TestCase
             'zero' => [0],
             'above the maximum' => [10000000.01],
             'finer than the column scale' => ['0.000000001'],
+            'finer than the column scale as a number' => [0.000000001],
         ];
     }
 
