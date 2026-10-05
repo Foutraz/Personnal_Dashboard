@@ -53,6 +53,7 @@ dépendance Composer / npm.
 | 9 | Délai de grâce relu en config à la résolution | `ResolveChallenges::handle()` lit `ChallengeSettings::fromConfig()` | `closes_at` figé (§8.1) |
 | 10 | Historique de proposition : jusqu'à 36 requêtes et lignes hydratées | `ProposeWeeklyChallenges::hasHistory()` / `weeklyValues()`, chargeurs de `GoalProgressCalculator` | une requête groupée par template (§8.2) |
 | 11 | Une sortie ancienne, modifiée ensuite, sert de jeton d'antidatage réutilisable | modifier `started_at` ou `distance` garde le `created_at` d'origine, donc `created_at < closes_at` reste vrai | `moto_rides.recorded_at`, posé par le serveur à la création et à chaque changement de `started_at` ou `distance` (§4.2, §5) |
+| 12 | Un décalage horaire passe la validation puis est perdu au stockage (`+14:00` : jusqu'à 14 h dans le futur, donc dans la semaine de jeu suivante ; `-14:00` en 1970 : hors de la plage `TIMESTAMP` MySQL) | `before_or_equal:now` compare des instants, le cast `datetime` formate l'heure murale du `Carbon` reçu | cast `Technical\Osdd\Casts\UtcDatetime` sur `started_at` et `executed_at` (§4.2) |
 
 La faille 7 est nouvelle : Lomkit valide les clés d'attributs contre `fields()` puis appelle `forceFill()`. Un
 `created_at` fourni reste « dirty » et Eloquent ne le remplace pas à l'insertion ; un `id` fourni en mise à jour
@@ -109,6 +110,16 @@ de factory est « saisie à temps ») ; les tests d'antidatage posent `recorded_
 titre, la durée, la note ou la météo, restaurer une sortie supprimée, renvoyer les mêmes valeurs : `recorded_at` ne
 bouge pas.
 
+**Dates en UTC.** `started_at` (et `investment_transactions.executed_at`, §4.3) passent par le cast partagé
+`Technical\Osdd\Casts\UtcDatetime` : toute valeur reçue (chaîne avec décalage ou identifiant de fuseau, `Carbon` ou
+`DateTime` de n'importe quel fuseau, timestamp) est convertie dans le fuseau applicatif (`config('app.timezone')`, UTC)
+avant stockage, et la lecture rend un `Carbon` en UTC. Sans lui, `2026-10-01T23:00:00+14:00` passait
+`before_or_equal:now` (09:00 UTC, comparaison d'instants) mais était stocké `2026-10-01 23:00:00`, 14 h dans le futur,
+dans la semaine de jeu suivante ; `1970-01-01T00:00:00-14:00` passait `after:1970-01-01` mais était stocké
+`1970-01-01 00:00:00`, hors de la plage `TIMESTAMP` de MySQL. Avec le cast, ces deux valeurs sont stockées
+`2026-10-01 09:00:00` et `1970-01-01 14:00:00`, et `2026-10-02T00:00:01+14:00` (10:00:01 UTC) reste refusé. Un `Carbon`
+déjà converti dans un fuseau d'affichage (formulaire moto) est traité de même.
+
 ### 4.3 Finance
 
 `Functional\Finance\Validation\InvestmentTransactionRules` :
@@ -117,7 +128,7 @@ bouge pas.
 |---|---|---|
 | quantité | `quantity` : `numeric`, `gt:0`, `max:1000000000` | `txQuantity` : `required` + mêmes règles |
 | prix unitaire | `unit_price` : `numeric`, `gt:0`, `max:10000000` | `txUnitPrice` : `required` + mêmes règles |
-| exécution | `executed_at` : `date`, `after:1970-01-01`, `before_or_equal:now` | posé à `now()` par le composant (inchangé) |
+| exécution | `executed_at` : `date`, `after:1970-01-01`, `before_or_equal:now`, stocké en UTC (cast `UtcDatetime`, §4.2) | posé à `now()` par le composant (inchangé) |
 | serveur | `id`, `created_at`, `updated_at` : `prohibited` | — |
 
 Les plafonds suivent la capacité des colonnes `decimal(18, 8)` (10¹⁰) avec une marge plausible (un titre au-delà de
@@ -362,7 +373,8 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 - **Horloge client en avance** : un `started_at` d'une seconde dans le futur est refusé (422) ; le client renvoie.
 - **Formulaire moto en fuseau applicatif** : `rideStartedAt` est saisi et interprété en UTC (comportement existant) et
   `before_or_equal:now` compare dans le même fuseau. Un utilisateur qui taperait l'heure de Paris dans les deux heures
-  précédant « maintenant » serait refusé ; l'ambiguïté de fuseau du formulaire est antérieure et hors périmètre.
+  précédant « maintenant » serait refusé ; l'ambiguïté de fuseau du formulaire est antérieure et hors périmètre. Une valeur saisie avec un décalage explicite est,
+  elle, convertie en UTC avant stockage (§4.2).
 - **Sortie déplacée ou corrigée** : modifier `started_at` ou `distance` repose `recorded_at` à l'instant de la
   modification, donc la sortie ne compte pas pour une semaine déjà close (même si elle y avait été saisie à temps) ; la
   déplacer dans la semaine en cours la fait compter. Modifier le titre, la durée, la note ou la météo n'y change rien.
@@ -405,8 +417,11 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
 
 - Moto : `tests/Feature/Moto/MotoRideValidationTest.php` (bornes, futur, plancher, `created_at` / `id` interdits,
   `created_at` serveur), `tests/Feature/Moto/RideRecordingStampTest.php` et `RecordedAtMigrationTest.php`
-  (`recorded_at`), ajouts dans `MotoDashboardComponentTest`.
-- Finance : ajouts dans `InvestmentTransactionValidationTest` et `PortfolioOverviewComponentTest`.
+  (`recorded_at`), `tests/Feature/Moto/RideDateTimezoneTest.php` (décalages, API et Livewire), ajouts dans
+  `MotoDashboardComponentTest`.
+- Finance : ajouts dans `InvestmentTransactionValidationTest` et `PortfolioOverviewComponentTest`,
+  `tests/Feature/Finance/TransactionDateTimezoneTest.php` (décalages).
+- Cast : `tests/Unit/Osdd/UtcDatetimeTest.php`.
 - Tâches : `tests/Feature/Todo/TaskCompletionStampTest.php`, ajouts dans `TaskValidationTest`.
 - Sport / exploration : ajouts dans `ActivitiesApiScopeTest`, `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`,
   `RebuildCoverageTest`.
@@ -481,3 +496,6 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
     `FinanceInvestedCapital` en SQL (recopie la règle de `CapitalCalculator`).
 16. **Tests G4 adaptés, limités à la liste du §13.** Ce sont exactement les comportements que ce lot change ; tout autre
     test existant reste vert sans modification.
+17. **Dates normalisées en UTC par un cast partagé (`UtcDatetime`).** Rejeté : convertir dans la règle de validation (la
+    valeur validée n'est pas celle qui est stockée) ; un mutateur par modèle (copié deux fois, oubliable sur le suivant) ;
+    refuser les valeurs avec décalage (casse les clients légitimes qui envoient de l'ISO 8601 avec offset).
