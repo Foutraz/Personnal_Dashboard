@@ -2,6 +2,7 @@
 
 namespace Functional\Finance\Validation;
 
+use Technical\Osdd\Rules\IsoDatetime;
 use Technical\Osdd\Rules\WithinScale;
 
 final class InvestmentTransactionRules
@@ -43,10 +44,10 @@ final class InvestmentTransactionRules
     }
 
     /**
-     * @return list<string>
+     * @return list<string|IsoDatetime>
      */
     public static function executedAt(): array
     {
-        return ['date', sprintf('after:%s', self::EARLIEST_EXECUTION), 'before_or_equal:now'];
+        return [new IsoDatetime, 'date', sprintf('after:%s', self::EARLIEST_EXECUTION), 'before_or_equal:now'];
     }
 }

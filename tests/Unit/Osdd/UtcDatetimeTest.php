@@ -3,6 +3,7 @@
 namespace Tests\Unit\Osdd;
 
 use Carbon\CarbonImmutable;
+use Carbon\Exceptions\InvalidFormatException;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -55,6 +56,10 @@ class UtcDatetimeTest extends TestCase
             'string without an offset' => ['2026-10-01 08:30:00', '2026-10-01 08:30:00'],
             'date only string' => ['2026-10-01', '2026-10-01 00:00:00'],
             'unix timestamp' => [1_790_848_800, '2026-10-01 10:00:00'],
+            'float unix timestamp' => [1_790_848_800.0, '2026-10-01 10:00:00'],
+            'compact date string is a date, not a timestamp' => ['20260930', '2026-09-30 00:00:00'],
+            'digit string is a date, not a timestamp' => ['01800041970', '1970-01-04 00:00:00'],
+            'compact date and minutes string' => ['202609301010', '2026-09-30 10:10:00'],
             'fractional seconds are truncated' => ['2026-10-01T23:00:00.987+14:00', '2026-10-01 09:00:00'],
             'null' => [null, null],
         ];
@@ -159,6 +164,14 @@ class UtcDatetimeTest extends TestCase
         $model->moment = '2026-10-01 09:00:00';
 
         $this->assertTrue($model->isDirty('moment'));
+    }
+
+    #[Test]
+    public function it_does_not_read_a_digit_string_as_a_timestamp(): void
+    {
+        $this->expectException(InvalidFormatException::class);
+
+        $this->storedFor('1790845200');
     }
 
     public static function unparsableMoments(): array

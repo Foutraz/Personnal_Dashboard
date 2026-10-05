@@ -3,6 +3,7 @@
 namespace Functional\Moto\Validation;
 
 use Carbon\CarbonInterface;
+use Technical\Osdd\Rules\IsoDatetime;
 use Technical\Osdd\Rules\WithinScale;
 
 final class MotoRideRules
@@ -18,11 +19,11 @@ final class MotoRideRules
     public const EARLIEST_START = '1970-01-01';
 
     /**
-     * @return list<string>
+     * @return list<string|IsoDatetime>
      */
     public static function startedAt(): array
     {
-        return ['date', sprintf('after:%s', self::EARLIEST_START), 'before_or_equal:now'];
+        return [new IsoDatetime, 'date', sprintf('after:%s', self::EARLIEST_START), 'before_or_equal:now'];
     }
 
     /**

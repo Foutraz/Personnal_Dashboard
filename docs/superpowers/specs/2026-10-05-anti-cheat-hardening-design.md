@@ -54,6 +54,7 @@ dépendance Composer / npm.
 | 10 | Historique de proposition : jusqu'à 36 requêtes et lignes hydratées | `ProposeWeeklyChallenges::hasHistory()` / `weeklyValues()`, chargeurs de `GoalProgressCalculator` | une requête groupée par template (§8.2) |
 | 11 | Une sortie ancienne, modifiée ensuite, sert de jeton d'antidatage réutilisable | modifier `started_at` ou `distance` garde le `created_at` d'origine, donc `created_at < closes_at` reste vrai | `moto_rides.recorded_at`, posé par le serveur à la création et à chaque changement de `started_at` ou `distance` (§4.2, §5) |
 | 12 | Un décalage horaire passe la validation puis est perdu au stockage (`+14:00` : jusqu'à 14 h dans le futur, donc dans la semaine de jeu suivante ; `-14:00` en 1970 : hors de la plage `TIMESTAMP` MySQL) | `before_or_equal:now` compare des instants, le cast `datetime` formate l'heure murale du `Carbon` reçu | cast `Technical\Osdd\Casts\UtcDatetime` sur `started_at` et `executed_at` (§4.2) |
+| 13 | Une chaîne de chiffres validée comme date calendaire mais stockée comme timestamp (`01800041970` : `date` la lit 1970-01-04, le cast la stockait 2027-01-15) | `date` et `before_or_equal` passent par `strtotime`, le cast `datetime` lit toute chaîne numérique comme un timestamp | forme ISO stricte `Technical\Osdd\Rules\IsoDatetime` devant `date`, et `UtcDatetime` ne lit comme timestamp que les entiers et flottants (§4.2) |
 
 La faille 7 est nouvelle : Lomkit valide les clés d'attributs contre `fields()` puis appelle `forceFill()`. Un
 `created_at` fourni reste « dirty » et Eloquent ne le remplace pas à l'insertion ; un `id` fourni en mise à jour
@@ -93,7 +94,7 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 
 | Champ | API (`MotoRideResource`) | Livewire (`MotoDashboard::logRide`) |
 |---|---|---|
-| départ | `started_at` : `date`, `after:1970-01-01`, `before_or_equal:now` | `rideStartedAt` : `required` + mêmes règles |
+| départ | `started_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now` | `rideStartedAt` : `required` + mêmes règles |
 | distance (km) | `distance` : `numeric`, `gt:0`, `max:2000` | `rideDistance` : `required` + mêmes règles |
 | durée | `duration` (s) : `integer`, `min:60`, `max:86400` | `rideDuration` (min) : `required`, `numeric`, `min:1`, `max:1440` |
 | serveur | `id`, `created_at`, `updated_at` : `prohibited` | — (création Eloquent) |
@@ -120,6 +121,15 @@ dans la semaine de jeu suivante ; `1970-01-01T00:00:00-14:00` passait `after:197
 `2026-10-01 09:00:00` et `1970-01-01 14:00:00`, et `2026-10-02T00:00:01+14:00` (10:00:01 UTC) reste refusé. Un `Carbon`
 déjà converti dans un fuseau d'affichage (formulaire moto) est traité de même.
 
+**Forme ISO stricte.** La règle `Technical\Osdd\Rules\IsoDatetime` précède `date` sur `started_at` et `executed_at` :
+seule une chaîne `AAAA-MM-JJ`, éventuellement suivie de `[T ]HH:MM[:SS[.fraction]]` et d'un décalage (`Z`, `+HH:MM`,
+`+HHMM`) est acceptée. Elle refuse les chaînes de chiffres (`01800041970`, `202609301010`, `20260930`), les nombres JSON,
+les phrases relatives (`yesterday`), les marqueurs `@timestamp` et les noms de fuseau (`Pacific/Kiritimati`) : `date`
+et `before_or_equal` lisent ces valeurs comme des dates calendaires, alors que l'ancien cast stockait une chaîne
+numérique comme un timestamp. Le cast `UtcDatetime` lit désormais toute chaîne comme une date (jamais comme un timestamp,
+réservé aux entiers et flottants), de sorte que la valeur validée est celle qui est stockée. Un `Carbon` ou un `DateTime`
+passe tel quel par le cast (la règle ne voit que les entrées du client).
+
 ### 4.3 Finance
 
 `Functional\Finance\Validation\InvestmentTransactionRules` :
@@ -128,7 +138,7 @@ déjà converti dans un fuseau d'affichage (formulaire moto) est traité de mêm
 |---|---|---|
 | quantité | `quantity` : `numeric`, `gt:0`, `max:1000000000` | `txQuantity` : `required` + mêmes règles |
 | prix unitaire | `unit_price` : `numeric`, `gt:0`, `max:10000000` | `txUnitPrice` : `required` + mêmes règles |
-| exécution | `executed_at` : `date`, `after:1970-01-01`, `before_or_equal:now`, stocké en UTC (cast `UtcDatetime`, §4.2) | posé à `now()` par le composant (inchangé) |
+| exécution | `executed_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now`, stocké en UTC (cast `UtcDatetime`, §4.2) | posé à `now()` par le composant (inchangé) |
 | serveur | `id`, `created_at`, `updated_at` : `prohibited` | — |
 
 Les plafonds suivent la capacité des colonnes `decimal(18, 8)` (10¹⁰) avec une marge plausible (un titre au-delà de
@@ -421,7 +431,7 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
   `MotoDashboardComponentTest`.
 - Finance : ajouts dans `InvestmentTransactionValidationTest` et `PortfolioOverviewComponentTest`,
   `tests/Feature/Finance/TransactionDateTimezoneTest.php` (décalages).
-- Cast : `tests/Unit/Osdd/UtcDatetimeTest.php`.
+- Cast et règle : `tests/Unit/Osdd/UtcDatetimeTest.php`, `tests/Unit/Osdd/IsoDatetimeTest.php`.
 - Tâches : `tests/Feature/Todo/TaskCompletionStampTest.php`, ajouts dans `TaskValidationTest`.
 - Sport / exploration : ajouts dans `ActivitiesApiScopeTest`, `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`,
   `RebuildCoverageTest`.
@@ -498,4 +508,7 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
     test existant reste vert sans modification.
 17. **Dates normalisées en UTC par un cast partagé (`UtcDatetime`).** Rejeté : convertir dans la règle de validation (la
     valeur validée n'est pas celle qui est stockée) ; un mutateur par modèle (copié deux fois, oubliable sur le suivant) ;
-    refuser les valeurs avec décalage (casse les clients légitimes qui envoient de l'ISO 8601 avec offset).
+    refuser les valeurs avec décalage (casse les clients légitimes qui envoient de l'ISO 8601 avec offset). La validation
+    impose en plus une forme ISO stricte (`IsoDatetime`) : rejeté, garder `date` seule (elle accepte des chaînes de
+    chiffres, des phrases relatives et des noms de fuseau que le stockage ne lit pas comme la validation) ; accepter les
+    noms de fuseau (aucun client n'en envoie, un décalage numérique suffit).

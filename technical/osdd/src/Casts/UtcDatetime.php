@@ -55,7 +55,7 @@ final class UtcDatetime implements CastsAttributes, ComparesCastableAttributes
             return Date::instance($moment)->setTimezone($timezone);
         }
 
-        if (is_numeric($moment)) {
+        if (is_int($moment) || is_float($moment)) {
             return Date::createFromTimestamp($moment, $timezone);
         }
 
