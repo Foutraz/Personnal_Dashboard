@@ -8,15 +8,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Technical\WebAuthentication\Http\Requests\LoginWebRequest;
+use Technical\WebAuthentication\Services\RegistrationAllowList;
 
 class LoginController
 {
     /**
      * Display the login form.
      */
-    public function show(): View
+    public function show(RegistrationAllowList $registrationAllowList): View
     {
-        return view('web-authentication::login');
+        return view('web-authentication::login', ['registrationOpen' => $registrationAllowList->isOpen()]);
     }
 
     /**

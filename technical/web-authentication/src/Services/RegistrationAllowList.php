@@ -15,6 +15,14 @@ class RegistrationAllowList
     }
 
     /**
+     * Tell whether at least one email is listed, so the registration is open to someone.
+     */
+    public function isOpen(): bool
+    {
+        return $this->allowedEmails() !== [];
+    }
+
+    /**
      * @return array<int, string>
      */
     private function allowedEmails(): array
