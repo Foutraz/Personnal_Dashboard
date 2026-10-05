@@ -2,9 +2,7 @@
 
 namespace Technical\WebAuthentication\Exceptions;
 
-use Exception;
-
-class SocialProviderDeniedException extends Exception
+class SocialProviderDeniedException extends SocialSignInRefusedException
 {
     /**
      * Create an exception raised when the social provider denied the authentication.
