@@ -3,7 +3,8 @@
 > Date : 2026-10-05. Branche : `fix/post-gamification-followups` (depuis `develop`).
 > Hors périmètre, détenu par `feature/anti-cheat-hardening` : `functional/gamification`, `functional/goals` et les
 > règles de validation des ressources REST moto / sport / finance / todo / exploration. Rien n'y est modifié ici.
-> Pile réellement installée (lock) : Laravel 12.62, PHPUnit 11.5, Livewire 3.8.1, lomkit/laravel-rest-api 2.21.0.
+> Pile installée à la rédaction (lock) : Laravel 12.62, PHPUnit 11.5, Livewire 3.8.1, lomkit/laravel-rest-api 2.21.0 ; la montée de
+> dépendances du §6 (décision de Quentin) porte lomkit/laravel-rest-api à 2.23.2.
 
 ## 1. Purge des notifications à la suppression d'un utilisateur
 
@@ -38,7 +39,7 @@ technique au type `User` et renvoie un `MorphMany` au lieu d'un `Builder`).
 
 ## 3. Lomkit : chemin de relation non déclaré → 500
 
-**Cause.** `Relationable::relation()` (lomkit 2.21.0, toujours présent sur `main` le 2026-10-05) déréférence
+**Cause.** `Relationable::relation()` (lomkit 2.21.0, toujours présent en 2.23.2 et sur `main` le 2026-10-05) déréférence
 `$relation->resource()` sans test de nullité quand le premier segment d'un chemin pointé n'est pas déclaré. Sonde
 sur `/api/moto-rides/search` et `/api/badge-awards/search` :
 
@@ -54,11 +55,16 @@ sur `/api/moto-rides/search` et `/api/badge-awards/search` :
 
 Avec `APP_DEBUG=true`, la réponse expose `exception`, `file`, `line` et `trace`.
 
+**Sonde sur lomkit 2.23.2 (version installée après la montée du §6).** Le pont reste nécessaire : un chemin pointé dont
+le premier segment n'est pas déclaré renvoie toujours 500, ainsi que les éléments `includes` / `aggregates` chaînes ou
+sans `relation` exploitable. Seuls `search` non tableau, `includes` / `aggregates` non tableaux et `relation` numérique
+sont corrigés en amont (422, épinglés par des tests de non-régression sans code ajouté).
+
 **Décision.** Le défaut est dans le paquet : le correctif va d'abord **en amont** (`contribute-upstream`). Brouillon
 d'issue + PR pour Lomkit/laravel-rest-api, à déposer par Quentin : « 500 quand le premier segment d'une relation
 pointée n'est pas déclaré », reproduction ci-dessus, correctif `return $relation?->resource()->relation($nestedRelation);`
-dans `Relationable`, plus `'array'` sur `search` et `includes.*` / `aggregates.*` avec `relation` `required` +
-`string` lus avant `$value['relation']` dans `SearchInclude` / `SearchAggregate`, avec test dans la suite du paquet.
+dans `Relationable`, plus `relation` `required` + `string` lus avant `$value['relation']` dans `SearchInclude` /
+`SearchAggregate` (le `'array'` sur `search` est corrigé depuis 2.23.2), avec test dans la suite du paquet.
 
 **Pont applicatif** (demandé, à confirmer par Quentin une fois l'issue ouverte, référencée dans le commit et la PR) :
 trait `ResolvesUndeclaredRelationPathsToNull` utilisé par la `Resource` OSDD de base (`technical/osdd`), dont toutes
@@ -67,7 +73,7 @@ déclaré, sinon `parent::relation($name)`. La propre règle lomkit `ResourceRel
 en 422 (`search.includes.0.relation`, `search.aggregates.0.relation`, `search.includes.0.includes.0.relation`) avec le
 message `The relation is not valid or allowed for this resource.`, à toute profondeur et sur les 17 ressources. Validé
 par une sonde jetable sur une sous-classe de `BadgeAwardResource`. Pas de mapping d'exception par message, pas de
-try-catch, aucun fichier `vendor/`. Le trait est supprimé dans la PR qui monte vers la version lomkit corrigée.
+try-catch, aucun fichier `vendor/`. Le trait est supprimé dans la PR qui monte vers la première version lomkit corrigée de ce défaut (2.23.2 ne l'est pas).
 
 **Résiduel accepté.** Les éléments malformés (chaîne, `relation` absente ou non chaîne) et `search` non tableau
 restent en 500 jusqu'à la version amont : un pont de plus imposerait de rebinder `SearchRequest`, plus large que le
@@ -110,7 +116,8 @@ mode. Aucun changement de code ; vérification par Quentin sur le serveur (`php 
 `composer audit --locked` (2026-10-05) : guzzlehttp/guzzle 7.12.3 (1 high, 5 medium), league/commonmark 2.8.2
 (9 high, 3 medium), livewire/livewire 3.8.1 (DOM XSS medium), phpseclib/phpseclib 3.0.55 (medium),
 league/flysystem 3.35.1, symfony/yaml 7.4.11 (3) et laravel/framework 12.62.0 (low). Toutes les versions corrigées
-tiennent dans les contraintes actuelles de `composer.json` (patch ou mineure) :
+tiennent dans les contraintes actuelles de `composer.json` (patch ou mineure). lomkit/laravel-rest-api, montée à 2.23.2
+sur décision de Quentin (avis GHSA-w87g-c4fx-87gg, que `composer audit` ne signalait pas), fait partie du lot :
 
 | Paquet | Installé | Corrigé à partir de | Cible (Packagist, 2026-10-05) |
 |---|---|---|---|
@@ -121,6 +128,7 @@ tiennent dans les contraintes actuelles de `composer.json` (patch ou mineure) :
 | guzzlehttp/guzzle | 7.12.3 | 7.15.2 | 7.15.5 |
 | phpseclib/phpseclib | 3.0.55 | 3.0.57 | 3.0.57 |
 | symfony/yaml | 7.4.11 | 7.4.12 | 7.4.20 |
+| lomkit/laravel-rest-api | 2.21.0 | 2.23.2 (GHSA-w87g-c4fx-87gg) | 2.23.2 |
 
 Les SDK Foutraz sont des dépôts VCS GitHub, injoignables depuis ce poste : Quentin lance la mise à jour, puis
 l'implémenteur vérifie (suite complète, PHPStan, Pint, `composer audit`) et commite le lock.
@@ -131,7 +139,7 @@ l'implémenteur vérifie (suite complète, PHPStan, Pint, `composer audit`) et c
 - Même défaut de fuseau : `TodoBoard::newDueAt` (saisie `datetime-local` stockée en UTC, rappels décalés) et les
   libellés météo de l'écran moto (bandeau horaire, créneaux favorables) affichés en UTC ; `DisplayTimezone` les couvre.
 - `gamification.timezone` pourrait prendre `app.display_timezone` pour défaut (branche gamification).
-- lomkit 2.23.2 cite l'avis GHSA-w87g-c4fx-87gg, que `composer audit` ne signale pas : montée à évaluer à part.
+- lomkit 2.23.2 (avis GHSA-w87g-c4fx-87gg) est installée dans cette branche ; le défaut du §3 y subsiste, le pont aussi.
 
 ## 8. Décisions prises
 
@@ -147,4 +155,5 @@ l'implémenteur vérifie (suite complète, PHPStan, Pint, `composer audit`) et c
    exception nommée.** Rejeté : réutiliser `gamification.timezone` (concept distinct, autre branche) ; changer
    `app.timezone` (stockage et requêtes UTC partout) ; replier silencieusement sur UTC.
 5. **`APP_DEBUG` documenté, pas de code** : aucun fichier de production dans le dépôt.
-6. **Dépendances : patch / mineure dans les contraintes, lancées par Quentin**, lock seul commité, lomkit exclu.
+6. **Dépendances : patch / mineure dans les contraintes, lancées par Quentin**, lock seul commité, lomkit incluse
+   (2.23.2, avis GHSA-w87g-c4fx-87gg, décision de Quentin) ; le pont du §3 reste nécessaire sur cette version.
