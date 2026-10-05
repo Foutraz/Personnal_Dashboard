@@ -8,6 +8,8 @@ use Lomkit\Rest\Http\Resource as RestResource;
 
 abstract class Resource extends RestResource
 {
+    private const SERVER_MANAGED_FIELDS = ['id', 'created_at', 'updated_at'];
+
     /**
      * Enable policy authorization so the controls enforce per-user ownership.
      */
@@ -54,5 +56,17 @@ abstract class Resource extends RestResource
     public function forceDeleteQuery(RestRequest $request, Builder $query): Builder
     {
         return $query->controlled();
+    }
+
+    /**
+     * Lomkit force-fills every declared field, so a client could otherwise choose the key or the timestamps.
+     *
+     * @return array<string, list<string>>
+     */
+    protected function serverManagedFieldRules(RestRequest $request): array
+    {
+        $declaredFields = array_intersect(self::SERVER_MANAGED_FIELDS, $this->fields($request));
+
+        return array_fill_keys($declaredFields, ['prohibited']);
     }
 }

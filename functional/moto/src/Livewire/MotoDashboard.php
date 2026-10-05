@@ -10,6 +10,7 @@ use Functional\Moto\Services\FavorableSlotFinder;
 use Functional\Moto\Services\MotoFriendlyScore;
 use Functional\Moto\Services\RidingStatsCalculator;
 use Functional\Moto\Services\WeatherForecastService;
+use Functional\Moto\Validation\MotoRideRules;
 use Functional\Moto\ValueObjects\RideCondition;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -143,9 +144,9 @@ class MotoDashboard extends Component
     {
         $this->validate([
             'rideTitle' => 'required|string|max:255',
-            'rideStartedAt' => 'required|date',
-            'rideDuration' => 'required|numeric|min:1',
-            'rideDistance' => 'required|numeric|min:0',
+            'rideStartedAt' => ['required', ...MotoRideRules::startedAt()],
+            'rideDuration' => ['required', ...MotoRideRules::durationInMinutes()],
+            'rideDistance' => ['required', ...MotoRideRules::distance()],
             'rideNote' => 'nullable|string|max:1000',
         ]);
 

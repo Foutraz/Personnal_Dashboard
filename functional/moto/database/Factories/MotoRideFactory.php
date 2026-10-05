@@ -33,6 +33,8 @@ class MotoRideFactory extends Factory
             'distance' => faker()->float(10, 450, 2),
             'weather_label' => faker()->randomElement(['Excellent', 'Bon', 'Moyen', null]),
             'note' => faker()->boolean() ? faker()->words(8) : null,
+            'created_at' => fn (array $attributes): mixed => $attributes['started_at'],
+            'updated_at' => fn (array $attributes): mixed => $attributes['started_at'],
         ];
     }
 }
