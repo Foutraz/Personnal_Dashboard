@@ -10,6 +10,7 @@ use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Livewire\PlayerProfilePage;
 use Functional\Gamification\Models\Badge;
 use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
@@ -346,6 +347,35 @@ class PlayerProfilePageTest extends TestCase
         Livewire::actingAs($user)->test(PlayerProfilePage::class);
 
         $this->assertSame(1, $spy->measures);
+    }
+
+    #[Test]
+    public function it_embeds_the_challenge_board_between_the_xp_tiles_and_the_streaks(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        Streak::factory()->create(['user_id' => $user->id, 'last_activity_date' => now()->toDateString()]);
+
+        Livewire::actingAs($user)
+            ->test(PlayerProfilePage::class)
+            ->assertSeeLivewire('gamification-challenge-board')
+            ->assertSeeInOrder(['XP ce mois-ci', 'Défis de la semaine', 'Séries']);
+    }
+
+    #[Test]
+    public function it_shows_the_challenges_of_the_week_on_the_player_page(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        Challenge::factory()->for($user)->create();
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSeeLivewire('gamification-challenge-board')
+            ->assertSee('Défis de la semaine')
+            ->assertSee('Distance sportive')
+            ->assertSeeHtml('aria-label="Relever le défi Distance sportive"');
     }
 
     private function userWithDistanceAndBronze(int $kilometres): User

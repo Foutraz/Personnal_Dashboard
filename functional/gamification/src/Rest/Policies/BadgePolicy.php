@@ -39,4 +39,20 @@ class BadgePolicy extends ControlledPolicy
     {
         return false;
     }
+
+    /**
+     * Forbid restoring catalogue entries through the API.
+     */
+    public function restore(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * Forbid purging catalogue entries through the API.
+     */
+    public function forceDelete(Model $user, Model $model): bool
+    {
+        return false;
+    }
 }

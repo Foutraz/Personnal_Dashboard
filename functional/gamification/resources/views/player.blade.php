@@ -54,6 +54,8 @@
         />
     </section>
 
+    <livewire:gamification-challenge-board />
+
     @if ($streakCards->isNotEmpty())
         <section class="mt-8" style="animation-delay: 0.15s;">
             <h3 class="font-display text-lg font-semibold tracking-tight">{{ __('gamification::player.streaks_title') }}</h3>

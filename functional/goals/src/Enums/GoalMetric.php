@@ -70,6 +70,23 @@ enum GoalMetric: string
         };
     }
 
+    public function isPeriodBound(): bool
+    {
+        return match ($this) {
+            self::SportDistance,
+            self::SportElevation,
+            self::SportActivityCount,
+            self::SportMovingTime,
+            self::FinanceInvestedCapital,
+            self::MotoDistance,
+            self::MotoRideCount,
+            self::ExplorationCells => true,
+            self::FinancePortfolioValue,
+            self::Manual,
+            self::TodoCompletionRate => false,
+        };
+    }
+
     /**
      * Determine whether the metric is computed automatically from another module.
      */

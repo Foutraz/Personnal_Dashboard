@@ -96,6 +96,36 @@ class AwardXpTest extends TestCase
         $this->assertTrue(XpEntry::query()->whereKey($badgeEntry->id)->exists());
     }
 
+    #[Test]
+    public function it_keeps_challenge_completed_entries_when_purging_the_window(): void
+    {
+        $user = User::factory()->create();
+        $challengeEntry = XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'rule_key' => XpRuleKey::ChallengeCompleted->value,
+            'source_type' => XpSourceType::Challenge->value,
+            'occurred_at' => now()->subDay(),
+        ]);
+
+        $this->app->make(AwardXp::class)->handle(
+            $user,
+            collect([$this->award('sport_activity', 'activity-1', 40)]),
+            collect(['sport_activity']),
+            now()->subDays(3)->startOfDay(),
+        );
+
+        $this->assertTrue(XpEntry::query()->whereKey($challengeEntry->id)->exists());
+    }
+
+    #[Test]
+    public function it_lists_the_challenge_completed_key_among_the_bonus_rule_keys(): void
+    {
+        $this->assertTrue(XpRuleKey::ChallengeCompleted->isBonus());
+        $this->assertSame('challenge_completed', XpRuleKey::ChallengeCompleted->value);
+        $this->assertSame('challenge', XpSourceType::Challenge->value);
+        $this->assertSame(['streak_milestone', 'badge_award', 'challenge_completed'], XpRuleKey::bonusKeys());
+    }
+
     /**
      * Build a sport award targeting the given source with the given points.
      */

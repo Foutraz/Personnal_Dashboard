@@ -1137,11 +1137,12 @@
             "dist": {
                 "type": "path",
                 "url": "./functional/gamification",
-                "reference": "815982476ea9301b71916ff32263d1ab267fd9f0"
+                "reference": "d3f5c95c9aef43421e43fc7ab44890d58997f2c7"
             },
             "require": {
                 "functional/exploration": "*",
                 "functional/finance": "*",
+                "functional/goals": "*",
                 "functional/health": "*",
                 "functional/moto": "*",
                 "functional/sport": "*",
