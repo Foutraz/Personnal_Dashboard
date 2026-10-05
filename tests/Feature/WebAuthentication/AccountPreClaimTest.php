@@ -66,4 +66,25 @@ class AccountPreClaimTest extends TestCase
         $this->assertNotSame($attacker->id, Auth::guard('web')->id());
         $this->assertNull($attacker->fresh()->google_id);
     }
+
+    #[Test]
+    public function it_stops_an_unverified_google_email_from_pre_claiming_the_victims_account(): void
+    {
+        $this->queueGoogleSignIns(
+            $this->googleUser('google-attacker', self::VICTIM_EMAIL, emailVerified: false),
+            $this->googleUser(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL),
+        );
+
+        $this->get('/auth/google/callback')->assertRedirect(route('login'));
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertSame(0, User::query()->count());
+
+        $this->get('/auth/google/callback')->assertRedirect('/dashboard');
+
+        $victim = User::query()->where('email', self::VICTIM_EMAIL)->firstOrFail();
+        $this->assertSame(self::VICTIM_GOOGLE_ID, $victim->google_id);
+        $this->assertNotNull($victim->email_verified_at);
+        $this->assertSame($victim->id, Auth::guard('web')->id());
+        $this->assertSame(1, User::query()->count());
+    }
 }

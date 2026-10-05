@@ -5,10 +5,14 @@ namespace Tests\Feature\WebAuthentication;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Socialite\Contracts\User as SocialUser;
+use Laravel\Socialite\Two\User as GoogleUser;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\WebAuthentication\Actions\FindOrCreateSocialUser;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
+use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
 use Tests\Feature\WebAuthentication\Concerns\FakesGoogleSignIn;
 use Tests\TestCase;
 
@@ -155,5 +159,79 @@ class GoogleAccountLinkingTest extends TestCase
         $this->expectException(GoogleIdentityMismatchException::class);
 
         app(FindOrCreateSocialUser::class)($this->googleUser('google-intruder', self::VICTIM_EMAIL));
+    }
+
+    #[Test]
+    public function it_refuses_to_create_an_account_when_google_has_not_verified_the_email(): void
+    {
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL, emailVerified: false);
+
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email' => __('web-authentication::auth.social_link_refused')]);
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertSame(0, User::query()->count());
+    }
+
+    #[Test]
+    public function it_refuses_to_link_a_verified_account_when_google_has_not_verified_the_email(): void
+    {
+        $owner = User::factory()->verified()->create(['email' => self::VICTIM_EMAIL]);
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL, emailVerified: false);
+
+        $this->get('/auth/google/callback')->assertRedirect(route('login'));
+
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertNull($owner->fresh()->google_id);
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_google_has_not_verified_the_email(): void
+    {
+        $this->expectException(UnverifiedGoogleEmailException::class);
+
+        app(FindOrCreateSocialUser::class)($this->googleUser(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL, emailVerified: false));
+    }
+
+    #[Test]
+    public function it_refuses_a_google_user_that_carries_no_email_verified_claim(): void
+    {
+        $socialUser = GoogleUser::fake([
+            'id' => self::VICTIM_GOOGLE_ID,
+            'email' => self::VICTIM_EMAIL,
+            'name' => 'Google User',
+            'nickname' => null,
+        ]);
+
+        $this->expectException(UnverifiedGoogleEmailException::class);
+
+        app(FindOrCreateSocialUser::class)($socialUser);
+    }
+
+    #[Test]
+    public function it_refuses_a_social_user_that_is_not_an_oauth_two_user(): void
+    {
+        $socialUser = Mockery::mock(SocialUser::class);
+        $socialUser->shouldReceive('getId')->andReturn(self::VICTIM_GOOGLE_ID);
+        $socialUser->shouldReceive('getEmail')->andReturn(self::VICTIM_EMAIL);
+
+        $this->expectException(UnverifiedGoogleEmailException::class);
+
+        app(FindOrCreateSocialUser::class)($socialUser);
+    }
+
+    #[Test]
+    public function it_signs_in_an_already_linked_identity_even_when_google_reports_the_email_unverified(): void
+    {
+        $linked = User::factory()->verified()->create([
+            'email' => self::VICTIM_EMAIL,
+            'google_id' => self::VICTIM_GOOGLE_ID,
+        ]);
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL, emailVerified: false);
+
+        $this->get('/auth/google/callback')->assertRedirect('/dashboard');
+
+        $this->assertSame($linked->id, Auth::guard('web')->id());
     }
 }
