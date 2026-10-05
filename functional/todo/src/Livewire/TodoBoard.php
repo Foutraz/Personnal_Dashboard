@@ -13,6 +13,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Technical\Application\Time\DisplayTimezone;
 
 class TodoBoard extends Component
 {
@@ -45,7 +46,7 @@ class TodoBoard extends Component
     /**
      * Create a task owned by the authenticated user from the inline form.
      */
-    public function createTask(): void
+    public function createTask(DisplayTimezone $displayTimezone): void
     {
         $this->validate([
             'newTitle' => 'required|string|max:255',
@@ -58,7 +59,7 @@ class TodoBoard extends Component
             'title' => $this->newTitle,
             'priority' => $this->newPriority,
             'status' => TaskStatus::Pending,
-            'due_at' => $this->newDueAt !== null && $this->newDueAt !== '' ? $this->newDueAt : null,
+            'due_at' => $this->newDueAt !== null && $this->newDueAt !== '' ? $displayTimezone->toApplicationTime($this->newDueAt) : null,
             'position' => (int) Task::query()->where('user_id', Auth::id())->max('position') + 1,
         ]);
 
@@ -159,10 +160,11 @@ class TodoBoard extends Component
      */
     #[Layout('layouts.app')]
     #[Title('To-Do')]
-    public function render(): View
+    public function render(DisplayTimezone $displayTimezone): View
     {
         return view('todo::todo', [
             'tasks' => $this->tasks(),
+            'displayTimezone' => $displayTimezone->name(),
             'priorities' => TaskPriority::cases(),
             'statuses' => TaskStatus::cases(),
         ]);

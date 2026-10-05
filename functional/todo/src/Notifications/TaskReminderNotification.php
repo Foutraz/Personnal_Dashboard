@@ -6,6 +6,8 @@ use Functional\Todo\Models\Task;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Carbon;
+use Technical\Application\Time\DisplayTimezone;
 
 class TaskReminderNotification extends Notification
 {
@@ -32,7 +34,7 @@ class TaskReminderNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $line = $this->task->due_at !== null
-            ? "Votre tâche « {$this->task->title} » arrive à échéance le {$this->task->due_at->format('d/m/Y H:i')}."
+            ? "Votre tâche « {$this->task->title} » arrive à échéance le {$this->displayedDueAt($this->task->due_at)}."
             : "Votre tâche « {$this->task->title} » nécessite votre attention.";
 
         return (new MailMessage)
@@ -40,6 +42,11 @@ class TaskReminderNotification extends Notification
             ->greeting('Rappel de tâche')
             ->line($line)
             ->action('Voir mes tâches', route('todo'));
+    }
+
+    private function displayedDueAt(Carbon $dueAt): string
+    {
+        return app(DisplayTimezone::class)->toDisplayTime($dueAt)->format('d/m/Y H:i');
     }
 
     /**
