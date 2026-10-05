@@ -39,4 +39,20 @@ class StreakPolicy extends ControlledPolicy
     {
         return false;
     }
+
+    /**
+     * Forbid restoring the recomputed projection through the API.
+     */
+    public function restore(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    /**
+     * Forbid purging the recomputed projection through the API.
+     */
+    public function forceDelete(Model $user, Model $model): bool
+    {
+        return false;
+    }
 }

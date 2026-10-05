@@ -2,10 +2,14 @@
 
 namespace Functional\Gamification\Dashboard;
 
+use Functional\Gamification\Enums\ChallengeStatus;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\BadgeShowcase;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
+use Functional\Gamification\Services\WeeklyChallenges;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -22,10 +26,12 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
         private LevelCurve $levelCurve,
         private XpLedger $xpLedger,
         private GamificationCalendar $calendar,
+        private BadgeShowcase $badgeShowcase,
+        private WeeklyChallenges $weeklyChallenges,
     ) {}
 
     /**
-     * Summarise the user's player level and experience.
+     * Summarise the user's player level, experience, badges and hottest streak.
      */
     public function dashboardSummary(Authenticatable $user): DashboardSummary
     {
@@ -47,10 +53,20 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             __('gamification::dashboard.total_xp', ['xp' => number_format($totalXp, 0, ',', ' ')]),
             __('gamification::dashboard.remaining_xp', ['xp' => number_format($remaining, 0, ',', ' '), 'level' => $level + 1]),
             __('gamification::dashboard.monthly_xp', ['xp' => number_format($monthlyXp, 0, ',', ' ')]),
+            __('gamification::dashboard.badges', [
+                'earned' => $this->badgeShowcase->earnedCount($user),
+                'total' => $this->badgeShowcase->totalCount(),
+            ]),
         ];
 
         if ($hottest !== null) {
             $secondaryLines[] = __('gamification::dashboard.hottest_streak', ['domain' => $hottest->domain->label(), 'count' => $hottest->current_count]);
+        }
+
+        $challengeLine = $this->challengeLine($user);
+
+        if ($challengeLine !== null) {
+            $secondaryLines[] = $challengeLine;
         }
 
         return new DashboardSummary(
@@ -65,6 +81,26 @@ final class GamificationDashboardContribution implements ProvidesDashboardSummar
             metricUnit: __('gamification::dashboard.metric_unit'),
             secondaryLines: $secondaryLines,
         );
+    }
+
+    private function challengeLine(User $user): ?string
+    {
+        $challenges = $this->weeklyChallenges->forWeek($user, $this->calendar->currentWeek());
+        $proposed = $challenges->filter(fn (Challenge $challenge): bool => $challenge->status === ChallengeStatus::Proposed)->count();
+        $engaged = $challenges->filter(fn (Challenge $challenge): bool => $challenge->status->isEngaged());
+
+        if ($proposed > 0) {
+            return trans_choice('gamification::dashboard.challenges_pending', $proposed);
+        }
+
+        if ($engaged->isEmpty()) {
+            return null;
+        }
+
+        return __('gamification::dashboard.challenges_progress', [
+            'completed' => $engaged->filter(fn (Challenge $challenge): bool => $challenge->status === ChallengeStatus::Completed)->count(),
+            'committed' => $engaged->count(),
+        ]);
     }
 
     /**

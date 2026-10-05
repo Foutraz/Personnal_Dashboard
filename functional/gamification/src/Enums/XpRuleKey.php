@@ -11,4 +11,25 @@ enum XpRuleKey: string
     case TodoTaskCompleted = 'todo_task_completed';
     case ExplorationDailyCells = 'exploration_daily_cells';
     case StreakMilestone = 'streak_milestone';
+    case BadgeAward = 'badge_award';
+    case ChallengeCompleted = 'challenge_completed';
+
+    public function isBonus(): bool
+    {
+        return match ($this) {
+            self::StreakMilestone, self::BadgeAward, self::ChallengeCompleted => true,
+            default => false,
+        };
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function bonusKeys(): array
+    {
+        return array_values(array_map(
+            fn (self $ruleKey): string => $ruleKey->value,
+            array_filter(self::cases(), fn (self $ruleKey): bool => $ruleKey->isBonus()),
+        ));
+    }
 }

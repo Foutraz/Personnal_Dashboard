@@ -6,15 +6,26 @@ use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
+use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Notifications\ChallengeCompletedNotification;
+use Functional\Gamification\Notifications\ChallengesProposedNotification;
 use Functional\Sport\Models\SportActivity;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -89,7 +100,7 @@ class ProcessUserGamificationJobTest extends TestCase
         ProcessUserGamificationJob::dispatchSync($user->id);
 
         $position = Position::factory()->create(['user_id' => $user->id]);
-        InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'executed_at' => $month->copy()->addDays(5)]);
+        InvestmentTransaction::factory()->create(['position_id' => $position->id, 'type' => TransactionType::Buy, 'quantity' => 1, 'unit_price' => 100, 'executed_at' => $month->copy()->addDays(5)]);
 
         ProcessUserGamificationJob::dispatchSync($user->id);
 
@@ -216,5 +227,169 @@ class ProcessUserGamificationJobTest extends TestCase
 
         $streak = Streak::query()->where('user_id', $user->id)->where('domain', GamificationDomain::Sport->value)->sole();
         $this->assertSame(2, $streak->current_count);
+    }
+
+    #[Test]
+    public function it_keeps_the_badge_xp_through_windowed_and_full_passes_and_totals_the_ledger(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(7));
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $badgeEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->sole();
+        $this->assertSame(BadgeTier::Bronze->xpReward(), $badgeEntry->points);
+        $this->assertSame(1, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_keeps_the_badge_xp_after_a_full_recalculation_purge(): void
+    {
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        XpEntry::query()->whereBelongsTo($user)->delete();
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(1, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::BadgeAward->value)->count());
+        $this->assertSame(1, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_stores_one_database_notification_with_the_translated_title_per_new_badge(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        $this->smallActivities($user, 10);
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $notification = $user->notifications()->get()->sole();
+        $this->assertSame('Nouveau badge : Assiduité sportive (Bronze)', $notification->data['title']);
+        $this->assertSame(BadgeRuleKey::SportActivityCount->badgeKey(BadgeTier::Bronze), $notification->data['badge_key']);
+        $this->assertSame(BadgeTier::Bronze->xpReward(), $notification->data['xp_reward']);
+    }
+
+    #[Test]
+    public function it_keeps_the_challenge_xp_through_windowed_passes_and_totals_the_ledger(): void
+    {
+        $user = $this->userWithACompletableChallenge();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(3));
+
+        $challengeEntry = XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->sole();
+        $this->assertSame(50, $challengeEntry->points);
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_rebuilds_the_challenge_xp_after_a_full_recalculation(): void
+    {
+        $user = $this->userWithACompletableChallenge();
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id, now()->subDays(3));
+
+        $this->artisan('gamification:recalculate', ['user' => $user->id])->assertExitCode(0);
+
+        $this->assertSame(1, XpEntry::query()->whereBelongsTo($user)->where('rule_key', XpRuleKey::ChallengeCompleted->value)->count());
+        $this->assertSame(
+            (int) XpEntry::query()->whereBelongsTo($user)->sum('points'),
+            PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp,
+        );
+    }
+
+    #[Test]
+    public function it_stores_the_completed_challenge_notification_once_across_passes(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithACompletableChallenge();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(1, $user->notifications()->where('type', ChallengeCompletedNotification::class)->count());
+        $this->assertSame(0, $user->notifications()->where('type', ChallengesProposedNotification::class)->count());
+    }
+
+    #[Test]
+    public function it_awards_no_badge_to_a_user_without_data(): void
+    {
+        $user = User::factory()->create();
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(0, BadgeAward::query()->whereBelongsTo($user)->count());
+        $this->assertSame(0, $user->notifications()->count());
+        $this->assertSame(0, PlayerProfile::query()->whereBelongsTo($user)->sole()->total_xp);
+    }
+
+    #[Test]
+    public function it_syncs_the_badge_catalogue_once_outside_the_transaction_before_running(): void
+    {
+        $user = User::factory()->create();
+        $baselineLevel = DB::transactionLevel();
+        $syncLevels = [];
+        $this->mock(SyncBadgeCatalogue::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->andReturnUsing(function () use (&$syncLevels): void {
+                $syncLevels[] = DB::transactionLevel();
+            });
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame([$baselineLevel], $syncLevels);
+    }
+
+    #[Test]
+    public function it_creates_the_badge_catalogue_on_the_first_run(): void
+    {
+        $user = User::factory()->create();
+        $this->assertSame(0, Badge::query()->count());
+
+        ProcessUserGamificationJob::dispatchSync($user->id);
+
+        $this->assertSame(30, Badge::query()->count());
+    }
+
+    private function userWithACompletableChallenge(): User
+    {
+        $this->travelTo(Carbon::parse('2026-10-03 12:00:00', 'UTC'));
+        $user = User::factory()->create();
+        Challenge::factory()->accepted()->create(['user_id' => $user->id, 'target_value' => 28]);
+        SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'distance' => 30000.0,
+            'moving_time' => 0,
+            'total_elevation_gain' => 0,
+            'started_at' => now()->subDay(),
+        ]);
+
+        return $user;
+    }
+
+    private function smallActivities(User $user, int $count): void
+    {
+        SportActivity::factory()->count($count)->create([
+            'user_id' => $user->id,
+            'distance' => 1000.0,
+            'started_at' => now()->subDays(2)->setTime(8, 0),
+        ]);
     }
 }

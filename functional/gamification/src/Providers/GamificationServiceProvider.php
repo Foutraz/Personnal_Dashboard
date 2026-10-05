@@ -4,20 +4,41 @@ namespace Functional\Gamification\Providers;
 
 use Functional\Exploration\Events\CoverageRebuilt;
 use Functional\Finance\Events\BankTransactionsSynced;
+use Functional\Gamification\Badges\Rules\ExplorationCellsBadgeRule;
+use Functional\Gamification\Badges\Rules\FinanceInvestedCapitalBadgeRule;
+use Functional\Gamification\Badges\Rules\HealthMeasurementDaysBadgeRule;
+use Functional\Gamification\Badges\Rules\HealthStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\MotoDistanceBadgeRule;
+use Functional\Gamification\Badges\Rules\SportActivityCountBadgeRule;
+use Functional\Gamification\Badges\Rules\SportDistanceBadgeRule;
+use Functional\Gamification\Badges\Rules\SportStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\TodoStreakBadgeRule;
+use Functional\Gamification\Badges\Rules\TodoTasksCompletedBadgeRule;
 use Functional\Gamification\Console\BackfillGamification;
 use Functional\Gamification\Console\RecalculateGamification;
+use Functional\Gamification\Contracts\BadgeRule;
 use Functional\Gamification\Dashboard\GamificationDashboardContribution;
 use Functional\Gamification\Database\Seeders\GamificationSeeder;
 use Functional\Gamification\Jobs\ProcessUserGamificationJob;
 use Functional\Gamification\Listeners\DeleteUserGamificationData;
 use Functional\Gamification\Listeners\ProcessXpOnSync;
+use Functional\Gamification\Livewire\ChallengeBoard;
 use Functional\Gamification\Livewire\PlayerProfilePage;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
+use Functional\Gamification\Rest\Controls\BadgeAwardControl;
+use Functional\Gamification\Rest\Controls\BadgeControl;
+use Functional\Gamification\Rest\Controls\ChallengeControl;
 use Functional\Gamification\Rest\Controls\PlayerProfileControl;
 use Functional\Gamification\Rest\Controls\StreakControl;
 use Functional\Gamification\Rest\Controls\XpEntryControl;
+use Functional\Gamification\Rest\Policies\BadgeAwardPolicy;
+use Functional\Gamification\Rest\Policies\BadgePolicy;
+use Functional\Gamification\Rest\Policies\ChallengePolicy;
 use Functional\Gamification\Rest\Policies\PlayerProfilePolicy;
 use Functional\Gamification\Rest\Policies\StreakPolicy;
 use Functional\Gamification\Rest\Policies\XpEntryPolicy;
@@ -81,6 +102,19 @@ class GamificationServiceProvider extends OsddServiceProvider
             ExplorationCellXpRule::class,
         ], 'gamification.xp_rules');
 
+        $this->app->tag([
+            SportDistanceBadgeRule::class,
+            SportActivityCountBadgeRule::class,
+            SportStreakBadgeRule::class,
+            HealthMeasurementDaysBadgeRule::class,
+            HealthStreakBadgeRule::class,
+            FinanceInvestedCapitalBadgeRule::class,
+            MotoDistanceBadgeRule::class,
+            TodoTasksCompletedBadgeRule::class,
+            TodoStreakBadgeRule::class,
+            ExplorationCellsBadgeRule::class,
+        ], BadgeRule::TAG);
+
         $this->app->tag(GamificationDashboardContribution::class, ['dashboard.summaries', 'dashboard.navigation']);
     }
 
@@ -97,14 +131,21 @@ class GamificationServiceProvider extends OsddServiceProvider
         Blade::anonymousComponentNamespace('gamification::components', 'gamification');
 
         Livewire::component('gamification-player-profile', PlayerProfilePage::class);
+        Livewire::component('gamification-challenge-board', ChallengeBoard::class);
 
         (new Access)->addControl(new XpEntryControl);
         (new Access)->addControl(new PlayerProfileControl);
         (new Access)->addControl(new StreakControl);
+        (new Access)->addControl(new BadgeControl);
+        (new Access)->addControl(new BadgeAwardControl);
+        (new Access)->addControl(new ChallengeControl);
 
         Gate::policy(XpEntry::class, XpEntryPolicy::class);
         Gate::policy(PlayerProfile::class, PlayerProfilePolicy::class);
         Gate::policy(Streak::class, StreakPolicy::class);
+        Gate::policy(Badge::class, BadgePolicy::class);
+        Gate::policy(BadgeAward::class, BadgeAwardPolicy::class);
+        Gate::policy(Challenge::class, ChallengePolicy::class);
 
         $this->loadListenEvent();
 

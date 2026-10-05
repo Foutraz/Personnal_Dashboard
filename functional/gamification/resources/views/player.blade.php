@@ -54,6 +54,8 @@
         />
     </section>
 
+    <livewire:gamification-challenge-board />
+
     @if ($streakCards->isNotEmpty())
         <section class="mt-8" style="animation-delay: 0.15s;">
             <h3 class="font-display text-lg font-semibold tracking-tight">{{ __('gamification::player.streaks_title') }}</h3>
@@ -88,6 +90,21 @@
             </div>
         </section>
     @endif
+
+    <section class="mt-8" style="animation-delay: 0.2s;">
+        <div class="flex items-baseline justify-between gap-3">
+            <h3 class="font-display text-lg font-semibold tracking-tight">{{ __('gamification::badges.showcase.title') }}</h3>
+            <p class="font-display text-lg font-bold text-violet text-glow-violet">
+                {{ __('gamification::badges.showcase.counter', ['earned' => $badgesEarned, 'total' => $badgesTotal]) }}
+            </p>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach ($badgeFamilies as $family)
+                <x-gamification::badge-family-card :family="$family" />
+            @endforeach
+        </div>
+    </section>
 
     <x-ui.glass-card class="mt-8">
         <h3 class="font-display text-lg font-semibold tracking-tight">{{ __('gamification::player.daily_title') }}</h3>

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Notifications;
 
-use Functional\Todo\Models\Task;
-use Functional\Todo\Notifications\TaskReminderNotification;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Notifications\BadgeAwardedNotification;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
@@ -33,9 +33,8 @@ class NotificationsSchemaTest extends TestCase
     public function it_stores_a_notification_for_a_ulid_user(): void
     {
         $user = User::factory()->create();
-        $task = Task::factory()->create(['user_id' => $user->id]);
 
-        $user->notify(new TaskReminderNotification($task));
+        $user->notify(new BadgeAwardedNotification(Badge::factory()->create()));
 
         $this->assertSame($user->id, DatabaseNotification::query()->sole()->notifiable_id);
         $this->assertSame(1, $user->notifications()->count());

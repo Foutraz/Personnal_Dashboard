@@ -2,16 +2,26 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Gamification\Actions\SyncBadgeCatalogue;
+use Functional\Gamification\Badges\Rules\SportDistanceBadgeRule;
+use Functional\Gamification\Enums\BadgeRuleKey;
+use Functional\Gamification\Enums\BadgeTier;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Livewire\PlayerProfilePage;
+use Functional\Gamification\Models\Badge;
+use Functional\Gamification\Models\BadgeAward;
+use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Services\Dto\StreakCard;
+use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -155,5 +165,226 @@ class PlayerProfilePageTest extends TestCase
         Streak::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user, 'web')->get(route('player'))->assertOk();
+    }
+
+    #[Test]
+    public function it_shows_the_badge_showcase_with_its_counter_and_translated_family_names(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(150);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Badges')
+            ->assertSee('1 / 30')
+            ->assertSee('Distance sportive')
+            ->assertSee('Régularité tâches')
+            ->assertDontSee('gamification::');
+    }
+
+    #[Test]
+    public function it_shows_the_current_value_and_the_next_threshold_with_their_unit(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(150);
+
+        $response = $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Actuel : 150 km');
+
+        $this->assertStringContainsString('Prochain palier : 1 000 km', Str::squish($response->getContent()));
+    }
+
+    #[Test]
+    public function it_exposes_the_progress_of_each_family_as_an_accessible_progressbar(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(150);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('role="progressbar"', false)
+            ->assertSee('aria-valuenow="6"', false)
+            ->assertSee('aria-valuemin="0"', false)
+            ->assertSee('aria-valuemax="100"', false)
+            ->assertSee('aria-label="Distance sportive"', false);
+    }
+
+    #[Test]
+    public function it_gives_every_medal_a_text_alternative_with_its_tier_and_state(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(150);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('aria-label="Bronze : Obtenu"', false)
+            ->assertSee('aria-label="Argent : Verrouillé"', false)
+            ->assertSee('aria-label="Or : Verrouillé"', false);
+    }
+
+    #[Test]
+    public function it_marks_a_completed_family_as_completed(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(6000);
+        foreach ([BadgeTier::Silver, BadgeTier::Gold] as $tier) {
+            BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey($tier))->sole())->create();
+        }
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Famille complétée')
+            ->assertSee('aria-valuenow="100"', false);
+    }
+
+    #[Test]
+    public function it_announces_a_reached_tier_that_unlocks_at_the_next_update_in_french(): void
+    {
+        $this->app->setLocale('fr');
+        $user = $this->userWithDistanceAndBronze(1500);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Atteint — débloqué à la prochaine mise à jour')
+            ->assertSee('aria-label="Argent : Atteint — débloqué à la prochaine mise à jour"', false)
+            ->assertSee('aria-label="Bronze : Obtenu"', false)
+            ->assertDontSee('aria-valuenow="100"', false);
+    }
+
+    #[Test]
+    public function it_announces_a_reached_tier_that_unlocks_at_the_next_update_in_english(): void
+    {
+        $this->app->setLocale('en');
+        $user = $this->userWithDistanceAndBronze(1500);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Reached — unlocks at the next update')
+            ->assertSee('aria-label="Silver: Reached — unlocks at the next update"', false)
+            ->assertDontSee('aria-valuenow="100"', false);
+    }
+
+    #[Test]
+    public function it_renders_the_badge_showcase_in_english(): void
+    {
+        $this->app->setLocale('en');
+        $user = $this->userWithDistanceAndBronze(150);
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('1 / 30')
+            ->assertSee('Sport distance')
+            ->assertSee('Current: 150 km')
+            ->assertSee('Next tier: 1,000 km')
+            ->assertSee('aria-label="Silver: Locked"', false)
+            ->assertDontSee('gamification::');
+    }
+
+    #[Test]
+    public function it_renders_an_empty_catalogue_as_zero_of_zero(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSee('Badges')
+            ->assertSee('0 / 0')
+            ->assertDontSee('role="progressbar"', false);
+    }
+
+    #[Test]
+    public function it_hands_the_badge_families_and_counters_to_the_view(): void
+    {
+        $user = $this->userWithDistanceAndBronze(150);
+
+        Livewire::actingAs($user)
+            ->test(PlayerProfilePage::class)
+            ->assertViewHas('badgeFamilies', fn (Collection $families): bool => $families->count() === 10)
+            ->assertViewHas('badgesEarned', 1)
+            ->assertViewHas('badgesTotal', 30);
+    }
+
+    #[Test]
+    public function it_derives_the_badge_counters_from_the_families_without_counting_queries(): void
+    {
+        $user = $this->userWithDistanceAndBronze(150);
+        DB::enableQueryLog();
+
+        Livewire::actingAs($user)->test(PlayerProfilePage::class);
+
+        $badgeCountQueries = collect(DB::getQueryLog())->filter(fn (array $query): bool => str_starts_with($query['query'], 'select count(*)') && str_contains($query['query'], 'badge'));
+        $this->assertTrue($badgeCountQueries->isEmpty());
+    }
+
+    #[Test]
+    public function it_measures_each_badge_rule_once_per_render(): void
+    {
+        $user = $this->userWithDistanceAndBronze(150);
+        $spy = new class extends SportDistanceBadgeRule
+        {
+            public int $measures = 0;
+
+            public function measure(User $user): float
+            {
+                $this->measures++;
+
+                return parent::measure($user);
+            }
+        };
+        $this->app->instance(SportDistanceBadgeRule::class, $spy);
+
+        Livewire::actingAs($user)->test(PlayerProfilePage::class);
+
+        $this->assertSame(1, $spy->measures);
+    }
+
+    #[Test]
+    public function it_embeds_the_challenge_board_between_the_xp_tiles_and_the_streaks(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        Streak::factory()->create(['user_id' => $user->id, 'last_activity_date' => now()->toDateString()]);
+
+        Livewire::actingAs($user)
+            ->test(PlayerProfilePage::class)
+            ->assertSeeLivewire('gamification-challenge-board')
+            ->assertSeeInOrder(['XP ce mois-ci', 'Défis de la semaine', 'Séries']);
+    }
+
+    #[Test]
+    public function it_shows_the_challenges_of_the_week_on_the_player_page(): void
+    {
+        $this->app->setLocale('fr');
+        $user = User::factory()->create();
+        Challenge::factory()->for($user)->create();
+
+        $this->actingAs($user, 'web')
+            ->get(route('player'))
+            ->assertOk()
+            ->assertSeeLivewire('gamification-challenge-board')
+            ->assertSee('Défis de la semaine')
+            ->assertSee('Distance sportive')
+            ->assertSeeHtml('aria-label="Relever le défi Distance sportive"');
+    }
+
+    private function userWithDistanceAndBronze(int $kilometres): User
+    {
+        $user = User::factory()->create();
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => $kilometres * 1000]);
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+        BadgeAward::factory()->for($user)->for(Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze))->sole())->create();
+
+        return $user;
     }
 }

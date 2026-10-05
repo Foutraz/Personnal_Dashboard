@@ -5,6 +5,8 @@ namespace Functional\Gamification\Livewire;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\BadgeShowcase;
+use Functional\Gamification\Services\Dto\BadgeFamilyProgress;
 use Functional\Gamification\Services\Dto\StreakCard;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
@@ -20,10 +22,10 @@ class PlayerProfilePage extends Component
     private const DAILY_SERIES_DAYS = 30;
 
     /**
-     * Render the player profile with level ring, domain totals and daily xp chart.
+     * Render the player profile with level ring, domain totals, daily xp chart and badge showcase.
      */
     #[Layout('layouts.app')]
-    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar): View
+    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar, BadgeShowcase $badgeShowcase): View
     {
         /** @var User $user */
         $user = Auth::user();
@@ -38,6 +40,7 @@ class PlayerProfilePage extends Component
         $levelPercentage = min(($totalXp - $levelFloor) / $levelSpan * 100, 100);
 
         $series = $xpLedger->dailySeries($user, self::DAILY_SERIES_DAYS);
+        $badgeFamilies = $badgeShowcase->families($user);
 
         return view('gamification::player', [
             'level' => $level,
@@ -56,6 +59,9 @@ class PlayerProfilePage extends Component
                 ->orderByDesc('current_count')
                 ->get()
                 ->map(fn (Streak $streak): StreakCard => StreakCard::fromStreak($streak, $calendar->isStreakAlive($streak->last_activity_date))),
+            'badgeFamilies' => $badgeFamilies,
+            'badgesEarned' => $badgeFamilies->sum(fn (BadgeFamilyProgress $family): int => $family->earnedCount()),
+            'badgesTotal' => $badgeFamilies->sum(fn (BadgeFamilyProgress $family): int => $family->medalCount()),
         ])->title(__('gamification::player.title'));
     }
 }

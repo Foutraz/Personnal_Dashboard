@@ -10,6 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "ext-intl": "*",
         "ext-pdo": "*",
         "foutraz/gocardless-bank": "^1.0",
         "foutraz/google-calendar": "^1.0",
