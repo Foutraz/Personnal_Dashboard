@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Actions\AwardXp;
 use Functional\Gamification\Enums\GamificationDomain;
+use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Models\PlayerProfile;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Gamification\Services\Dto\XpAward;
@@ -17,7 +18,7 @@ class AwardXpTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function it_writes_awards_to_the_ledger_and_refreshes_the_profile(): void
+    public function it_writes_awards_to_the_ledger_without_refreshing_the_profile(): void
     {
         $user = User::factory()->create();
 
@@ -26,10 +27,9 @@ class AwardXpTest extends TestCase
             $this->award('sport_activity', 'activity-2', 25),
         ]));
 
-        $this->assertSame(2, XpEntry::query()->where('user_id', $user->id)->count());
-        $profile = PlayerProfile::query()->where('user_id', $user->id)->sole();
-        $this->assertSame(65, $profile->total_xp);
-        $this->assertSame(1, $profile->level);
+        $this->assertSame(2, XpEntry::query()->whereBelongsTo($user)->count());
+        $this->assertSame(65, (int) XpEntry::query()->whereBelongsTo($user)->sum('points'));
+        $this->assertSame(0, PlayerProfile::query()->whereBelongsTo($user)->count());
     }
 
     #[Test]
@@ -44,23 +44,34 @@ class AwardXpTest extends TestCase
             $this->award('sport_activity', 'activity-3', 12),
         ]));
 
-        $this->assertSame(2, XpEntry::query()->where('user_id', $user->id)->count());
-        $this->assertSame(52, PlayerProfile::query()->where('user_id', $user->id)->sole()->total_xp);
+        $this->assertSame(2, XpEntry::query()->whereBelongsTo($user)->count());
+        $this->assertSame(52, (int) XpEntry::query()->whereBelongsTo($user)->sum('points'));
     }
 
     #[Test]
-    public function it_records_the_level_up_timestamp_when_the_level_changes(): void
+    public function it_keeps_streak_milestone_entries_when_purging_the_window(): void
     {
         $user = User::factory()->create();
+        $milestone = XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'rule_key' => XpRuleKey::StreakMilestone->value,
+            'occurred_at' => now()->subDay(),
+        ]);
+        $retired = XpEntry::factory()->create([
+            'user_id' => $user->id,
+            'rule_key' => 'retired_rule',
+            'occurred_at' => now()->subDay(),
+        ]);
 
-        $transition = $this->app->make(AwardXp::class)->handle($user, collect([
-            $this->award('sport_activity', 'activity-1', 300),
-        ]));
+        $this->app->make(AwardXp::class)->handle(
+            $user,
+            collect([$this->award('sport_activity', 'activity-1', 40)]),
+            collect(['sport_activity']),
+            now()->subDays(3)->startOfDay(),
+        );
 
-        $this->assertSame(1, $transition->previousLevel);
-        $this->assertSame(2, $transition->currentLevel);
-        $this->assertTrue($transition->leveledUp());
-        $this->assertNotNull(PlayerProfile::query()->where('user_id', $user->id)->sole()->level_reached_at);
+        $this->assertTrue(XpEntry::query()->whereKey($milestone->id)->exists());
+        $this->assertFalse(XpEntry::query()->whereKey($retired->id)->exists());
     }
 
     /**

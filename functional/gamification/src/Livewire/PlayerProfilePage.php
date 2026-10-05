@@ -4,28 +4,31 @@ namespace Functional\Gamification\Livewire;
 
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Models\PlayerProfile;
+use Functional\Gamification\Models\Streak;
+use Functional\Gamification\Services\Dto\StreakCard;
+use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\LevelCurve;
 use Functional\Gamification\Services\XpLedger;
 use Functional\Users\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 
 class PlayerProfilePage extends Component
 {
+    private const DAILY_SERIES_DAYS = 30;
+
     /**
      * Render the player profile with level ring, domain totals and daily xp chart.
      */
     #[Layout('layouts.app')]
-    #[Title('Joueur')]
-    public function render(LevelCurve $levelCurve, XpLedger $xpLedger): View
+    public function render(LevelCurve $levelCurve, XpLedger $xpLedger, GamificationCalendar $calendar): View
     {
         /** @var User $user */
         $user = Auth::user();
 
-        $profile = PlayerProfile::query()->where('user_id', $user->id)->first();
+        $profile = PlayerProfile::query()->whereBelongsTo($user)->first();
         $totalXp = $profile === null ? 0 : $profile->total_xp;
         $level = $profile === null ? 1 : $profile->level;
 
@@ -34,7 +37,7 @@ class PlayerProfilePage extends Component
         $levelSpan = max($levelCeiling - $levelFloor, 1);
         $levelPercentage = min(($totalXp - $levelFloor) / $levelSpan * 100, 100);
 
-        $series = $xpLedger->dailySeries($user, 30);
+        $series = $xpLedger->dailySeries($user, self::DAILY_SERIES_DAYS);
 
         return view('gamification::player', [
             'level' => $level,
@@ -47,6 +50,12 @@ class PlayerProfilePage extends Component
             'domains' => GamificationDomain::cases(),
             'chartLabels' => array_keys($series),
             'chartValues' => array_values($series),
-        ]);
+            'dailySeriesDays' => self::DAILY_SERIES_DAYS,
+            'streakCards' => Streak::query()
+                ->whereBelongsTo($user)
+                ->orderByDesc('current_count')
+                ->get()
+                ->map(fn (Streak $streak): StreakCard => StreakCard::fromStreak($streak, $calendar->isStreakAlive($streak->last_activity_date))),
+        ])->title(__('gamification::player.title'));
     }
 }

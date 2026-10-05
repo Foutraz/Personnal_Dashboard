@@ -2,19 +2,19 @@
 
 namespace Functional\Gamification\Rest\Policies;
 
-use Functional\Gamification\Rest\Controls\XpEntryControl;
+use Functional\Gamification\Rest\Controls\StreakControl;
 use Illuminate\Database\Eloquent\Model;
 use Lomkit\Access\Controls\Control;
 use Lomkit\Access\Policies\ControlledPolicy;
 
-class XpEntryPolicy extends ControlledPolicy
+class StreakPolicy extends ControlledPolicy
 {
     /**
-     * The control enforcing per-user ownership of xp entries.
+     * The control enforcing per-user ownership of streaks.
      *
      * @var class-string<Control>
      */
-    protected string $control = XpEntryControl::class;
+    protected string $control = StreakControl::class;
 
     /**
      * Forbid creating ledger-derived records through the API.
@@ -25,7 +25,7 @@ class XpEntryPolicy extends ControlledPolicy
     }
 
     /**
-     * Forbid updating the append-only ledger through the API.
+     * Forbid updating the recomputed projection through the API.
      */
     public function update(Model $user, Model $model): bool
     {
@@ -33,7 +33,7 @@ class XpEntryPolicy extends ControlledPolicy
     }
 
     /**
-     * Forbid deleting from the append-only ledger through the API.
+     * Forbid deleting the recomputed projection through the API.
      */
     public function delete(Model $user, Model $model): bool
     {

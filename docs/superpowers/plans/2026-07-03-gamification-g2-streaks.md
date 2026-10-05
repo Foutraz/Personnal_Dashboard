@@ -18,6 +18,15 @@
 - Worktree : symlinks SDK + `.env` + `public/build` copiés depuis le repo principal avant que la suite passe (voir Task 1).
 - Le calcul des jours actifs DOIT exclure `rule_key = 'streak_milestone'` (sinon les bonus s'auto-entretiennent).
 
+## Révisions post-revue (PR #33)
+
+- **Passage atomique.** `RunUserGamification` ouvre une seule transaction autour de `AwardXp` puis `UpdateStreaks` et rafraîchit le profil une seule fois à la fin ; `AwardXp::purgeWindow` ne supprime plus les entrées `streak_milestone`. Remplace la note de la Task 5 (purge des milestones « voulue ») : elle faisait perdre l'XP du palier si la seconde transaction échouait et réécrivait `level_reached_at`.
+- **Palier attribué une seule fois (décision produit).** Un bonus de palier (7/30/100 jours) est gagné une seule fois par user, par domaine et par palier : jamais réattribué après une rupture, jamais retiré par une sync tardive qui fusionne deux séries. Clé `source_id = "{domain}:{days}"`, `occurred_at` = jour où la première série atteint le palier ; le bonus ne disparaît que si plus aucune série du ledger n'atteint le palier.
+- **Jours découpés dans le fuseau d'affichage.** Les jours actifs et le test « série vivante » (dernier jour actif = aujourd'hui ou hier) utilisent tous deux `config('gamification.timezone')` (défaut `Europe/Paris`, surcharge `GAMIFICATION_TIMEZONE`) via le service `GamificationCalendar`, et non plus `DATE(occurred_at)` en UTC côté base.
+- **Pas de série Finance.** La règle Finance n'écrit qu'une entrée par mois : une série quotidienne y serait toujours morte. `GamificationDomain::tracksStreaks()` exclut Finance du calcul.
+- **Rescan complet conservé.** `UpdateStreaks` relit tout l'historique du user (une ligne distincte par domaine et instant) : `best_count`, la date du premier palier atteint et une série en cours de plus de 100 jours dépendent de l'historique complet ; une fenêtre de 100 jours imposerait de faire confiance au `best_count` stocké, ce qui casserait la reconvergence depuis le ledger.
+- **Textes traduits.** Les libellés du layer (hub Joueur, anneau de niveau, tuile dashboard, navigation, libellés de domaines) sont dans `functional/gamification/lang/{fr,en}/*.php`, chargés par `loadTranslationsFrom(..., 'gamification')` dans `GamificationServiceProvider` ; la langue affichée suit `APP_LOCALE`.
+
 ---
 
 ### Task 1: Créer le worktree et préparer l'environnement
@@ -622,7 +631,7 @@ git push
 
 **Interfaces:**
 - Consumes: `UpdateStreaks` (Task 3), `Streak::MILESTONE_RULE_KEY`, clé unique ledger (`user_id`, `rule_key`, `source_type`, `source_id`).
-- Produces: entrées `xp_entries` avec `rule_key = 'streak_milestone'`, `source_type = Streak::class`, `source_id = "{domain}:{startDate}:{days}"`, points depuis `config('gamification.streaks.milestones')`, synchronisées de façon convergente (les paliers non atteints sont supprimés).
+- Produces: entrées `xp_entries` avec `rule_key = 'streak_milestone'`, `source_type = 'streak_milestone'`, `source_id = "{domain}:{days}"` (un seul bonus par user, domaine et palier — voir « Révisions post-revue »), points depuis `config('gamification.streaks.milestones')`, synchronisées de façon convergente (un palier n'est retiré que si plus aucune série du ledger ne l'atteint).
 
 - [ ] **Step 1: Ajouter les tests qui échouent**
 
