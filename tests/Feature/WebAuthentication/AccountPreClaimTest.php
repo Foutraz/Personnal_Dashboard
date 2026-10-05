@@ -56,4 +56,26 @@ class AccountPreClaimTest extends TestCase
         $this->assertNull($attacker->fresh()->google_id);
         $this->assertTrue(Hash::check(self::ATTACKER_PASSWORD, $attacker->fresh()->password));
     }
+
+    #[Test]
+    public function it_stops_an_attacker_from_pre_claiming_the_victims_email_through_the_api(): void
+    {
+        $attacker = User::factory()->unverified()->create([
+            'email' => 'attacker@example.com',
+            'password' => Hash::make(self::ATTACKER_PASSWORD),
+        ]);
+
+        $response = $this->actingAs($attacker, 'api')->postJson('/api/users/mutate', [
+            'mutate' => [
+                ['operation' => 'update', 'key' => $attacker->id, 'attributes' => ['email' => self::VICTIM_EMAIL]],
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertSame('attacker@example.com', $attacker->fresh()->email);
+        $this->victimSignsInWithGoogle();
+        $this->get('/auth/google/callback')->assertRedirect('/dashboard');
+        $this->assertNotSame($attacker->id, Auth::guard('web')->id());
+        $this->assertNull($attacker->fresh()->google_id);
+    }
 }
