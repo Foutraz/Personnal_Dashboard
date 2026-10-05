@@ -54,6 +54,7 @@ class GoalResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'title' => ['string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'type' => [Rule::enum(GoalType::class)],

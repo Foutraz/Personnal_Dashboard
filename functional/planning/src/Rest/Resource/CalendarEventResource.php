@@ -47,6 +47,7 @@ class CalendarEventResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'provider' => [Rule::enum(IntegrationProvider::class)],
             'external_id' => ['string', 'max:255'],
             'title' => ['string', 'max:255'],

@@ -52,6 +52,7 @@ class RecurringExpenseResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'label' => ['string', 'max:255'],
             'amount' => ['numeric', 'min:0'],
             'currency' => ['string', 'size:3'],

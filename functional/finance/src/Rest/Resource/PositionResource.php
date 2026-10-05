@@ -47,6 +47,7 @@ class PositionResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'asset_symbol' => ['string', 'max:255'],
             'asset_name' => ['string', 'max:255'],
             'asset_type' => [Rule::enum(AssetType::class)],

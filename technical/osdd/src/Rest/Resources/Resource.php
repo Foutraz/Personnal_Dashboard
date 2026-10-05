@@ -8,7 +8,7 @@ use Lomkit\Rest\Http\Resource as RestResource;
 
 abstract class Resource extends RestResource
 {
-    private const SERVER_MANAGED_FIELDS = ['id', 'created_at', 'updated_at'];
+    public const SERVER_MANAGED_FIELDS = ['id', 'created_at', 'updated_at'];
 
     /**
      * Enable policy authorization so the controls enforce per-user ownership.
@@ -56,6 +56,14 @@ abstract class Resource extends RestResource
     public function forceDeleteQuery(RestRequest $request, Builder $query): Builder
     {
         return $query->controlled();
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return $this->serverManagedFieldRules($request);
     }
 
     /**
