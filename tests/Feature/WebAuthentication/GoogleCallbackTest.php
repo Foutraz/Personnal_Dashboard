@@ -8,15 +8,18 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialUser;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Feature\WebAuthentication\Concerns\OpensRegistration;
 use Tests\TestCase;
 
 class GoogleCallbackTest extends TestCase
 {
-    use RefreshDatabase;
+    use OpensRegistration, RefreshDatabase;
 
     #[Test]
     public function it_creates_a_user_with_a_google_id_and_logs_into_the_web_guard(): void
     {
+        $this->allowRegistrationFor('social@example.com');
+
         $socialUser = SocialUser::fake([
             'id' => 'google-12345',
             'email' => 'social@example.com',

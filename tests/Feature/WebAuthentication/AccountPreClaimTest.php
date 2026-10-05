@@ -8,17 +8,25 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\WebAuthentication\Concerns\FakesGoogleSignIn;
+use Tests\Feature\WebAuthentication\Concerns\OpensRegistration;
 use Tests\TestCase;
 
 class AccountPreClaimTest extends TestCase
 {
-    use FakesGoogleSignIn, RefreshDatabase;
+    use FakesGoogleSignIn, OpensRegistration, RefreshDatabase;
 
     private const VICTIM_EMAIL = 'victim@example.com';
 
     private const VICTIM_GOOGLE_ID = 'google-victim';
 
     private const ATTACKER_PASSWORD = 'attacker-password';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->allowRegistrationFor(self::VICTIM_EMAIL);
+    }
 
     private function victimSignsInWithGoogle(): void
     {

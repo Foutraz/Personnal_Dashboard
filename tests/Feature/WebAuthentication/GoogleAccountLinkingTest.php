@@ -15,11 +15,12 @@ use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
 use Tests\Feature\WebAuthentication\Concerns\FakesGoogleSignIn;
+use Tests\Feature\WebAuthentication\Concerns\OpensRegistration;
 use Tests\TestCase;
 
 class GoogleAccountLinkingTest extends TestCase
 {
-    use FakesGoogleSignIn, RefreshDatabase;
+    use FakesGoogleSignIn, OpensRegistration, RefreshDatabase;
 
     private const VICTIM_EMAIL = 'victim@example.com';
 
@@ -121,6 +122,7 @@ class GoogleAccountLinkingTest extends TestCase
     #[Test]
     public function it_creates_a_verified_user_when_no_account_shares_the_email(): void
     {
+        $this->allowRegistrationFor(self::VICTIM_EMAIL);
         $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL);
 
         $this->get('/auth/google/callback')->assertRedirect('/dashboard');

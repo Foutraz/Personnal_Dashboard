@@ -9,11 +9,15 @@ use Laravel\Socialite\Contracts\User as SocialUser;
 use Laravel\Socialite\Two\User as GoogleUser;
 use Technical\WebAuthentication\Exceptions\DeletedAccountSignInException;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
+use Technical\WebAuthentication\Exceptions\UnlistedGoogleEmailException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 use Technical\WebAuthentication\Exceptions\UnverifiedGoogleEmailException;
+use Technical\WebAuthentication\Services\RegistrationAllowList;
 
 class FindOrCreateSocialUser
 {
+    public function __construct(private readonly RegistrationAllowList $registrationAllowList) {}
+
     /**
      * Resolve the local user matching the social account, linking or creating it as needed.
      *
@@ -21,6 +25,7 @@ class FindOrCreateSocialUser
      * @throws GoogleIdentityMismatchException
      * @throws UnverifiedGoogleEmailException
      * @throws DeletedAccountSignInException
+     * @throws UnlistedGoogleEmailException
      */
     public function __invoke(SocialUser $socialUser): User
     {
@@ -37,6 +42,8 @@ class FindOrCreateSocialUser
         $existingUser = User::query()->withTrashed()->where('email', $socialUser->getEmail())->first();
 
         if ($existingUser === null) {
+            $this->assertRegistrationAllowed($socialUser);
+
             return $this->createVerifiedUser($socialUser);
         }
 
@@ -66,6 +73,18 @@ class FindOrCreateSocialUser
 
         if (! $isVerified) {
             throw new UnverifiedGoogleEmailException((string) $socialUser->getId());
+        }
+    }
+
+    /**
+     * Ensure a brand new account may be opened for the email of the signing-in identity.
+     *
+     * @throws UnlistedGoogleEmailException
+     */
+    private function assertRegistrationAllowed(SocialUser $socialUser): void
+    {
+        if (! $this->registrationAllowList->permits((string) $socialUser->getEmail())) {
+            throw new UnlistedGoogleEmailException((string) $socialUser->getId());
         }
     }
 

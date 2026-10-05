@@ -21,6 +21,9 @@ class WebAuthenticationServiceProvider extends OsddServiceProvider
         $this->mergeConfigWithPriorityFrom(
             __DIR__.'/../../config/services.php', 'services'
         );
+        $this->mergeConfigWithPriorityFrom(
+            __DIR__.'/../../config/web-authentication.php', 'web-authentication'
+        );
     }
 
     /**
