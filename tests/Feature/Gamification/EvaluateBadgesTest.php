@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Gamification;
 
+use Functional\Finance\Enums\TransactionType;
+use Functional\Finance\Models\InvestmentTransaction;
+use Functional\Finance\Models\Position;
+use Functional\Finance\Validation\InvestmentTransactionRules;
 use Functional\Gamification\Actions\EvaluateBadges;
 use Functional\Gamification\Actions\SyncBadgeCatalogue;
 use Functional\Gamification\Enums\BadgeRuleKey;
@@ -15,6 +19,7 @@ use Functional\Gamification\Models\Streak;
 use Functional\Gamification\Models\XpEntry;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +30,22 @@ use Tests\TestCase;
 class EvaluateBadgesTest extends TestCase
 {
     use RefreshDatabase;
+
+    private const BRONZE_REACHED_METRES = 120000.0;
+
+    private const BRONZE_REACHED_KILOMETRES = 120.0;
+
+    private const SILVER_REACHED_METRES = 1200000.0;
+
+    private const SILVER_REACHED_KILOMETRES = 1200.0;
+
+    private const LATER_SILVER_REACHED_METRES = 1500000.0;
+
+    private const LATER_SILVER_REACHED_KILOMETRES = 1500.0;
+
+    private const UNROUNDED_REACHED_METRES = 123456.0;
+
+    private const UNROUNDED_REACHED_KILOMETRES = 123.46;
 
     #[Test]
     public function it_awards_the_reached_badge_with_its_ledger_xp(): void
@@ -261,6 +282,104 @@ class EvaluateBadgesTest extends TestCase
         $this->assertSame(1, $this->badgeEntries($other)->count());
     }
 
+    #[Test]
+    public function it_snapshots_the_measure_in_the_unit_of_the_badge_on_the_award(): void
+    {
+        $user = User::factory()->create();
+        $this->distanceActivity($user, self::BRONZE_REACHED_METRES);
+
+        $this->evaluate($user);
+
+        $this->assertSame(self::BRONZE_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Bronze));
+    }
+
+    #[Test]
+    public function it_snapshots_the_same_measure_on_every_tier_awarded_in_the_same_pass(): void
+    {
+        $user = User::factory()->create();
+        $this->distanceActivity($user, self::SILVER_REACHED_METRES);
+
+        $this->evaluate($user);
+
+        $this->assertSame(self::SILVER_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Bronze));
+        $this->assertSame(self::SILVER_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Silver));
+    }
+
+    #[Test]
+    public function it_keeps_the_snapshot_of_an_earlier_award_when_a_later_tier_is_reached(): void
+    {
+        $user = User::factory()->create();
+        $this->distanceActivity($user, self::BRONZE_REACHED_METRES);
+        $this->evaluate($user);
+        $this->distanceActivity($user, self::LATER_SILVER_REACHED_METRES - self::BRONZE_REACHED_METRES);
+
+        $this->evaluate($user);
+
+        $this->assertSame(self::BRONZE_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Bronze));
+        $this->assertSame(self::LATER_SILVER_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Silver));
+    }
+
+    #[Test]
+    public function it_never_rewrites_the_snapshot_of_an_existing_award(): void
+    {
+        $user = User::factory()->create();
+        $this->distanceActivity($user, self::BRONZE_REACHED_METRES);
+        $this->evaluate($user);
+        $this->distanceActivity($user, self::BRONZE_REACHED_METRES);
+
+        $this->evaluate($user);
+
+        $this->assertSame(self::BRONZE_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Bronze));
+    }
+
+    #[Test]
+    public function it_leaves_an_award_without_a_snapshot_untouched(): void
+    {
+        $user = User::factory()->create();
+        $this->app->make(SyncBadgeCatalogue::class)->handle();
+        $badge = Badge::query()->where('key', BadgeRuleKey::SportDistance->badgeKey(BadgeTier::Bronze))->sole();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'badge_id' => $badge->id]);
+        $this->distanceActivity($user, self::BRONZE_REACHED_METRES);
+
+        $awards = $this->evaluate($user);
+
+        $this->assertTrue($awards->isEmpty());
+        $this->assertNull($this->measuredValue($user, BadgeTier::Bronze));
+    }
+
+    #[Test]
+    public function it_rounds_the_snapshot_to_two_decimals(): void
+    {
+        $user = User::factory()->create();
+        $this->distanceActivity($user, self::UNROUNDED_REACHED_METRES);
+
+        $this->evaluate($user);
+
+        $this->assertSame(self::UNROUNDED_REACHED_KILOMETRES, $this->measuredValue($user, BadgeTier::Bronze));
+    }
+
+    #[Test]
+    public function it_snapshots_the_capped_invested_capital_without_overflowing_the_column(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->create(['user_id' => $user->id]);
+        InvestmentTransaction::factory()->create([
+            'user_id' => $user->id,
+            'position_id' => $position->id,
+            'type' => TransactionType::Buy,
+            'quantity' => InvestmentTransactionRules::MAX_QUANTITY,
+            'unit_price' => InvestmentTransactionRules::MAX_UNIT_PRICE,
+        ]);
+
+        $this->evaluate($user);
+
+        $award = BadgeAward::query()
+            ->whereBelongsTo($user)
+            ->whereHas('badge', fn (Builder $badges): Builder => $badges->where('key', BadgeRuleKey::FinanceInvestedCapital->badgeKey(BadgeTier::Gold)))
+            ->sole();
+        $this->assertSame(1.0E16, $award->measured_value);
+    }
+
     /**
      * @return Collection<int, BadgeAward>
      */
@@ -274,6 +393,20 @@ class EvaluateBadgesTest extends TestCase
     private function activities(User $user, int $count): void
     {
         SportActivity::factory()->count($count)->create(['user_id' => $user->id, 'distance' => 1000.0]);
+    }
+
+    private function distanceActivity(User $user, float $metres): void
+    {
+        SportActivity::factory()->create(['user_id' => $user->id, 'distance' => $metres]);
+    }
+
+    private function measuredValue(User $user, BadgeTier $tier): ?float
+    {
+        return BadgeAward::query()
+            ->whereBelongsTo($user)
+            ->whereHas('badge', fn (Builder $badges): Builder => $badges->where('key', BadgeRuleKey::SportDistance->badgeKey($tier)))
+            ->sole()
+            ->measured_value;
     }
 
     /**

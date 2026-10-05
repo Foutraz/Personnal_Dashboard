@@ -12,6 +12,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -32,6 +33,31 @@ class BadgeModelTest extends TestCase
         $this->assertTrue($badge->awards->contains($award));
         $this->assertTrue($award->user->is(User::query()->findOrFail($award->user_id)));
         $this->assertNotNull($award->awarded_at);
+    }
+
+    #[Test]
+    public function it_leaves_the_measured_value_of_a_factory_award_empty(): void
+    {
+        $award = BadgeAward::factory()->create();
+
+        $this->assertNull($award->fresh()->measured_value);
+    }
+
+    #[Test]
+    public function it_casts_the_measured_value_to_a_float(): void
+    {
+        $award = BadgeAward::factory()->create(['measured_value' => 120]);
+
+        $this->assertSame(120.0, $award->fresh()->measured_value);
+    }
+
+    #[Test]
+    public function it_stores_the_measured_value_in_a_double_column_wide_enough_for_the_capped_capital(): void
+    {
+        $award = BadgeAward::factory()->create(['measured_value' => 1.0E16]);
+
+        $this->assertSame('double', Schema::getColumnType('badge_awards', 'measured_value'));
+        $this->assertSame(1.0E16, $award->fresh()->measured_value);
     }
 
     #[Test]

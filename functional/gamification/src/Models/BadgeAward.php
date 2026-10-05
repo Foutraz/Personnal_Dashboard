@@ -19,6 +19,7 @@ use Lomkit\Access\Controls\HasControl;
  * @property string $user_id
  * @property string $badge_id
  * @property Carbon $awarded_at
+ * @property float|null $measured_value
  */
 #[UseFactory(BadgeAwardFactory::class)]
 class BadgeAward extends Model
@@ -35,6 +36,7 @@ class BadgeAward extends Model
         'user_id',
         'badge_id',
         'awarded_at',
+        'measured_value',
     ];
 
     /**
@@ -46,6 +48,7 @@ class BadgeAward extends Model
     {
         return [
             'awarded_at' => 'datetime',
+            'measured_value' => 'float',
         ];
     }
 

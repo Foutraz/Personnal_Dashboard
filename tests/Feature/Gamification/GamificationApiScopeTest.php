@@ -507,6 +507,37 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_does_not_expose_the_measured_value_of_a_badge_award(): void
+    {
+        $user = User::factory()->create();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => faker()->number(100, 5000)]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertArrayNotHasKey('measured_value', $response->json('data.0'));
+        $this->assertStringNotContainsString('measured_value', $response->getContent());
+    }
+
+    #[Test]
+    public function it_refuses_filtering_badge_awards_on_the_measured_value(): void
+    {
+        $user = User::factory()->create();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => faker()->number(100, 5000)]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/search', [
+            'search' => [
+                'filters' => [['field' => 'measured_value', 'operator' => '>', 'value' => 0]],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+    }
+
+    #[Test]
     public function it_refuses_including_the_user_relation_of_badge_awards(): void
     {
         $user = User::factory()->create();
