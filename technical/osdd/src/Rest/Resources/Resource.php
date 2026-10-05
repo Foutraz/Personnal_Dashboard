@@ -59,7 +59,7 @@ abstract class Resource extends RestResource
     }
 
     /**
-     * Lomkit force-fills every declared field, so a client could otherwise choose the key or the timestamps.
+     * Lomkit force-fills every declared field, so a client could choose or erase the key and the timestamps, and `prohibited` still lets a null or empty value through.
      *
      * @return array<string, list<string>>
      */
@@ -67,6 +67,6 @@ abstract class Resource extends RestResource
     {
         $declaredFields = array_intersect(self::SERVER_MANAGED_FIELDS, $this->fields($request));
 
-        return array_fill_keys($declaredFields, ['prohibited']);
+        return array_fill_keys($declaredFields, ['missing']);
     }
 }

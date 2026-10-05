@@ -201,6 +201,45 @@ class MotoRideValidationTest extends TestCase
         $this->assertTrue($ride->fresh()->updated_at->equalTo($originalUpdatedAt));
     }
 
+    public static function emptyServerManagedFields(): array
+    {
+        $cases = [];
+
+        foreach (['id', 'created_at', 'updated_at'] as $field) {
+            $cases["{$field} null"] = [$field, null];
+            $cases["{$field} empty string"] = [$field, ''];
+        }
+
+        return $cases;
+    }
+
+    #[Test]
+    #[DataProvider('emptyServerManagedFields')]
+    public function it_rejects_an_empty_server_managed_field_on_creation(string $field, ?string $emptyValue): void
+    {
+        $response = $this->createRide([$field => $emptyValue]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(["mutate.0.attributes.{$field}"]);
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('emptyServerManagedFields')]
+    public function it_rejects_an_empty_server_managed_field_on_update(string $field, ?string $emptyValue): void
+    {
+        $ride = MotoRide::factory()->for($this->owner)->create([
+            'started_at' => Carbon::parse('2026-09-20 08:00:00', 'UTC'),
+        ]);
+        $storedBefore = MotoRide::query()->sole()->getAttributes();
+
+        $response = $this->updateRide($ride, [$field => $emptyValue]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(["mutate.0.attributes.{$field}"]);
+        $this->assertSame($storedBefore, MotoRide::query()->sole()->getAttributes());
+    }
+
     #[Test]
     public function it_stamps_the_server_instant_on_a_ride_dated_in_the_past(): void
     {

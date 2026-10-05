@@ -143,11 +143,11 @@ class MotoDashboard extends Component
     public function logRide(): void
     {
         $this->validate([
-            'rideTitle' => 'required|string|max:255',
+            'rideTitle' => ['required', 'string', 'max:255'],
             'rideStartedAt' => ['required', ...MotoRideRules::startedAt()],
             'rideDuration' => ['required', ...MotoRideRules::durationInMinutes()],
             'rideDistance' => ['required', ...MotoRideRules::distance()],
-            'rideNote' => 'nullable|string|max:1000',
+            'rideNote' => ['nullable', 'string', 'max:1000'],
         ]);
 
         MotoRide::query()->create([
