@@ -20,6 +20,7 @@ use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -434,5 +435,77 @@ class GoalProgressCalculatorTest extends TestCase
         $exception = new UnboundedGoalMetricException(GoalMetric::TodoCompletionRate);
 
         $this->assertSame(GoalMetric::TodoCompletionRate, $exception->metric);
+    }
+
+    /**
+     * @return array<string, array{GoalMetric, bool}>
+     */
+    public static function selfReportedMetrics(): array
+    {
+        return [
+            'sport distance' => [GoalMetric::SportDistance, false],
+            'sport elevation' => [GoalMetric::SportElevation, false],
+            'sport activity count' => [GoalMetric::SportActivityCount, false],
+            'sport moving time' => [GoalMetric::SportMovingTime, false],
+            'finance invested capital' => [GoalMetric::FinanceInvestedCapital, true],
+            'finance portfolio value' => [GoalMetric::FinancePortfolioValue, true],
+            'manual' => [GoalMetric::Manual, true],
+            'moto distance' => [GoalMetric::MotoDistance, true],
+            'moto ride count' => [GoalMetric::MotoRideCount, true],
+            'exploration cells' => [GoalMetric::ExplorationCells, false],
+            'todo completion rate' => [GoalMetric::TodoCompletionRate, true],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('selfReportedMetrics')]
+    public function it_flags_the_metrics_that_the_user_declares_instead_of_syncing(GoalMetric $metric, bool $expected): void
+    {
+        $this->assertSame($expected, $metric->isSelfReported());
+    }
+
+    #[Test]
+    public function it_measures_moto_distance_in_a_single_summing_query(): void
+    {
+        $user = User::factory()->create();
+        MotoRide::factory()->create(['user_id' => $user->id, 'distance' => 120.5, 'started_at' => Carbon::parse('2026-09-29 09:00:00', 'UTC')]);
+        MotoRide::factory()->create(['user_id' => $user->id, 'distance' => 80.25, 'started_at' => Carbon::parse('2026-10-02 17:00:00', 'UTC')]);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $measured = $this->calculator->measure(
+            GoalMetric::MotoDistance,
+            $user->id,
+            Carbon::parse('2026-09-27 22:00:00', 'UTC'),
+            Carbon::parse('2026-10-04 21:59:59', 'UTC'),
+        );
+
+        $this->assertSame(200.75, $measured);
+        $this->assertCount(1, DB::getQueryLog());
+        $this->assertStringContainsString('sum(', DB::getQueryLog()[0]['query']);
+    }
+
+    #[Test]
+    public function it_measures_the_invested_capital_through_the_finance_calculator(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->create(['user_id' => $user->id]);
+        InvestmentTransaction::factory()->create([
+            'user_id' => $user->id,
+            'position_id' => $position->id,
+            'type' => TransactionType::Buy,
+            'quantity' => 2,
+            'unit_price' => 50,
+            'executed_at' => Carbon::parse('2026-09-29 09:00:00', 'UTC'),
+        ]);
+
+        $measured = $this->calculator->measure(
+            GoalMetric::FinanceInvestedCapital,
+            $user->id,
+            Carbon::parse('2026-09-27 22:00:00', 'UTC'),
+            Carbon::parse('2026-10-04 21:59:59', 'UTC'),
+        );
+
+        $this->assertSame(100.0, $measured);
     }
 }
