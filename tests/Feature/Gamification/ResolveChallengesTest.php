@@ -406,6 +406,65 @@ class ResolveChallengesTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_frozen_closing_when_the_grace_is_lowered_afterwards(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->acceptedChallenge($user);
+        config(['gamification.challenges.closing_grace_hours' => 0]);
+        $this->travelTo(Carbon::parse('2026-10-05 10:00:00', 'UTC'));
+
+        $this->resolve($user);
+
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+    }
+
+    #[Test]
+    public function it_keeps_the_frozen_closing_when_the_grace_is_raised_afterwards(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->acceptedChallenge($user);
+        config(['gamification.challenges.closing_grace_hours' => 168]);
+        $this->travelTo(Carbon::parse('2026-10-06 22:00:00', 'UTC'));
+
+        $this->resolve($user);
+
+        $this->assertSame(ChallengeStatus::Failed, $challenge->fresh()->status);
+    }
+
+    #[Test]
+    public function it_closes_exactly_at_the_closing_instant_of_the_challenge(): void
+    {
+        $user = User::factory()->create();
+        $challenge = Challenge::factory()->accepted()->forWeek($this->week)->create([
+            'user_id' => $user->id,
+            'target_value' => 28,
+            'closes_at' => Carbon::parse('2026-10-05 08:00:00', 'UTC'),
+        ]);
+        $this->travelTo(Carbon::parse('2026-10-05 07:59:59', 'UTC'));
+        $this->resolve($user);
+
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+
+        $this->travelTo(Carbon::parse('2026-10-05 08:00:00', 'UTC'));
+        $this->resolve($user);
+
+        $this->assertSame(ChallengeStatus::Failed, $challenge->fresh()->status);
+    }
+
+    #[Test]
+    public function it_resolves_without_reading_the_challenge_settings(): void
+    {
+        $user = User::factory()->create();
+        $challenge = $this->acceptedChallenge($user);
+        config(['gamification.challenges.closing_grace_hours' => -1, 'gamification.challenges.xp_reward' => 0]);
+        $this->activityAt($user, '2026-10-01 08:00:00', 30000.0);
+
+        $completed = $this->resolve($user);
+
+        $this->assertTrue($completed->sole()->is($challenge));
+    }
+
+    #[Test]
     public function it_closes_on_the_frozen_bounds_of_the_challenge_when_the_game_timezone_changes(): void
     {
         $user = User::factory()->create();

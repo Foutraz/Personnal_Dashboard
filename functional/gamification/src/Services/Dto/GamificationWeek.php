@@ -50,8 +50,8 @@ final readonly class GamificationWeek
         return $moment->greaterThanOrEqualTo($this->endsAt);
     }
 
-    public function isPastGrace(CarbonInterface $moment, int $graceHours): bool
+    public function closesAt(int $graceHours): CarbonImmutable
     {
-        return $moment->greaterThanOrEqualTo($this->endsAt->addHours($graceHours));
+        return $this->endsAt->addHours($graceHours);
     }
 }

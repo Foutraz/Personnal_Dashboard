@@ -83,6 +83,45 @@ class ProposeWeeklyChallengesTest extends TestCase
     }
 
     #[Test]
+    public function it_freezes_the_closing_instant_with_the_default_grace(): void
+    {
+        $user = User::factory()->create();
+        $this->sportHistory($user);
+
+        $this->action->handle($user, $this->week);
+
+        $this->assertSame('2026-10-06 22:00:00', Challenge::query()->whereBelongsTo($user)->sole()->closes_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_freezes_the_closing_instant_with_the_configured_grace(): void
+    {
+        config(['gamification.challenges.closing_grace_hours' => 72]);
+        $user = User::factory()->create();
+        $this->sportHistory($user);
+
+        $this->action->handle($user, $this->week);
+
+        $this->assertSame('2026-10-07 22:00:00', Challenge::query()->whereBelongsTo($user)->sole()->closes_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_gives_every_challenge_of_the_set_the_same_closing_instant(): void
+    {
+        $user = User::factory()->create();
+        $this->sportHistory($user);
+        $this->motoHistory($user);
+
+        $this->action->handle($user, $this->week);
+
+        $this->assertGreaterThan(1, Challenge::query()->whereBelongsTo($user)->count());
+        $this->assertSame(
+            ['2026-10-06 22:00:00'],
+            Challenge::query()->whereBelongsTo($user)->get()->map(fn (Challenge $challenge): string => $challenge->closes_at->toDateTimeString())->unique()->values()->all(),
+        );
+    }
+
+    #[Test]
     public function it_follows_the_configured_reward_and_stretch(): void
     {
         config(['gamification.challenges.xp_reward' => 80, 'gamification.challenges.stretch_ratio' => 0]);

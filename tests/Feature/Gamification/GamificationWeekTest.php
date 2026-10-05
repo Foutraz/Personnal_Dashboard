@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Gamification;
 
+use Carbon\CarbonImmutable;
 use Functional\Gamification\Services\Dto\GamificationWeek;
 use Functional\Gamification\Services\GamificationCalendar;
 use Illuminate\Support\Carbon;
@@ -140,12 +141,35 @@ class GamificationWeekTest extends TestCase
     }
 
     #[Test]
-    public function it_is_past_the_grace_period_exactly_when_the_grace_hours_have_elapsed_after_the_end(): void
+    public function it_closes_the_grace_hours_after_the_end_of_the_week(): void
+    {
+        $closesAt = $this->weekOf('2026-10-01 10:00:00')->closesAt(48);
+
+        $this->assertInstanceOf(CarbonImmutable::class, $closesAt);
+        $this->assertSame('2026-10-06 22:00:00', $closesAt->toDateTimeString());
+        $this->assertSame('UTC', $closesAt->timezoneName);
+    }
+
+    #[Test]
+    public function it_closes_with_the_end_of_the_week_when_the_grace_is_zero(): void
+    {
+        $this->assertSame('2026-10-04 22:00:00', $this->weekOf('2026-10-01 10:00:00')->closesAt(0)->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_adds_real_hours_across_the_autumn_clock_change(): void
+    {
+        $this->assertSame('2026-10-27 23:00:00', $this->weekOf('2026-10-21 10:00:00')->closesAt(48)->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_leaves_the_end_of_the_week_untouched_when_computing_the_closing(): void
     {
         $week = $this->weekOf('2026-10-01 10:00:00');
 
-        $this->assertFalse($week->isPastGrace(Carbon::parse('2026-10-06 21:59:59', 'UTC'), 48));
-        $this->assertTrue($week->isPastGrace(Carbon::parse('2026-10-06 22:00:00', 'UTC'), 48));
+        $week->closesAt(48);
+
+        $this->assertSame('2026-10-04 22:00:00', $week->endsAt->toDateTimeString());
     }
 
     #[Test]

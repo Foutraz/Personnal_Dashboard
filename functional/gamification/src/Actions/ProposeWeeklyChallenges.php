@@ -41,7 +41,7 @@ class ProposeWeeklyChallenges
         $moment = now()->toDateTimeString();
         $targets = $this->eligibleTargets($user, $week, $settings);
         $rows = collect($this->pickedTemplates($targets, $week))
-            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment, $settings->xpReward))
+            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment, $settings))
             ->values();
 
         if ($rows->isEmpty()) {
@@ -137,7 +137,7 @@ class ProposeWeeklyChallenges
     /**
      * @return array<string, mixed>
      */
-    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment, int $xpReward): array
+    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment, ChallengeSettings $settings): array
     {
         return [
             'id' => (new Challenge)->newUniqueId(),
@@ -148,10 +148,11 @@ class ProposeWeeklyChallenges
             'metric' => $template->metric()->value,
             'starts_at' => $week->startsAt->toDateTimeString(),
             'ends_at' => $week->endsAt->toDateTimeString(),
+            'closes_at' => $week->closesAt($settings->closingGraceHours)->toDateTimeString(),
             'baseline_value' => $target->baseline,
             'target_value' => $target->target,
             'current_value' => 0,
-            'xp_reward' => $xpReward,
+            'xp_reward' => $settings->xpReward,
             'status' => ChallengeStatus::Proposed->value,
             'accepted_at' => null,
             'resolved_at' => null,

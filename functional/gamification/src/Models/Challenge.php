@@ -29,6 +29,7 @@ use Lomkit\Access\Controls\HasControl;
  * @property GoalMetric $metric
  * @property Carbon $starts_at
  * @property Carbon $ends_at
+ * @property Carbon $closes_at
  * @property string $baseline_value
  * @property string $target_value
  * @property string $current_value
@@ -79,6 +80,7 @@ class Challenge extends Model
             'metric' => GoalMetric::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'closes_at' => 'datetime',
             'baseline_value' => 'decimal:2',
             'target_value' => 'decimal:2',
             'current_value' => 'decimal:2',

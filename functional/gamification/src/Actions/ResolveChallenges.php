@@ -3,11 +3,9 @@
 namespace Functional\Gamification\Actions;
 
 use Functional\Gamification\Enums\ChallengeStatus;
-use Functional\Gamification\Exceptions\InvalidChallengeConfigException;
 use Functional\Gamification\Exceptions\StaleChallengeStatusException;
 use Functional\Gamification\Models\Challenge;
 use Functional\Gamification\Services\Dto\ChallengeProgress;
-use Functional\Gamification\Services\Dto\ChallengeSettings;
 use Functional\Gamification\Services\Dto\GamificationWeek;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\WeeklyMetricMeter;
@@ -28,11 +26,10 @@ class ResolveChallenges
      *
      * @return Collection<int, Challenge>
      *
-     * @throws InvalidChallengeConfigException|StaleChallengeStatusException|UnboundedGoalMetricException
+     * @throws StaleChallengeStatusException|UnboundedGoalMetricException
      */
     public function handle(User $user): Collection
     {
-        $closingGraceHours = ChallengeSettings::fromConfig()->closingGraceHours;
         $moment = now();
         $completed = new Collection;
 
@@ -49,7 +46,7 @@ class ResolveChallenges
             $next = $challenge->state()->evolve(new ChallengeProgress(
                 targetReached: $measured >= (float) $challenge->target_value,
                 weekEnded: $week->hasEnded($moment),
-                gracePassed: $week->isPastGrace($moment, $closingGraceHours),
+                gracePassed: $moment->greaterThanOrEqualTo($challenge->closes_at),
             ));
 
             if ($next->status() === $challenge->status) {
