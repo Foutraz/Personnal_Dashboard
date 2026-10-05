@@ -594,6 +594,28 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_rejects_rewriting_the_measured_value_of_an_own_badge_award_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $originalMeasure = faker()->number(100, 5000);
+        $award = BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => $originalMeasure]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'attributes' => ['measured_value' => $originalMeasure + faker()->number(1000, 9000)],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.attributes');
+        $this->assertSame((float) $originalMeasure, $award->fresh()->measured_value);
+    }
+
+    #[Test]
     public function it_prohibits_updating_the_badge_through_an_own_badge_award(): void
     {
         $user = User::factory()->create();

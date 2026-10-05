@@ -16,7 +16,11 @@ class BadgeAwardMeasuredValueMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Migration $migration;
+    private ?Migration $migration = null;
+
+    private ?User $committedUser = null;
+
+    private ?Badge $committedBadge = null;
 
     protected function setUp(): void
     {
@@ -27,7 +31,9 @@ class BadgeAwardMeasuredValueMigrationTest extends TestCase
 
     protected function tearDown(): void
     {
-        $this->migration->up();
+        $this->migration?->up();
+        $this->committedUser?->forceDelete();
+        $this->committedBadge?->delete();
 
         parent::tearDown();
     }
@@ -35,14 +41,14 @@ class BadgeAwardMeasuredValueMigrationTest extends TestCase
     #[Test]
     public function it_leaves_the_awards_that_predate_the_column_without_a_snapshot(): void
     {
-        $user = User::factory()->create();
-        $badge = Badge::factory()->create();
         $this->migration->down();
+        $this->committedUser = User::factory()->create();
+        $this->committedBadge = Badge::factory()->create();
         $awardId = (new BadgeAward)->newUniqueId();
         DB::table('badge_awards')->insert([
             'id' => $awardId,
-            'user_id' => $user->id,
-            'badge_id' => $badge->id,
+            'user_id' => $this->committedUser->id,
+            'badge_id' => $this->committedBadge->id,
             'awarded_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
