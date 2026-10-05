@@ -235,9 +235,9 @@
                                 <span class="font-display text-lg font-bold">{{ $slot['score'] }}</span>
                             </div>
                             <p class="text-xs text-muted">
-                                {{ \Illuminate\Support\Carbon::parse($slot['starts_at'])->translatedFormat('D d M, H\h') }}
+                                {{ \Illuminate\Support\Carbon::parse($slot['starts_at'])->setTimezone($displayTimezone)->translatedFormat('D d M, H\h') }}
                                 →
-                                {{ \Illuminate\Support\Carbon::parse($slot['ends_at'])->format('H\h') }}
+                                {{ \Illuminate\Support\Carbon::parse($slot['ends_at'])->setTimezone($displayTimezone)->format('H\h') }}
                             </p>
                         </div>
                     @empty

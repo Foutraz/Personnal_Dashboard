@@ -211,7 +211,7 @@ class MotoDashboard extends Component
         if ($configured) {
             $current = $weatherForecastService->currentWeather($this->lat, $this->lon);
             $forecast = $weatherForecastService->forecast($this->lat, $this->lon);
-            $hourly = $this->buildHourly($forecast, $motoFriendlyScore);
+            $hourly = $this->buildHourly($forecast, $motoFriendlyScore, $displayTimezone);
             $condition = $this->nextWindowCondition($forecast, $motoFriendlyScore, $current);
             $slots = array_map(
                 fn ($slot): array => $slot->toArray(),
@@ -243,13 +243,13 @@ class MotoDashboard extends Component
      *
      * @return array<int, array{label: string, temp: float, pop: float, wind: float, score: int, accent: string}>
      */
-    private function buildHourly(Forecast $forecast, MotoFriendlyScore $motoFriendlyScore): array
+    private function buildHourly(Forecast $forecast, MotoFriendlyScore $motoFriendlyScore, DisplayTimezone $displayTimezone): array
     {
-        return array_map(function ($entry) use ($motoFriendlyScore): array {
+        return array_map(function ($entry) use ($motoFriendlyScore, $displayTimezone): array {
             $condition = $motoFriendlyScore->forForecastEntry($entry);
 
             return [
-                'label' => Carbon::instance($entry->dt)->format('D H\h'),
+                'label' => $displayTimezone->toDisplayTime(Carbon::instance($entry->dt))->format('D H\h'),
                 'temp' => round($entry->temp, 1),
                 'pop' => round($entry->pop * 100),
                 'wind' => round($entry->windSpeed * 3.6),
