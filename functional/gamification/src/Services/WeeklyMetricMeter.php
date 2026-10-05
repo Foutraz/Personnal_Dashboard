@@ -22,7 +22,7 @@ class WeeklyMetricMeter
      */
     public function measure(User $user, GoalMetric $metric, CarbonInterface $startsAt, CarbonInterface $endsAt, CarbonInterface $closesAt): float
     {
-        $period = $this->periodOf($metric, $startsAt, $endsAt, $closesAt);
+        $period = new MeasurementPeriod($startsAt, $endsAt, $closesAt);
 
         return round($this->aggregator->totalsPerPeriod($metric, $user->id, [$period])[0], self::DECIMALS);
     }
@@ -36,7 +36,7 @@ class WeeklyMetricMeter
     public function history(User $user, GoalMetric $metric, array $weeks, int $closingGraceHours): array
     {
         $periods = array_map(
-            fn (GamificationWeek $week): MeasurementPeriod => $this->periodOf($metric, $week->startsAt, $week->endsAt, $week->closesAt($closingGraceHours)),
+            fn (GamificationWeek $week): MeasurementPeriod => new MeasurementPeriod($week->startsAt, $week->endsAt, $week->closesAt($closingGraceHours)),
             $weeks,
         );
 
@@ -44,10 +44,5 @@ class WeeklyMetricMeter
             fn (float $total): float => round($total, self::DECIMALS),
             $this->aggregator->totalsPerPeriod($metric, $user->id, $periods),
         );
-    }
-
-    private function periodOf(GoalMetric $metric, CarbonInterface $startsAt, CarbonInterface $endsAt, CarbonInterface $closesAt): MeasurementPeriod
-    {
-        return new MeasurementPeriod($startsAt, $endsAt, $metric->isSelfReported() ? $closesAt : null);
     }
 }

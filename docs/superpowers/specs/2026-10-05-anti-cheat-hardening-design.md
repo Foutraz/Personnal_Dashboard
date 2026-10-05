@@ -115,7 +115,9 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
   règles en notation tableau) utilisée **à la fois** par la ressource REST et par le formulaire Livewire qui crée la
   même ligne, pour qu'aucune des deux portes ne diverge.
 - **Nature de la source** : chaque `GoalMetric` sait si ses lignes sont saisies par l'utilisateur
-  (`isSelfReported()`) ; c'est l'unique critère « synchronisé / déclaratif » du jeu (décision 9).
+  (`isSelfReported()`) ; c'est l'unique critère « synchronisé / déclaratif » du jeu (décision 9). Le seuil
+  d'enregistrement, lui, n'est décidé que par la présence d'une `recordedColumn` sur l'agrégat de la métrique, et un
+  test impose qu'une métrique agrégée porte cette colonne exactement quand elle est déclarative.
 
 | Source | Écriture par l'utilisateur | Nature | Après durcissement |
 |---|---|---|---|
@@ -399,8 +401,9 @@ grammaire du builder ; les lignes d'index nul (déclaratives hors délai) sont i
 | `moto_ride_count` | `MotoRide` | `started_at` | `count(*)` |
 | `exploration_cells` | `ExploredCell` | `first_seen_at` | `count(*)` |
 
-Côté gamification, `WeeklyMetricMeter::history(user, metric, weeks, graceHours)` construit les quatre périodes (avec
-`recordedBefore` pour une métrique déclarative) et `WeeklyMetricMeter::measure(user, metric, startsAt, endsAt,
+Côté gamification, `WeeklyMetricMeter::history(user, metric, weeks, graceHours)` construit les quatre périodes (chacune
+avec `recordedBefore = closes_at`, pour toute métrique : seule la colonne d'enregistrement de l'agrégat,
+`MetricAggregate::$recordedColumn`, décide si le seuil s'applique) et `WeeklyMetricMeter::measure(user, metric, startsAt, endsAt,
 closesAt)` mesure un défi. `ProposeWeeklyChallenges` perd `hasHistory()` : le calculateur de cible écarte déjà un
 historique sans semaine active.
 
@@ -516,7 +519,8 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
 - Gamification : `tests/Feature/Gamification/ChallengeClosesAtMigrationTest.php`,
   `FinanceMonthInvestmentXpTest.php` et `FinanceXpSettingsTest.php` (XP finance mensuelle), ajouts dans `GamificationWeekTest`,
   `ChallengeModelTest`, `ProposeWeeklyChallengesTest`, `ResolveChallengesTest`, `WeeklyMetricMeterTest`,
-  `EvaluateBadgesTest`, `BadgeModelTest`, `GamificationApiScopeTest`.
+  `EvaluateBadgesTest`, `BadgeModelTest`, `GamificationApiScopeTest`, `WeeklyMetricMeterRecordingCutoffTest` (le seuil
+  est transmis pour toute métrique, et appliqué exactement quand elle est déclarative).
 - Tests existants adaptés, et eux seuls : `ExploredCellsApiScopeTest::it_allows_the_owner_to_update_their_explored_cell`
   (le comportement s'inverse), `RunChallengeCycleTest::it_reads_the_closing_grace_on_every_call` (idem),
   `GamificationWeekTest` (`isPastGrace` remplacé par `closesAt`), `WeeklyMetricMeterTest` (signature),
