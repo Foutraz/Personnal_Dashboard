@@ -9,6 +9,7 @@ use Functional\Gamification\Services\Dto\ChallengeProgress;
 use Functional\Gamification\Services\Dto\GamificationWeek;
 use Functional\Gamification\Services\GamificationCalendar;
 use Functional\Gamification\Services\WeeklyMetricMeter;
+use Functional\Goals\Exceptions\UnaggregatableGoalMetricException;
 use Functional\Goals\Exceptions\UnboundedGoalMetricException;
 use Functional\Users\Models\User;
 use Illuminate\Support\Collection;
@@ -26,7 +27,7 @@ class ResolveChallenges
      *
      * @return Collection<int, Challenge>
      *
-     * @throws StaleChallengeStatusException|UnboundedGoalMetricException
+     * @throws StaleChallengeStatusException|UnboundedGoalMetricException|UnaggregatableGoalMetricException
      */
     public function handle(User $user): Collection
     {
@@ -42,7 +43,7 @@ class ResolveChallenges
 
         foreach ($openChallenges as $challenge) {
             $week = $this->weekOf($challenge);
-            $measured = $this->meter->measure($user, $challenge->metric, $challenge->starts_at, $challenge->ends_at);
+            $measured = $this->meter->measure($user, $challenge->metric, $challenge->starts_at, $challenge->ends_at, $challenge->closes_at);
             $next = $challenge->state()->evolve(new ChallengeProgress(
                 targetReached: $measured >= (float) $challenge->target_value,
                 weekEnded: $week->hasEnded($moment),

@@ -245,6 +245,47 @@ class GoalMetricAggregatorTest extends TestCase
     }
 
     #[Test]
+    public function it_counts_a_row_in_the_first_period_that_accepts_it(): void
+    {
+        $user = User::factory()->create();
+        $this->rideAt($user, '2026-09-30 08:00:00', '2026-10-02 08:00:00', distance: 100.0);
+        $this->rideAt($user, '2026-09-30 09:00:00', '2026-09-28 08:00:00', distance: 50.0);
+        $strictPeriod = $this->period('2026-09-20 22:00:00', '2026-10-04 22:00:00', '2026-09-29 22:00:00');
+        $lenientPeriod = $this->period('2026-09-27 22:00:00', '2026-10-11 22:00:00', '2026-10-06 22:00:00');
+
+        $totals = $this->aggregator->totalsPerPeriod(GoalMetric::MotoDistance, $user->id, [$strictPeriod, $lenientPeriod]);
+
+        $this->assertSame([50.0, 100.0], $totals);
+    }
+
+    #[Test]
+    public function it_returns_the_totals_in_the_order_received_whatever_the_keys_of_the_periods(): void
+    {
+        $user = User::factory()->create();
+        $this->activityAt($user, '2026-09-23 08:00:00', distance: 4000.0);
+        $this->activityAt($user, '2026-09-30 08:00:00', distance: 2000.0);
+
+        $totals = $this->aggregator->totalsPerPeriod(GoalMetric::SportDistance, $user->id, [7 => $this->week40(), 3 => $this->week39()]);
+
+        $this->assertSame([2.0, 4.0], $totals);
+    }
+
+    #[Test]
+    public function it_never_writes_the_keys_of_the_periods_into_the_query(): void
+    {
+        $user = User::factory()->create();
+        $this->activityAt($user, '2026-09-23 08:00:00', distance: 4000.0);
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $totals = $this->aggregator->totalsPerPeriod(GoalMetric::SportDistance, $user->id, ['older' => $this->week39(), 'recent' => $this->week40()]);
+
+        $this->assertSame([4.0, 0.0], $totals);
+        $this->assertStringNotContainsString('older', DB::getQueryLog()[0]['query']);
+        $this->assertStringContainsString('then 1', DB::getQueryLog()[0]['query']);
+    }
+
+    #[Test]
     public function it_returns_nothing_and_runs_no_query_for_no_period(): void
     {
         $user = User::factory()->create();

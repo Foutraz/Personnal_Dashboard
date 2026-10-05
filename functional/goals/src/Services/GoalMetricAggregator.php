@@ -46,15 +46,16 @@ class GoalMetricAggregator
     }
 
     /**
-     * A row inside two overlapping periods is counted in the first only, and a zoned Carbon would shift its period, so bounds are converted to the application timezone before binding.
+     * A row inside overlapping periods is counted in the first period that accepts it, and a zoned Carbon would shift its period, so bounds are converted to the application timezone before binding.
      *
-     * @param  list<MeasurementPeriod>  $periods
+     * @param  array<array-key, MeasurementPeriod>  $periods
      * @return list<float>
      *
      * @throws UnboundedGoalMetricException|UnaggregatableGoalMetricException
      */
     public function totalsPerPeriod(GoalMetric $metric, string $userId, array $periods): array
     {
+        $periods = array_values($periods);
         $aggregate = $this->aggregateOf($metric);
 
         if ($periods === []) {

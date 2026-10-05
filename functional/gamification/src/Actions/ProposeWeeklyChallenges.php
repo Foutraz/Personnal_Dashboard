@@ -91,22 +91,21 @@ class ProposeWeeklyChallenges
     }
 
     /**
-     * Measure the whole history of each template, then the single weeks of those with data only.
-     *
      * @return array<string, ChallengeTarget>
      *
      * @throws MissingChallengeTemplateConfigException|InvalidChallengeConfigException
      */
     private function eligibleTargets(User $user, GamificationWeek $week, ChallengeSettings $settings): array
     {
+        $historyWeeks = array_map(
+            fn (int $weeksBack): GamificationWeek => $week->previous($weeksBack),
+            range($settings->historyWeeks, 1),
+        );
         $targets = [];
 
         foreach (ChallengeTemplateKey::cases() as $template) {
-            if (! $this->hasHistory($user, $template, $week, $settings)) {
-                continue;
-            }
-
-            $target = $this->calculator->target($template->settings(), $settings, $this->weeklyValues($user, $template, $week, $settings));
+            $weeklyValues = $this->meter->history($user, $template->metric(), $historyWeeks, $settings->closingGraceHours);
+            $target = $this->calculator->target($template->settings(), $settings, $weeklyValues);
 
             if ($target !== null) {
                 $targets[$template->value] = $target;
@@ -114,24 +113,6 @@ class ProposeWeeklyChallenges
         }
 
         return $targets;
-    }
-
-    private function hasHistory(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): bool
-    {
-        $historyStartsAt = $week->previous($settings->historyWeeks)->startsAt;
-
-        return $this->meter->measure($user, $template->metric(), $historyStartsAt, $week->startsAt) > 0.0;
-    }
-
-    /**
-     * @return list<float>
-     */
-    private function weeklyValues(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): array
-    {
-        return array_map(
-            fn (int $weeksBack): float => $this->meter->measureWeek($user, $template->metric(), $week->previous($weeksBack)),
-            range($settings->historyWeeks, 1),
-        );
     }
 
     /**
