@@ -6,6 +6,7 @@ use Functional\Moto\Models\MotoRide;
 use Functional\Users\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -96,6 +97,37 @@ class RecordedAtMigrationTest extends TestCase
         $this->expectException(QueryException::class);
 
         $this->insertRideWithoutRecording($user, '2026-09-01 08:00:00', '2026-09-01 09:00:00');
+    }
+
+    #[Test]
+    public function it_runs_again_without_overwriting_a_stamped_recording_instant(): void
+    {
+        $user = User::factory()->create();
+        $this->migration->down();
+        $id = $this->insertRideWithoutRecording($user, '2026-09-01 08:00:00', '2026-09-01 09:00:00');
+        $this->migration->up();
+        MotoRide::query()->whereKey($id)->update(['recorded_at' => '2026-09-25 12:00:00']);
+
+        $this->migration->up();
+
+        $this->assertSame('2026-09-25 12:00:00', $this->recordedAtOf($id));
+    }
+
+    #[Test]
+    public function it_completes_a_run_interrupted_after_the_column_was_added(): void
+    {
+        $user = User::factory()->create();
+        $this->migration->down();
+        Schema::table('moto_rides', function (Blueprint $table) {
+            $table->timestamp('recorded_at')->nullable()->after('created_at');
+        });
+        $id = $this->insertRideWithoutRecording($user, '2026-09-01 08:00:00', '2026-09-01 09:00:00');
+
+        $this->migration->up();
+
+        $this->assertSame('2026-09-01 09:00:00', $this->recordedAtOf($id));
+        $this->expectException(QueryException::class);
+        $this->insertRideWithoutRecording($user, '2026-09-02 08:00:00', '2026-09-02 09:00:00');
     }
 
     #[Test]

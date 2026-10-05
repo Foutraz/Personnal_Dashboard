@@ -358,7 +358,7 @@ historique sans semaine active.
 |---|---|---|
 | `challenges` | `closes_at` timestamp non nul, après `ends_at` | `functional/gamification/database/migrations/2026_10_05_000001_add_closes_at_to_challenges_table.php` (nullable → backfill → non nul ; `down` supprime la colonne) |
 | `badge_awards` | `measured_value` double nullable, après `awarded_at` | `functional/gamification/database/migrations/2026_10_05_000002_add_measured_value_to_badge_awards_table.php` (sans backfill) |
-| `moto_rides` | `recorded_at` timestamp non nul, après `created_at` | `functional/moto/database/migrations/2026_10_05_000003_add_recorded_at_to_moto_rides_table.php` (nullable → backfill `recorded_at = created_at`, puis l'instant de la migration pour une ligne sans `created_at` → non nul ; `down` supprime la colonne) |
+| `moto_rides` | `recorded_at` timestamp non nul, après `created_at` | `functional/moto/database/migrations/2026_10_05_000003_add_recorded_at_to_moto_rides_table.php` (nullable, ajoutée seulement si absente → backfill `recorded_at = created_at` des seules lignes encore nulles, puis l'instant de la migration pour une ligne sans `created_at` → non nul, ré-exécutable après une exécution interrompue ; `down` supprime la colonne) |
 
 Aucune autre table ne change : `sport_activities`, `explored_cells`, `investment_transactions` et `tasks`
 ont déjà des `timestamps()` fiables une fois la faille 7 fermée. Aucun identifiant nouveau (les ULID existants restent),

@@ -12,13 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('moto_rides', function (Blueprint $table) {
-            $table->timestamp('recorded_at')->nullable()->after('created_at');
-        });
+        if (! Schema::hasColumn('moto_rides', 'recorded_at')) {
+            Schema::table('moto_rides', function (Blueprint $table) {
+                $table->timestamp('recorded_at')->nullable()->after('created_at');
+            });
+        }
 
         $creationColumn = DB::getQueryGrammar()->wrap('created_at');
 
         DB::table('moto_rides')
+            ->whereNull('recorded_at')
             ->whereNotNull('created_at')
             ->update(['recorded_at' => DB::raw($creationColumn)]);
 
