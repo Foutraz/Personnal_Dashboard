@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Moto;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Foutraz\Weather\WeatherManager;
 use Functional\Moto\Livewire\MotoDashboard;
@@ -90,5 +91,22 @@ class MotoWeatherTimezoneTest extends TestCase
             ->test(MotoDashboard::class)
             ->assertSeeInOrder([$displayStart, '→', '03h'])
             ->assertDontSee($utcStart);
+    }
+
+    #[Test]
+    public function it_names_the_weekday_of_the_hourly_forecast_in_the_application_locale(): void
+    {
+        $originalLocale = Carbon::getLocale();
+        $this->app->setLocale('fr');
+        $this->bindClearForecastStartingAt(CarbonImmutable::parse('2026-10-04 22:00:00', 'UTC'));
+        $user = User::factory()->create();
+        $frenchLabel = CarbonImmutable::parse('2026-10-05 00:00:00', 'Europe/Paris')->locale('fr')->translatedFormat('D H\h');
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->assertSee($frenchLabel)
+            ->assertDontSee('Mon 00h');
+
+        Carbon::setLocale($originalLocale);
     }
 }

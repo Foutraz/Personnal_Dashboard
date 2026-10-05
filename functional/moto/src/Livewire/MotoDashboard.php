@@ -248,7 +248,7 @@ class MotoDashboard extends Component
             $condition = $motoFriendlyScore->forForecastEntry($entry);
 
             return [
-                'label' => $displayTimezone->toDisplayTime(Carbon::instance($entry->dt))->format('D H\h'),
+                'label' => $displayTimezone->toDisplayTime(Carbon::instance($entry->dt))->translatedFormat('D H\h'),
                 'temp' => round($entry->temp, 1),
                 'pop' => round($entry->pop * 100),
                 'wind' => round($entry->windSpeed * 3.6),
