@@ -14,6 +14,8 @@ class DeleteUserNotifications
     {
         $event->user->notifications()
             ->cursor()
-            ->each(fn (DatabaseNotification $notification) => $notification->delete());
+            ->each(function (DatabaseNotification $notification): void {
+                $notification->delete();
+            });
     }
 }
