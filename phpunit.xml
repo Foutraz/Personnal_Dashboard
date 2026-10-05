@@ -22,6 +22,8 @@
         <env name="APP_KEY" value="base64:0AB+UN66+rF7oPUVSctHDEIc6zGH1gH1oANkBjKMv6o="/>
         <env name="JWT_SECRET" value="testingtestingtestingtestingtestingtesting"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="APP_DISPLAY_TIMEZONE" value="Europe/Paris"/>
+        <env name="REGISTRATION_ALLOWED_EMAILS" value=""/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
