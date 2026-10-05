@@ -14,7 +14,7 @@ class UpsertStravaActivity
      */
     public function __invoke(IntegrationConnection $connection, Activity $activity): SportActivity
     {
-        return SportActivity::query()->updateOrCreate(
+        $sportActivity = SportActivity::query()->withTrashed()->updateOrCreate(
             [
                 'integration_connection_id' => $connection->id,
                 'strava_id' => $activity->id,
@@ -38,5 +38,11 @@ class UpsertStravaActivity
                 'raw' => null,
             ]
         );
+
+        if ($sportActivity->trashed()) {
+            $sportActivity->restore();
+        }
+
+        return $sportActivity;
     }
 }

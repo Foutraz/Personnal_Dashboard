@@ -180,6 +180,75 @@ class ActivitiesApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_forbids_the_owner_to_delete_their_activity(): void
+    {
+        $user = User::factory()->create();
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+        ]);
+        $storedBefore = SportActivity::query()->sole()->getAttributes();
+
+        $this->actingAs($user, 'api')->deleteJson('/api/sport-activities', [
+            'resources' => [$activity->id],
+        ])->assertForbidden();
+
+        $this->assertNotSoftDeleted($activity);
+        $this->assertSame($storedBefore, SportActivity::query()->sole()->getAttributes());
+    }
+
+    #[Test]
+    public function it_forbids_the_owner_to_restore_a_trashed_activity(): void
+    {
+        $user = User::factory()->create();
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+        ]);
+        $activity->delete();
+
+        $this->actingAs($user, 'api')->postJson('/api/sport-activities/restore', [
+            'resources' => [$activity->id],
+        ])->assertForbidden();
+
+        $this->assertSoftDeleted($activity);
+    }
+
+    #[Test]
+    public function it_forbids_the_owner_to_force_delete_their_activity(): void
+    {
+        $user = User::factory()->create();
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+        ]);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/sport-activities/force', [
+            'resources' => [$activity->id],
+        ])->assertForbidden();
+
+        $this->assertNotSoftDeleted($activity);
+    }
+
+    #[Test]
+    public function it_denies_deleting_restoring_and_force_deleting_an_activity_to_its_owner(): void
+    {
+        $user = User::factory()->create();
+        $connection = IntegrationConnection::factory()->for($user)->create();
+        $activity = SportActivity::factory()->create([
+            'user_id' => $user->id,
+            'integration_connection_id' => $connection->id,
+        ]);
+
+        $this->assertFalse($user->can('delete', $activity));
+        $this->assertFalse($user->can('restore', $activity));
+        $this->assertFalse($user->can('forceDelete', $activity));
+    }
+
+    #[Test]
     public function it_gives_server_managed_rules_only_to_the_fields_the_resource_declares(): void
     {
         $rules = app(SportActivityResource::class)->rules(new RestRequest);
