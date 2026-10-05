@@ -23,7 +23,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|ascii|email|exists:users,email',
+            'email' => 'required|ascii|email',
             'password' => 'required|string|min:8',
             'remember_me' => 'boolean',
         ];
@@ -40,7 +40,6 @@ class LoginRequest extends FormRequest
             'email.required' => 'The email field is required.',
             'password.required' => 'The password field is required.',
             'password.min' => 'The password must be at least 8 characters.',
-            'email.exists' => 'The provided email address does not exist.',
         ];
     }
 }
