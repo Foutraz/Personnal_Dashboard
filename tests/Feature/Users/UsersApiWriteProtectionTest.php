@@ -24,7 +24,7 @@ class UsersApiWriteProtectionTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
         $response->assertJsonValidationErrors('mutate.0.attributes.email');
         $this->assertSame('original@example.com', $user->fresh()->email);
     }
@@ -41,7 +41,7 @@ class UsersApiWriteProtectionTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
         $response->assertJsonValidationErrors('mutate.0.attributes.id');
         $this->assertDatabaseHas('users', ['id' => $originalId]);
     }
@@ -111,6 +111,6 @@ class UsersApiWriteProtectionTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
     }
 }

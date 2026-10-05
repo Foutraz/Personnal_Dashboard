@@ -77,6 +77,8 @@ class DisplayTimezoneTest extends TestCase
             'Paris summer time' => ['Europe/Paris', '2026-10-04T23:30', '2026-10-04 21:30:00'],
             'Paris winter time' => ['Europe/Paris', '2026-12-06T23:30', '2026-12-06 22:30:00'],
             'New York behind UTC' => ['America/New_York', '2026-10-04T23:30', '2026-10-05 03:30:00'],
+            'Paris spring forward gap' => ['Europe/Paris', '2026-03-29T02:30', '2026-03-29 01:30:00'],
+            'Paris fall back overlap' => ['Europe/Paris', '2026-10-25T02:30', '2026-10-25 01:30:00'],
         ];
     }
 

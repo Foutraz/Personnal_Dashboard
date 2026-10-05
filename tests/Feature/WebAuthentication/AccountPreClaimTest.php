@@ -67,7 +67,7 @@ class AccountPreClaimTest extends TestCase
             ],
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
         $this->assertSame('attacker@example.com', $attacker->fresh()->email);
         $this->victimSignsInWithGoogle();
         $this->get('/auth/google/callback')->assertRedirect('/dashboard');
