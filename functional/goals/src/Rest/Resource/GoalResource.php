@@ -65,6 +65,8 @@ class GoalResource extends Resource
             'starts_at' => ['nullable', 'date'],
             'deadline' => ['nullable', 'date'],
             'status' => [Rule::enum(GoalStatus::class)],
+            'current_value' => ['missing'],
+            'progress_percentage' => ['missing'],
         ];
     }
 

@@ -98,6 +98,9 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
   chaque champ déclaré est `missing` (création : 422 ; tout attribut : 422 ; mutation sans attribut : 200 sans effet).
   La route reste déclarée parce que `PreventsApiCreationTest` l'attend, et elle ne peut plus réécrire une activité
   synchronisée.
+- **Objectifs.** `current_value` et `progress_percentage` (calculés, sans colonne) sont déclarés dans `fields()` pour la
+  lecture : `GoalResource` les met en `['missing']`, faute de quoi un client les envoyait, Lomkit les `forceFill` et la
+  requête échouait en 500 (colonne inexistante).
 - **Lots et débit.** `Technical\Osdd\Rest\Controllers\Controller`, parent de tous les contrôleurs REST, enregistre deux
   middlewares de contrôleur (donc avant la validation Lomkit, et sans toucher au vendor) : la limite nommée `rest`
   (`Technical\Osdd\Rest\Throttle\RestRateLimit`, 120 requêtes par minute et par utilisateur, repli sur l'adresse IP,
@@ -507,6 +510,7 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
 - API REST commune : `tests/Feature/Lomkit/MutateOperationsCapTest.php` (plafond, imbriqué, configurable, présent sur
   toutes les routes `mutate`), `RestRateLimitTest.php` (429, seaux par utilisateur, repli IP, présent sur toutes les
   routes), `ServerManagedFieldsArchitectureTest.php`.
+- Objectifs : `tests/Feature/Goals/GoalComputedFieldsTest.php` (champs calculés refusés en création et en mise à jour).
 - Objectifs : `tests/Feature/Goals/GoalMetricAggregatorTest.php`, ajouts dans `tests/Unit/Goals/GoalProgressCalculatorTest.php` ;
   tous les tests Objectifs existants restent verts sans modification.
 - Gamification : `tests/Feature/Gamification/ChallengeClosesAtMigrationTest.php`,
@@ -647,8 +651,8 @@ obligatoires ; aucun n'est livré ici, les changements de SDK étant hors périm
    (`manual`) et de téléversement de l'API Strava ; l'activité manuelle ou téléversée ne compte pas pour `sport_activity` ni
    `exploration_daily_cells` au classement (aujourd'hui acceptée comme synchronisée, §12).
 3. **Un compte fournisseur pour un compte du tableau de bord.** Unicité `(fournisseur, identifiant externe)` sur les
-   connexions d'intégration, vérifiée à la liaison : un même athlète ne peut pas alimenter plusieurs joueurs ni se
-   répartir sur plusieurs comptes.
+   connexions d'intégration, vérifiée à la liaison : un même compte Strava ou Withings ne peut alimenter qu'un seul
+   joueur.
 4. **Périodes de classement figées à la clôture.** Le classement d'une période close est écrit une fois à sa clôture ;
    une activité ancienne importée ensuite (synchronisation tardive, backfill) ne déplace plus un classement passé.
 
