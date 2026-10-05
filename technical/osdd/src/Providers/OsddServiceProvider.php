@@ -4,7 +4,10 @@ namespace Technical\Osdd\Providers;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
+use Technical\Osdd\Rest\Throttle\RestRateLimit;
 use Xefi\LaravelOSDD\LayerServiceProvider;
 
 class OsddServiceProvider extends LayerServiceProvider
@@ -21,6 +24,8 @@ class OsddServiceProvider extends LayerServiceProvider
     public function boot(): void
     {
         $this->loadTranslationsFrom(__DIR__.'/../../lang', 'osdd');
+
+        RateLimiter::for(RestRateLimit::NAME, fn (Request $request) => $this->app->make(RestRateLimit::class)->limitFor($request));
     }
 
     /**

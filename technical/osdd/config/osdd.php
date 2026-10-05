@@ -7,4 +7,9 @@ return [
             'technical' => base_path('technical'),
         ],
     ],
+
+    'rest' => [
+        'max_mutate_operations' => 100,
+        'requests_per_minute' => 120,
+    ],
 ];
