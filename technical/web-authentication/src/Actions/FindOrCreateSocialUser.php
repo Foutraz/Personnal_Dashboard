@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialUser;
 use Laravel\Socialite\Two\User as GoogleUser;
+use Technical\WebAuthentication\Exceptions\BlankGoogleIdentityException;
 use Technical\WebAuthentication\Exceptions\DeletedAccountSignInException;
 use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnlistedGoogleEmailException;
@@ -21,6 +22,7 @@ class FindOrCreateSocialUser
     /**
      * Resolve the local user matching the social account, linking or creating it as needed.
      *
+     * @throws BlankGoogleIdentityException
      * @throws UnverifiedAccountLinkException
      * @throws GoogleIdentityMismatchException
      * @throws UnverifiedGoogleEmailException
@@ -29,6 +31,8 @@ class FindOrCreateSocialUser
      */
     public function __invoke(SocialUser $socialUser): User
     {
+        $this->assertHasGoogleId($socialUser);
+
         $linkedUser = User::query()->withTrashed()->where('google_id', $socialUser->getId())->first();
 
         if ($linkedUser !== null) {
@@ -60,6 +64,18 @@ class FindOrCreateSocialUser
         $existingUser->update(['google_id' => $socialUser->getId()]);
 
         return $existingUser;
+    }
+
+    /**
+     * Ensure the signing-in identity carries an id, since a lookup on a blank one matches an unlinked account.
+     *
+     * @throws BlankGoogleIdentityException
+     */
+    private function assertHasGoogleId(SocialUser $socialUser): void
+    {
+        if (trim((string) $socialUser->getId()) === '') {
+            throw new BlankGoogleIdentityException;
+        }
     }
 
     /**
