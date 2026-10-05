@@ -4,22 +4,29 @@ namespace Technical\Application\Time;
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use DateTimeZone;
 use Technical\Application\Exceptions\InvalidDisplayTimezoneException;
 
 final class DisplayTimezone
 {
     public const INPUT_FORMAT = 'Y-m-d\TH:i';
 
+    private ?string $validatedName = null;
+
     /** @throws InvalidDisplayTimezoneException */
     public function name(): string
     {
         $configured = config('app.display_timezone');
 
-        if (! is_string($configured) || ! in_array($configured, timezone_identifiers_list(), true)) {
+        if (is_string($configured) && $configured === $this->validatedName) {
+            return $configured;
+        }
+
+        if (! is_string($configured) || ! in_array($configured, DateTimeZone::listIdentifiers(DateTimeZone::ALL_WITH_BC), true)) {
             throw InvalidDisplayTimezoneException::forValue($configured);
         }
 
-        return $configured;
+        return $this->validatedName = $configured;
     }
 
     /** @throws InvalidDisplayTimezoneException */

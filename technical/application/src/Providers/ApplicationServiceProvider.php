@@ -4,6 +4,7 @@ namespace Technical\Application\Providers;
 
 use Illuminate\Support\Facades\RateLimiter;
 use Technical\Application\RateLimiting\AuthenticationAttemptsLimiter;
+use Technical\Application\Time\DisplayTimezone;
 use Technical\Osdd\Providers\OsddServiceProvider;
 
 class ApplicationServiceProvider extends OsddServiceProvider
@@ -19,6 +20,8 @@ class ApplicationServiceProvider extends OsddServiceProvider
 
     public function register(): void
     {
+        $this->app->singleton(DisplayTimezone::class);
+
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/app.php', 'app');
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/auth.php', 'auth');
         $this->mergeConfigWithPriorityFrom(__DIR__.'/../../config/cors.php', 'cors');
