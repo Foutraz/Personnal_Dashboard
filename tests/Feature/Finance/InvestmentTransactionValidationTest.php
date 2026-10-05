@@ -65,6 +65,13 @@ class InvestmentTransactionValidationTest extends TestCase
         ]);
     }
 
+    private function ownSell(): InvestmentTransaction
+    {
+        return InvestmentTransaction::factory()->sell()->for($this->position)->for($this->owner)->create([
+            'executed_at' => Carbon::parse('2026-09-20 08:00:00', 'UTC'),
+        ]);
+    }
+
     #[Test]
     public function it_rejects_a_transaction_referencing_a_missing_position(): void
     {
@@ -155,6 +162,7 @@ class InvestmentTransactionValidationTest extends TestCase
             'above the maximum' => [1000000001],
             'finer than the column scale' => ['0.000000001'],
             'finer than the column scale as a number' => [0.000000001],
+            'exponent string far below the column scale' => ['1e-400'],
         ];
     }
 
@@ -176,6 +184,7 @@ class InvestmentTransactionValidationTest extends TestCase
             'above the maximum' => [10000000.01],
             'finer than the column scale' => ['0.000000001'],
             'finer than the column scale as a number' => [0.000000001],
+            'exponent string far below the column scale' => ['1e-400'],
         ];
     }
 
@@ -217,6 +226,29 @@ class InvestmentTransactionValidationTest extends TestCase
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors(['mutate.0.attributes.unit_price']);
         $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    public static function unitPricesThatWouldStoreAsZero(): array
+    {
+        return [
+            'zero' => [0],
+            'finer than the column scale' => ['0.000000001'],
+            'exponent string far below the column scale' => ['1e-400'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unitPricesThatWouldStoreAsZero')]
+    public function it_rejects_updating_an_own_sell_to_a_unit_price_that_would_store_as_zero(float|int|string $unitPrice): void
+    {
+        $sell = $this->ownSell();
+        $storedBefore = InvestmentTransaction::query()->sole()->getAttributes();
+
+        $response = $this->updateTransaction($sell, ['unit_price' => $unitPrice]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['mutate.0.attributes.unit_price']);
+        $this->assertSame($storedBefore, InvestmentTransaction::query()->sole()->getAttributes());
     }
 
     #[Test]

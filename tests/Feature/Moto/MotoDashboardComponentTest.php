@@ -187,6 +187,17 @@ class MotoDashboardComponentTest extends TestCase
     }
 
     #[Test]
+    public function it_rejects_a_ride_distance_in_exponent_notation_far_below_the_column_scale(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '1e-400'])
+            ->assertHasErrors(['rideDistance' => WithinScale::class]);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
     public function it_rejects_a_ride_distance_written_with_a_decimal_comma(): void
     {
         $user = User::factory()->create();

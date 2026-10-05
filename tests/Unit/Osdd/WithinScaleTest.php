@@ -3,6 +3,7 @@
 namespace Tests\Unit\Osdd;
 
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Translation\PotentiallyTranslatedString;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\Osdd\Rules\WithinScale;
@@ -26,7 +27,14 @@ class WithinScaleTest extends TestCase
             'string with a sign' => ['+1.25', 2],
             'string with trailing zeros past the scale' => ['1.500000000', 8],
             'exponent string within the scale' => ['5.0E-5', 8],
+            'exponent string at the scale' => ['1E-8', 8],
             'exponent string with a positive exponent' => ['1E+3', 2],
+            'exponent string with trailing zeros in the mantissa' => ['100E-2', 0],
+            'exponent string with a zero mantissa' => ['0e-999', 8],
+            'exponent string with an enormous positive exponent' => ['1e999999999999999999999', 8],
+            'string surrounded by whitespace' => [' 1.5 ', 8],
+            'float with sixteen significant digits' => [41148567.69631931, 8],
+            'whole float' => [120.0, 0],
             'float at the scale' => [0.00000001, 8],
             'float below the scale' => [0.00005, 8],
             'float with cents' => [80.55, 2],
@@ -46,9 +54,18 @@ class WithinScaleTest extends TestCase
             'string rounding up past the cents' => ['0.005', 2],
             'exponent string past the scale' => ['1.0E-9', 8],
             'exponent string past a shorter scale' => ['5.0E-5', 4],
+            'exponent string far below the scale' => ['1e-400', 8],
+            'exponent string below the float range' => ['1e-324', 8],
+            'exponent string rounding to zero as a float' => ['4e-324', 8],
+            'exponent string with an enormous negative exponent' => ['1e-999999999999999999999', 8],
+            'exponent string surrounded by whitespace' => [' 1e-400 ', 8],
+            'exponent string preceded by a form feed' => ["\f1e-400", 8],
+            'exponent string with a mantissa fraction' => ['1.5e-9', 8],
             'float past the scale' => [0.000000001, 8],
             'float one digit past the cents' => [0.004, 2],
             'float rounding up past the cents' => [0.005, 2],
+            'float whose shortest representation is long' => [0.1 + 0.2, 8],
+            'infinite float' => [INF, 8],
             'float past a zero scale' => [1.5, 0],
             'string past a zero scale' => ['1.5', 0],
         ];
@@ -60,6 +77,7 @@ class WithinScaleTest extends TestCase
             'letters' => ['abc'],
             'decimal comma' => ['12,5'],
             'null' => [null],
+            'empty string' => [''],
             'boolean' => [true],
             'array' => [[1.5]],
         ];
@@ -83,7 +101,16 @@ class WithinScaleTest extends TestCase
     #[DataProvider('inputsLeftToTheNumericRule')]
     public function it_leaves_a_non_numeric_input_to_the_numeric_rule(mixed $input): void
     {
-        $this->assertTrue($this->passes($input, 8));
+        $reported = [];
+        $fail = function (string $message) use (&$reported): PotentiallyTranslatedString {
+            $reported[] = $message;
+
+            return new PotentiallyTranslatedString($message, $this->app->make('translator'));
+        };
+
+        (new WithinScale(8))->validate('amount', $input, $fail);
+
+        $this->assertSame([], $reported);
     }
 
     #[Test]

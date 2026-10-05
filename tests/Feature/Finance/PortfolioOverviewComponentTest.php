@@ -207,4 +207,17 @@ class PortfolioOverviewComponentTest extends TestCase
 
         $this->assertSame(0, InvestmentTransaction::query()->count());
     }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_rejects_a_transaction_value_in_exponent_notation_far_below_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '1e-400'])
+            ->assertHasErrors([$field => WithinScale::class]);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
 }

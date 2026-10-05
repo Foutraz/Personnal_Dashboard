@@ -7,6 +7,12 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 final class WithinScale implements ValidationRule
 {
+    private const NUMERIC_WHITESPACE = " \t\n\r\v\f";
+
+    private const NUMBER_PATTERN = '/^[+-]?(\d*)\.?(\d*)(?:[eE]([+-]?\d+))?$/';
+
+    private const EXPONENT_LIMIT = 10000;
+
     public function __construct(private readonly int $scale) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -26,19 +32,34 @@ final class WithinScale implements ValidationRule
             return true;
         }
 
-        if (is_float($number)) {
-            return round($number, $this->scale) === $number;
-        }
+        $decimalPlaces = $this->decimalPlaces(
+            is_float($number) ? var_export($number, true) : trim($number, self::NUMERIC_WHITESPACE),
+        );
 
-        return $this->isStringWithinScale(trim($number));
+        return $decimalPlaces !== null && $decimalPlaces <= $this->scale;
     }
 
-    private function isStringWithinScale(string $number): bool
+    private function decimalPlaces(string $representation): ?int
     {
-        if (preg_match('/^[+-]?\d*\.?(\d*)$/', $number, $matches) === 1) {
-            return strlen(rtrim($matches[1], '0')) <= $this->scale;
+        if (preg_match(self::NUMBER_PATTERN, $representation, $parts) !== 1) {
+            return null;
         }
 
-        return $this->isWithinScale((float) $number);
+        $digits = $parts[1].$parts[2];
+
+        if ($digits === '') {
+            return null;
+        }
+
+        $significantDigits = rtrim($digits, '0');
+
+        if ($significantDigits === '') {
+            return 0;
+        }
+
+        $exponent = max(-self::EXPONENT_LIMIT, min(self::EXPONENT_LIMIT, (int) ($parts[3] ?? 0)));
+        $strippedZeros = strlen($digits) - strlen($significantDigits);
+
+        return max(0, strlen($parts[2]) - $strippedZeros - $exponent);
     }
 }

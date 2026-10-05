@@ -108,6 +108,7 @@ class MotoRideValidationTest extends TestCase
             'zero' => [0],
             'above the maximum' => [2000.01],
             'finer than the column scale' => [0.004],
+            'exponent string far below the column scale' => ['1e-400'],
         ];
     }
 
@@ -138,7 +139,7 @@ class MotoRideValidationTest extends TestCase
 
     #[Test]
     #[DataProvider('rejectedDistances')]
-    public function it_rejects_a_distance_out_of_bounds(float|int $distance): void
+    public function it_rejects_a_distance_out_of_bounds(float|int|string $distance): void
     {
         $response = $this->createRide(['distance' => $distance]);
 
