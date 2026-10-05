@@ -107,7 +107,7 @@ class FindOrCreateSocialUser
     {
         $user = new User([
             'name' => $socialUser->getName() ?? $socialUser->getNickname() ?? $socialUser->getEmail(),
-            'email' => $socialUser->getEmail(),
+            'email' => Str::lower(trim((string) $socialUser->getEmail())),
             'google_id' => $socialUser->getId(),
             'password' => Hash::make(Str::random(32)),
         ]);

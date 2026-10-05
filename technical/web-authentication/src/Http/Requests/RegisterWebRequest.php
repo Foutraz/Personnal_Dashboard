@@ -25,7 +25,7 @@ class RegisterWebRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => ['bail', 'required', 'email', $allowedRegistrationEmail, 'unique:users,email'],
+            'email' => ['bail', 'required', 'ascii', 'email', $allowedRegistrationEmail, 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
         ];
     }
