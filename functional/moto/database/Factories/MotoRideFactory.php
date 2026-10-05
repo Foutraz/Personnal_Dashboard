@@ -5,6 +5,7 @@ namespace Functional\Moto\Database\Factories;
 use Functional\Moto\Models\MotoRide;
 use Functional\Users\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use WeakMap;
 
 /**
  * @extends Factory<MotoRide>
@@ -17,6 +18,23 @@ class MotoRideFactory extends Factory
      * @var class-string<MotoRide>
      */
     protected $model = MotoRide::class;
+
+    public function configure(): static
+    {
+        $intendedRecordings = new WeakMap;
+
+        return $this
+            ->afterMaking(function (MotoRide $ride) use ($intendedRecordings): void {
+                $intendedRecordings[$ride] = $ride->getAttributes()['recorded_at'];
+            })
+            ->afterCreating(function (MotoRide $ride) use ($intendedRecordings): void {
+                $recordedAt = $intendedRecordings[$ride];
+
+                MotoRide::withTrashed()->whereKey($ride->getKey())->toBase()->update(['recorded_at' => $recordedAt]);
+
+                $ride->forceFill(['recorded_at' => $recordedAt])->syncOriginalAttribute('recorded_at');
+            });
+    }
 
     /**
      * Define the model's default state.

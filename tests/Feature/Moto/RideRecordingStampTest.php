@@ -128,6 +128,35 @@ class RideRecordingStampTest extends TestCase
     }
 
     #[Test]
+    public function it_stamps_the_server_instant_on_a_replica_of_an_old_ride(): void
+    {
+        $ride = $this->ownRide();
+        $this->travelTo(Carbon::parse('2026-10-02 08:00:00', 'UTC'));
+
+        $replica = $ride->replicate();
+        $replica->save();
+
+        $this->assertRecordedAt('2026-10-02 08:00:00', $replica);
+        $this->assertRecordedAt('2026-09-20 08:00:00', $ride);
+    }
+
+    #[Test]
+    public function it_overrides_a_recording_instant_assigned_to_a_new_ride(): void
+    {
+        $ride = new MotoRide;
+        $ride->forceFill([
+            'user_id' => $this->owner->id,
+            'title' => 'Balade',
+            'started_at' => Carbon::parse('2026-09-14 08:00:00', 'UTC'),
+            'duration' => 3600,
+            'distance' => 80,
+            'recorded_at' => Carbon::parse('2026-09-14 09:00:00', 'UTC'),
+        ])->save();
+
+        $this->assertRecordedAt('2026-10-01 10:00:00', $ride);
+    }
+
+    #[Test]
     public function it_keeps_the_recording_when_only_the_title_changes(): void
     {
         $ride = $this->ownRide();
@@ -261,6 +290,38 @@ class RideRecordingStampTest extends TestCase
         ]);
 
         $this->assertRecordedAt('2026-09-30 12:00:00', $ride);
+    }
+
+    #[Test]
+    public function it_hands_back_a_factory_ride_carrying_its_aligned_recording_instant(): void
+    {
+        $ride = MotoRide::factory()->create([
+            'started_at' => Carbon::parse('2026-09-02 12:00:00', 'UTC'),
+        ]);
+
+        $this->assertTrue($ride->recorded_at->equalTo(Carbon::parse('2026-09-02 12:00:00', 'UTC')));
+        $this->assertFalse($ride->isDirty());
+    }
+
+    #[Test]
+    public function it_aligns_the_recording_instant_of_a_trashed_factory_ride(): void
+    {
+        $ride = MotoRide::factory()->create([
+            'started_at' => Carbon::parse('2026-09-02 12:00:00', 'UTC'),
+            'deleted_at' => Carbon::parse('2026-09-03 12:00:00', 'UTC'),
+        ]);
+
+        $this->assertTrue(MotoRide::withTrashed()->findOrFail($ride->id)->recorded_at->equalTo(Carbon::parse('2026-09-02 12:00:00', 'UTC')));
+    }
+
+    #[Test]
+    public function it_leaves_the_update_timestamp_of_a_factory_ride_on_its_start(): void
+    {
+        $ride = MotoRide::factory()->create([
+            'started_at' => Carbon::parse('2026-09-02 12:00:00', 'UTC'),
+        ]);
+
+        $this->assertTrue($ride->fresh()->updated_at->equalTo(Carbon::parse('2026-09-02 12:00:00', 'UTC')));
     }
 
     #[Test]

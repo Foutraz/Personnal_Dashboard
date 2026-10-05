@@ -101,13 +101,14 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 | enregistrement | `recorded_at` : hors de `fields()` donc refusé (422) pour toute valeur, `null` et chaîne vide compris | — (non remplissable) |
 
 2 000 km est au-delà du « SaddleSore 1000 » (1 609 km en 24 h) ; une sortie dure au plus 24 h (un voyage de plusieurs
-jours se saisit par jour). La factory aligne `created_at`, `updated_at` et `recorded_at` sur `started_at` (une sortie
-de factory est « saisie à temps ») ; les tests d'antidatage posent `recorded_at` explicitement.
+jours se saisit par jour). La factory aligne `created_at` et `updated_at` sur `started_at` à la fabrication et `recorded_at` après la
+création, par une requête de mise à jour (une sortie de factory est « saisie à temps ») ; les tests d'antidatage posent
+`recorded_at` explicitement dans l'état de la factory, qui le respecte par la même mise à jour.
 
 `moto_rides.recorded_at` est l'instant d'enregistrement, posé uniquement par le listener
 `Functional\Moto\Listeners\StampRideRecording` (événement `saving`, branché par classe dans `MotoServiceProvider`) :
-`now()` à la création (sauf valeur déjà posée par l'appelant, comme `created_at` pour Eloquent : seule la factory ou un
-écrivain non gardé en pose une), puis `now()` à chaque sauvegarde qui change `started_at` ou `distance`. Corriger le
+`now()` à toute création, même si l'appelant a posé une valeur (un `replicate()` d'une sortie ancienne, un `forceFill`),
+puis `now()` à chaque sauvegarde qui change `started_at` ou `distance`. Corriger le
 titre, la durée, la note ou la météo, restaurer une sortie supprimée, renvoyer les mêmes valeurs : `recorded_at` ne
 bouge pas.
 
