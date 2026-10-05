@@ -157,12 +157,15 @@
 
                                     <div class="mt-1 flex flex-col gap-0.5">
                                         @foreach (array_slice($cell['items'], 0, $view === 'week' ? 5 : 3) as $item)
-                                            @php $accent = $item->source->color(); @endphp
+                                            @php
+                                                $accent = $item->source->color();
+                                                $startsAt = $item->allDay ? $item->startsAt : $item->startsAt->inDisplayTimezone();
+                                            @endphp
                                             <div
                                                 x-data
                                                 x-init="$el.animate([{ opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 260, easing: 'ease-out' })"
                                                 class="flex items-center gap-1 truncate rounded-md border px-1 py-0.5 text-[0.6rem] {{ $sourceChip[$accent] }}"
-                                                title="{{ $item->title }}{{ $item->allDay ? '' : ' — '.$item->startsAt->format('H:i') }}"
+                                                title="{{ $item->title }}{{ $item->allDay ? '' : ' — '.$startsAt->format('H:i') }}"
                                             >
                                                 <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ $sourceDot[$accent] }}"></span>
                                                 <span class="truncate">{{ $item->title }}</span>
@@ -188,13 +191,16 @@
 
                 <div class="mt-4 flex flex-col gap-2.5">
                     @forelse ($upcoming as $item)
-                        @php $accent = $item->source->color(); @endphp
+                        @php
+                            $accent = $item->source->color();
+                            $startsAt = $item->allDay ? $item->startsAt : $item->startsAt->inDisplayTimezone();
+                        @endphp
                         <div wire:key="upcoming-{{ $item->source->value }}-{{ $item->id }}" class="flex items-center gap-3 rounded-xl border border-hairline bg-surface/50 px-3 py-2.5">
                             <span class="h-2 w-2 shrink-0 rounded-full {{ $sourceDot[$accent] }}"></span>
                             <div class="min-w-0 flex-1">
                                 <p class="truncate text-sm font-medium">{{ $item->title }}</p>
                                 <p class="text-xs text-faint">
-                                    {{ $item->startsAt->translatedFormat('d M') }}{{ $item->allDay ? '' : ' · '.$item->startsAt->format('H:i') }} · {{ $item->source->label() }}
+                                    {{ $startsAt->translatedFormat('d M') }}{{ $item->allDay ? '' : ' · '.$startsAt->format('H:i') }} · {{ $item->source->label() }}
                                 </p>
                             </div>
                             @if ($item->amount !== null)
