@@ -356,8 +356,10 @@ défis proposés ensuite, comme le promettait G4 §10.
 
 Migration : colonne ajoutée nullable, backfill **en PHP par valeur distincte de `ends_at`** (au plus une par semaine
 écoulée depuis G4) avec la grâce de la config validée par `ChallengeSettings::fromConfig()` au moment de la migration —
-celle que ces défis auraient reçue à la résolution —, puis passage en non nul (`->change()`). Aucune arithmétique de
-date en SQL (`DATE_ADD` et `datetime()` ne sont pas portables). Non exposée par l'API `challenges` (aucun client).
+celle que ces défis auraient reçue à la résolution —, lue **seulement s'il existe des lignes à remplir** (une
+configuration invalide ne doit pas casser un `migrate` sur une base neuve, ni la reprise d'une migration déjà complète),
+puis passage en non nul (`->change()`). Aucune arithmétique de date en SQL (`DATE_ADD` et `datetime()` ne sont pas
+portables). Non exposée par l'API `challenges` (aucun client).
 
 ### 8.2 Historique agrégé en SQL
 

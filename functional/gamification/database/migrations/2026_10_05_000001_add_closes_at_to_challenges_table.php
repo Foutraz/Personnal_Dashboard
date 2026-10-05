@@ -17,13 +17,17 @@ return new class extends Migration
             });
         }
 
-        $graceHours = ChallengeSettings::fromConfig()->closingGraceHours;
+        $endsAtToBackfill = DB::table('challenges')->whereNull('closes_at')->distinct()->pluck('ends_at');
 
-        foreach (DB::table('challenges')->whereNull('closes_at')->distinct()->pluck('ends_at') as $endsAt) {
-            DB::table('challenges')
-                ->whereNull('closes_at')
-                ->where('ends_at', $endsAt)
-                ->update(['closes_at' => Carbon::parse($endsAt, 'UTC')->addHours($graceHours)->toDateTimeString()]);
+        if ($endsAtToBackfill->isNotEmpty()) {
+            $graceHours = ChallengeSettings::fromConfig()->closingGraceHours;
+
+            foreach ($endsAtToBackfill as $endsAt) {
+                DB::table('challenges')
+                    ->whereNull('closes_at')
+                    ->where('ends_at', $endsAt)
+                    ->update(['closes_at' => Carbon::parse($endsAt, 'UTC')->addHours($graceHours)->toDateTimeString()]);
+            }
         }
 
         Schema::table('challenges', function (Blueprint $table) {

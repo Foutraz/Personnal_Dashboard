@@ -4,6 +4,7 @@ namespace Tests\Feature\Gamification;
 
 use Functional\Gamification\Enums\ChallengeStatus;
 use Functional\Gamification\Enums\ChallengeTemplateKey;
+use Functional\Gamification\Exceptions\InvalidChallengeConfigException;
 use Functional\Gamification\Models\Challenge;
 use Functional\Users\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -148,6 +149,44 @@ class ChallengeClosesAtMigrationTest extends TestCase
 
         $this->assertSame('2026-09-28 12:00:00', $this->closesAtOf($filled));
         $this->assertSame('2026-10-06 22:00:00', $this->closesAtOf($empty));
+    }
+
+    #[Test]
+    public function it_runs_on_a_table_without_challenges_whatever_the_configured_grace(): void
+    {
+        $this->migration->down();
+        config(['gamification.challenges.closing_grace_hours' => -1]);
+
+        $this->migration->up();
+
+        $this->assertTrue(Schema::hasColumn('challenges', 'closes_at'));
+    }
+
+    #[Test]
+    public function it_runs_when_every_challenge_already_has_its_closing_whatever_the_configured_grace(): void
+    {
+        $user = User::factory()->create();
+        $this->migration->down();
+        $current = $this->insertChallengeWithoutClosing($user, '2026-W40', self::CURRENT_WEEK_END);
+        $this->migration->up();
+        config(['gamification.challenges.closing_grace_hours' => -1]);
+
+        $this->migration->up();
+
+        $this->assertSame('2026-10-06 22:00:00', $this->closesAtOf($current));
+    }
+
+    #[Test]
+    public function it_refuses_an_invalid_configured_grace_when_a_challenge_needs_its_closing(): void
+    {
+        $user = User::factory()->create();
+        $this->migration->down();
+        $this->insertChallengeWithoutClosing($user, '2026-W40', self::CURRENT_WEEK_END);
+        config(['gamification.challenges.closing_grace_hours' => -1]);
+
+        $this->expectException(InvalidChallengeConfigException::class);
+
+        $this->migration->up();
     }
 
     #[Test]
