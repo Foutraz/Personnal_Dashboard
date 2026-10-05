@@ -5,9 +5,12 @@ namespace Technical\Osdd\Rest\Resources;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Lomkit\Rest\Http\Resource as RestResource;
+use Technical\Osdd\Rest\Resources\Concerns\ResolvesUndeclaredRelationPathsToNull;
 
 abstract class Resource extends RestResource
 {
+    use ResolvesUndeclaredRelationPathsToNull;
+
     /**
      * Enable policy authorization so the controls enforce per-user ownership.
      */
