@@ -9,6 +9,7 @@ use Functional\Todo\Dashboard\TodoDashboardContribution;
 use Functional\Todo\Database\Seeders\TodoSeeder;
 use Functional\Todo\Listeners\DeleteTaskReminders;
 use Functional\Todo\Listeners\DeleteUserTasks;
+use Functional\Todo\Listeners\StampTaskCompletion;
 use Functional\Todo\Livewire\TodoBoard;
 use Functional\Todo\Livewire\TodoStatistics;
 use Functional\Todo\Models\Task;
@@ -67,6 +68,7 @@ class TodoServiceProvider extends OsddServiceProvider
         $this->loadListenEvent();
 
         Task::creating(fn (Task $task) => app(AssignTaskOwner::class)->handle($task));
+        Task::saving(StampTaskCompletion::class);
         Task::deleting(fn (Task $task) => app(DeleteTaskReminders::class)->handle($task));
 
         Livewire::component('todo-board', TodoBoard::class);
