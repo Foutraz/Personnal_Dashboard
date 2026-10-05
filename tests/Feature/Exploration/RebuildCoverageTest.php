@@ -132,16 +132,18 @@ class RebuildCoverageTest extends TestCase
     }
 
     #[Test]
-    public function it_leaves_the_cells_of_another_user_untouched(): void
+    public function it_leaves_the_cell_of_another_user_sharing_a_stale_key_untouched(): void
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
         $this->createRoutedActivity($user);
-        $otherForgedCell = ExploredCell::factory()->create(['user_id' => $other->id, 'cell_key' => self::FORGED_CELL_KEY]);
+        ExploredCell::factory()->create(['user_id' => $user->id, 'cell_key' => self::FORGED_CELL_KEY]);
+        $otherCell = ExploredCell::factory()->create(['user_id' => $other->id, 'cell_key' => self::FORGED_CELL_KEY]);
 
         app(RebuildUserCoverage::class)->handle($user->id);
 
-        $this->assertDatabaseHas('explored_cells', ['id' => $otherForgedCell->id]);
+        $this->assertNotContains(self::FORGED_CELL_KEY, $this->cellKeysOf($user));
+        $this->assertDatabaseHas('explored_cells', ['id' => $otherCell->id, 'user_id' => $other->id]);
         $this->assertSame([self::FORGED_CELL_KEY], $this->cellKeysOf($other));
     }
 
@@ -209,6 +211,6 @@ class RebuildCoverageTest extends TestCase
 
         app(RebuildUserCoverage::class)->handle($user->id);
 
-        $this->assertSame(count($derivedKeys), ExploredCell::query()->whereBelongsTo($user)->count());
+        $this->assertSame($derivedKeys, $this->cellKeysOf($user));
     }
 }

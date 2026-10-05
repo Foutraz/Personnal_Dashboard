@@ -84,4 +84,15 @@ class ExploredCellsApiScopeTest extends TestCase
 
         $this->assertDatabaseHas('explored_cells', ['id' => $cell->id]);
     }
+
+    #[Test]
+    public function it_denies_restoring_and_force_deleting_an_explored_cell_to_its_owner(): void
+    {
+        $user = User::factory()->create();
+
+        $cell = ExploredCell::factory()->create(['user_id' => $user->id]);
+
+        $this->assertFalse($user->can('restore', $cell));
+        $this->assertFalse($user->can('forceDelete', $cell));
+    }
 }

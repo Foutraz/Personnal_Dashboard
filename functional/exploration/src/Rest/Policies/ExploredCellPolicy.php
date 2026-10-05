@@ -30,4 +30,14 @@ class ExploredCellPolicy extends ControlledPolicy
     {
         return false;
     }
+
+    public function restore(Model $user, Model $model): bool
+    {
+        return false;
+    }
+
+    public function forceDelete(Model $user, Model $model): bool
+    {
+        return false;
+    }
 }
