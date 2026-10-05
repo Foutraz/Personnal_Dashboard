@@ -51,19 +51,20 @@ class SportActivityResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
-            'strava_id' => ['integer', 'min:0'],
+            ...$this->serverManagedFieldRules($request),
+            'strava_id' => ['missing'],
             'name' => ['string', 'max:255'],
             'sport_type' => [Rule::enum(SportType::class)],
-            'distance' => ['numeric', 'min:0'],
-            'moving_time' => ['integer', 'min:0'],
-            'elapsed_time' => ['integer', 'min:0'],
-            'total_elevation_gain' => ['numeric', 'min:0'],
-            'average_speed' => ['nullable', 'numeric', 'min:0'],
-            'max_speed' => ['nullable', 'numeric', 'min:0'],
-            'average_heartrate' => ['nullable', 'numeric', 'min:0'],
-            'max_heartrate' => ['nullable', 'numeric', 'min:0'],
-            'kilojoules' => ['nullable', 'numeric', 'min:0'],
-            'started_at' => ['date'],
+            'distance' => ['missing'],
+            'moving_time' => ['missing'],
+            'elapsed_time' => ['missing'],
+            'total_elevation_gain' => ['missing'],
+            'average_speed' => ['missing'],
+            'max_speed' => ['missing'],
+            'average_heartrate' => ['missing'],
+            'max_heartrate' => ['missing'],
+            'kilojoules' => ['missing'],
+            'started_at' => ['missing'],
         ];
     }
 
