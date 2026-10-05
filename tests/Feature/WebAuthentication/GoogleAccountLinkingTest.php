@@ -5,41 +5,20 @@ namespace Tests\Feature\WebAuthentication;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Contracts\Provider;
-use Laravel\Socialite\Contracts\User as SocialUser;
-use Laravel\Socialite\Facades\Socialite;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\WebAuthentication\Actions\FindOrCreateSocialUser;
+use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
+use Tests\Feature\WebAuthentication\Concerns\FakesGoogleSignIn;
 use Tests\TestCase;
 
 class GoogleAccountLinkingTest extends TestCase
 {
-    use RefreshDatabase;
+    use FakesGoogleSignIn, RefreshDatabase;
 
     private const VICTIM_EMAIL = 'victim@example.com';
 
     private const VICTIM_GOOGLE_ID = 'google-victim';
-
-    private function googleUser(string $googleId, string $email): SocialUser
-    {
-        $socialUser = Mockery::mock(SocialUser::class);
-        $socialUser->shouldReceive('getId')->andReturn($googleId);
-        $socialUser->shouldReceive('getEmail')->andReturn($email);
-        $socialUser->shouldReceive('getName')->andReturn('Victim');
-        $socialUser->shouldReceive('getNickname')->andReturn(null);
-
-        return $socialUser;
-    }
-
-    private function signInWithGoogleAs(string $googleId, string $email): void
-    {
-        $provider = Mockery::mock(Provider::class);
-        $provider->shouldReceive('user')->andReturn($this->googleUser($googleId, $email));
-
-        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
-    }
 
     #[Test]
     public function it_refuses_to_link_google_to_an_unverified_account_sharing_the_email(): void
@@ -145,5 +124,36 @@ class GoogleAccountLinkingTest extends TestCase
         $this->assertSame(self::VICTIM_GOOGLE_ID, $created->google_id);
         $this->assertNotNull($created->email_verified_at);
         $this->assertSame($created->id, Auth::guard('web')->id());
+    }
+
+    #[Test]
+    public function it_refuses_a_google_identity_swap_on_an_account_linked_to_another_identity(): void
+    {
+        $owner = User::factory()->verified()->create([
+            'email' => self::VICTIM_EMAIL,
+            'google_id' => 'google-owner',
+        ]);
+        $this->signInWithGoogleAs('google-intruder', self::VICTIM_EMAIL);
+
+        $response = $this->get('/auth/google/callback');
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email' => __('web-authentication::auth.social_link_refused')]);
+        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertSame('google-owner', $owner->fresh()->google_id);
+        $this->assertSame(1, User::query()->count());
+    }
+
+    #[Test]
+    public function it_throws_a_named_exception_when_the_account_is_linked_to_another_identity(): void
+    {
+        User::factory()->verified()->create([
+            'email' => self::VICTIM_EMAIL,
+            'google_id' => 'google-owner',
+        ]);
+
+        $this->expectException(GoogleIdentityMismatchException::class);
+
+        app(FindOrCreateSocialUser::class)($this->googleUser('google-intruder', self::VICTIM_EMAIL));
     }
 }

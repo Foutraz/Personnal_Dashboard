@@ -6,6 +6,7 @@ use Functional\Users\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialUser;
+use Technical\WebAuthentication\Exceptions\GoogleIdentityMismatchException;
 use Technical\WebAuthentication\Exceptions\UnverifiedAccountLinkException;
 
 class FindOrCreateSocialUser
@@ -14,6 +15,7 @@ class FindOrCreateSocialUser
      * Resolve the local user matching the social account, linking or creating it as needed.
      *
      * @throws UnverifiedAccountLinkException
+     * @throws GoogleIdentityMismatchException
      */
     public function __invoke(SocialUser $socialUser): User
     {
@@ -33,9 +35,11 @@ class FindOrCreateSocialUser
             throw new UnverifiedAccountLinkException($existingUser->id);
         }
 
-        if ($existingUser->google_id === null) {
-            $existingUser->update(['google_id' => $socialUser->getId()]);
+        if ($existingUser->google_id !== null) {
+            throw new GoogleIdentityMismatchException($existingUser->id);
         }
+
+        $existingUser->update(['google_id' => $socialUser->getId()]);
 
         return $existingUser;
     }

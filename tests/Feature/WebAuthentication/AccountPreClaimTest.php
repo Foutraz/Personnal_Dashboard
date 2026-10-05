@@ -6,16 +6,13 @@ use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Socialite\Contracts\Provider;
-use Laravel\Socialite\Contracts\User as SocialUser;
-use Laravel\Socialite\Facades\Socialite;
-use Mockery;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Feature\WebAuthentication\Concerns\FakesGoogleSignIn;
 use Tests\TestCase;
 
 class AccountPreClaimTest extends TestCase
 {
-    use RefreshDatabase;
+    use FakesGoogleSignIn, RefreshDatabase;
 
     private const VICTIM_EMAIL = 'victim@example.com';
 
@@ -25,16 +22,7 @@ class AccountPreClaimTest extends TestCase
 
     private function victimSignsInWithGoogle(): void
     {
-        $socialUser = Mockery::mock(SocialUser::class);
-        $socialUser->shouldReceive('getId')->andReturn(self::VICTIM_GOOGLE_ID);
-        $socialUser->shouldReceive('getEmail')->andReturn(self::VICTIM_EMAIL);
-        $socialUser->shouldReceive('getName')->andReturn('Victim');
-        $socialUser->shouldReceive('getNickname')->andReturn(null);
-
-        $provider = Mockery::mock(Provider::class);
-        $provider->shouldReceive('user')->andReturn($socialUser);
-
-        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+        $this->signInWithGoogleAs(self::VICTIM_GOOGLE_ID, self::VICTIM_EMAIL);
     }
 
     #[Test]
