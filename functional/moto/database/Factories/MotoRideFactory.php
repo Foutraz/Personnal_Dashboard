@@ -34,6 +34,7 @@ class MotoRideFactory extends Factory
             'weather_label' => faker()->randomElement(['Excellent', 'Bon', 'Moyen', null]),
             'note' => faker()->boolean() ? faker()->words(8) : null,
             'created_at' => fn (array $attributes): mixed => $attributes['started_at'],
+            'recorded_at' => fn (array $attributes): mixed => $attributes['started_at'],
             'updated_at' => fn (array $attributes): mixed => $attributes['started_at'],
         ];
     }

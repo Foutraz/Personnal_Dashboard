@@ -24,6 +24,7 @@ use Lomkit\Access\Controls\HasControl;
  * @property string $distance
  * @property string|null $weather_label
  * @property string|null $note
+ * @property Carbon $recorded_at
  */
 #[UseFactory(MotoRideFactory::class)]
 class MotoRide extends Model
@@ -57,6 +58,7 @@ class MotoRide extends Model
             'started_at' => 'datetime',
             'duration' => 'integer',
             'distance' => 'decimal:2',
+            'recorded_at' => 'datetime',
         ];
     }
 

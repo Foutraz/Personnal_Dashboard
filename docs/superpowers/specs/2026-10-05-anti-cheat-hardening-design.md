@@ -52,6 +52,7 @@ dépendance Composer / npm.
 | 8 | Aucune trace de la mesure qui a valu un badge | `badge_awards` sans valeur mesurée | `measured_value` (§6) |
 | 9 | Délai de grâce relu en config à la résolution | `ResolveChallenges::handle()` lit `ChallengeSettings::fromConfig()` | `closes_at` figé (§8.1) |
 | 10 | Historique de proposition : jusqu'à 36 requêtes et lignes hydratées | `ProposeWeeklyChallenges::hasHistory()` / `weeklyValues()`, chargeurs de `GoalProgressCalculator` | une requête groupée par template (§8.2) |
+| 11 | Une sortie ancienne, modifiée ensuite, sert de jeton d'antidatage réutilisable | modifier `started_at` ou `distance` garde le `created_at` d'origine, donc `created_at < closes_at` reste vrai | `moto_rides.recorded_at`, posé par le serveur à la création et à chaque changement de `started_at` ou `distance` (§4.2, §5) |
 
 La faille 7 est nouvelle : Lomkit valide les clés d'attributs contre `fields()` puis appelle `forceFill()`. Un
 `created_at` fourni reste « dirty » et Eloquent ne le remplace pas à l'insertion ; un `id` fourni en mise à jour
@@ -95,10 +96,18 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 | distance (km) | `distance` : `numeric`, `gt:0`, `max:2000` | `rideDistance` : `required` + mêmes règles |
 | durée | `duration` (s) : `integer`, `min:60`, `max:86400` | `rideDuration` (min) : `required`, `numeric`, `min:1`, `max:1440` |
 | serveur | `id`, `created_at`, `updated_at` : `prohibited` | — (création Eloquent) |
+| enregistrement | `recorded_at` : hors de `fields()` donc refusé (422) pour toute valeur, `null` et chaîne vide compris | — (non remplissable) |
 
 2 000 km est au-delà du « SaddleSore 1000 » (1 609 km en 24 h) ; une sortie dure au plus 24 h (un voyage de plusieurs
-jours se saisit par jour). La factory aligne `created_at` / `updated_at` sur `started_at` (une sortie de factory est
-« saisie à temps ») ; les tests d'antidatage posent `created_at` explicitement.
+jours se saisit par jour). La factory aligne `created_at`, `updated_at` et `recorded_at` sur `started_at` (une sortie
+de factory est « saisie à temps ») ; les tests d'antidatage posent `recorded_at` explicitement.
+
+`moto_rides.recorded_at` est l'instant d'enregistrement, posé uniquement par le listener
+`Functional\Moto\Listeners\StampRideRecording` (événement `saving`, branché par classe dans `MotoServiceProvider`) :
+`now()` à la création (sauf valeur déjà posée par l'appelant, comme `created_at` pour Eloquent : seule la factory ou un
+écrivain non gardé en pose une), puis `now()` à chaque sauvegarde qui change `started_at` ou `distance`. Corriger le
+titre, la durée, la note ou la météo, restaurer une sortie supprimée, renvoyer les mêmes valeurs : `recorded_at` ne
+bouge pas.
 
 ### 4.3 Finance
 
@@ -156,10 +165,17 @@ L'**instant de clôture** d'une semaine de jeu W est `closes_at(W) = W.ends_at +
 porté par `GamificationWeek::closesAt(int $graceHours)` et figé sur chaque défi (§8.1).
 
 > Une ligne **déclarative** (métrique `isSelfReported()`) datée dans W ne compte pour W que si elle a été enregistrée
-> avant la clôture de W : `created_at < closes_at(W)`.
+> avant la clôture de W : `recorded_at < closes_at(W)`.
+
+Pour une sortie moto, `recorded_at` est l'instant d'enregistrement du §4.2, **pas `created_at`** : modifier `started_at`
+ou `distance` d'une sortie existante repose `recorded_at`, alors que `created_at` ne bouge jamais. Avec `created_at`,
+toute sortie ancienne servait de jeton réutilisable : redatée dans une semaine déjà close, elle gardait un `created_at`
+antérieur à la clôture et comptait. Avec `recorded_at`, une sortie redatée (ou dont la distance est corrigée) après la
+clôture de W ne compte plus pour W, et ne peut compter que pour une semaine dont la clôture n'est pas passée ; une
+correction légitime reste possible, elle perd seulement ses effets ludiques sur les semaines closes.
 
 Les métriques synchronisées (les quatre métriques sport, `exploration_cells`) comptent sur leur date déclarée quel que
-soit `created_at` : un backfill Strava du mercredi reste valable pour l'historique (G4 §10).
+soit leur instant d'enregistrement : un backfill Strava du mercredi reste valable pour l'historique (G4 §10).
 
 | Métrique | Source | `isSelfReported()` |
 |---|---|---|
@@ -173,7 +189,7 @@ soit `created_at` : un backfill Strava du mercredi reste valable pour l'historiq
 - **Historique de proposition** (éligibilité et médiane) : chaque semaine W−4 … W−1 est mesurée avec
   `recordedBefore = closes_at(W−k)`, la grâce étant celle de la config au moment de la proposition (celle qui sera
   figée sur les nouveaux défis).
-- **Progression et verdict d'un défi** : la mesure de `[starts_at, ends_at[` exclut les lignes déclaratives créées à
+- **Progression et verdict d'un défi** : la mesure de `[starts_at, ends_at[` exclut les lignes déclaratives enregistrées à
   partir de `closes_at`. Le verdict d'un défi moto ne dépend donc plus de l'instant du premier passage qui suit la
   grâce ; pour les métriques synchronisées, la règle G4 est inchangée (une activité de la semaine synchronisée avant ce
   passage compte encore).
@@ -185,18 +201,21 @@ Elle ne s'applique **pas** à l'XP de base, aux séries, aux badges ni aux Objec
 Proposition de 2026-W40 au passage du lundi 2026-09-28 06:00 UTC, grâce 48 h. Clôtures de l'historique : W36
 `2026-09-08 22:00:00`, W37 `2026-09-15 22:00:00`, W38 `2026-09-22 22:00:00`, W39 `2026-09-29 22:00:00` (UTC).
 
-- Sorties de 100 / 120 / 140 / 160 km les 02/09, 09/09, 16/09, 23/09 à 12:00, chacune créée le jour même → historique
+- Sorties de 100 / 120 / 140 / 160 km les 02/09, 09/09, 16/09, 23/09 à 12:00, chacune enregistrée le jour même → historique
   `[100, 120, 140, 160]`, base 130, cible 150 (G4).
-- Même historique, sortie du 16/09 créée le `2026-09-22 22:00:00` → historique `[100, 120, 0, 160]`, base 110, cible 130 ;
-  créée à `21:59:59` → compte, base 130, cible 150.
-- Sortie du 23/09 créée le `2026-09-28 05:00:00` (après la fin de W39, dans sa grâce) → compte.
+- Même historique, sortie du 16/09 enregistrée le `2026-09-22 22:00:00` → historique `[100, 120, 0, 160]`, base 110,
+  cible 130 ; enregistrée à `21:59:59` → compte, base 130, cible 150.
+- Sortie du 23/09 enregistrée le `2026-09-28 05:00:00` (après la fin de W39, dans sa grâce) → compte.
+- **Sortie corrigée après la clôture** : une sortie du 16/09 saisie à temps (`recorded_at` le 16/09) puis dont la
+  distance est corrigée le `2026-09-30` reçoit `recorded_at` `2026-09-30 …` : elle ne compte plus pour W38 (clôturée le
+  `2026-09-22 22:00:00`). Changer seulement son titre ou sa note ne change rien.
 - **Domaine découvert la veille** : au passage du 28/09, un utilisateur sans historique moto saisit des sorties datées du
-  16/09 et du 23/09 → W38 hors délai, W39 à temps : une seule semaine active sur deux exigées, aucun défi moto. Être
+  16/09 et du 23/09 (`recorded_at` le 28/09) → W38 hors délai, W39 à temps : une seule semaine active sur deux exigées, aucun défi moto. Être
   éligible exige désormais d'avoir saisi pendant deux semaines distinctes, chacune avant sa clôture.
-- Activités Strava de 10 / 20 / 30 / 40 km datées W36–W39, toutes créées le `2026-09-28 05:00:00` (backfill) → défi
+- Activités Strava de 10 / 20 / 30 / 40 km datées W36–W39, toutes synchronisées le `2026-09-28 05:00:00` (backfill) → défi
   `sport_distance` base 25, cible 28 (G4, inchangé).
 - Défi `moto_distance` W40 accepté, cible 150, `closes_at` `2026-10-06 22:00:00` : sortie de 160 km datée du 04/10
-  créée à `2026-10-06 21:59:59` → `Completed` ; créée à `22:00:00` → ignorée, `Failed` au passage de `22:00:00` avec
+  enregistrée à `2026-10-06 21:59:59` → `Completed` ; enregistrée à `22:00:00` → ignorée, `Failed` au passage de `22:00:00` avec
   `current_value` `0.00`.
 
 ## 6. Provenance
@@ -274,10 +293,10 @@ d'agréger une métrique, pour que « 28 km » reste identique sur les deux écr
 
 ```sql
 select case
-         when started_at >= ? and started_at < ? and created_at < ? then 0
-         when started_at >= ? and started_at < ? and created_at < ? then 1
-         when started_at >= ? and started_at < ? and created_at < ? then 2
-         when started_at >= ? and started_at < ? and created_at < ? then 3
+         when started_at >= ? and started_at < ? and recorded_at < ? then 0
+         when started_at >= ? and started_at < ? and recorded_at < ? then 1
+         when started_at >= ? and started_at < ? and recorded_at < ? then 2
+         when started_at >= ? and started_at < ? and recorded_at < ? then 3
        end as period_index,
        sum(distance) as total
 from moto_rides
@@ -288,7 +307,8 @@ group by period_index
 Les seaux sont des `CASE` à bornes liées, donc portables MySQL / SQLite (aucun `strftime`, `YEARWEEK`, `CONVERT_TZ`) ;
 toutes les bornes sont converties dans le fuseau applicatif (UTC) avant liaison ; les colonnes sont entourées par la
 grammaire du builder ; les lignes d'index nul (déclaratives hors délai) sont ignorées ; les périodes sans ligne valent
-`0.0`. Le terme `created_at < ?` n'apparaît que pour une période qui porte `recordedBefore`.
+`0.0`. Le terme `recorded_at < ?` n'apparaît que pour une période qui porte `recordedBefore` ; seule la table
+`moto_rides` porte cette colonne, les métriques synchronisées ne sont jamais filtrées.
 
 | Métrique | Modèle | Colonne de date | Agrégat |
 |---|---|---|---|
@@ -316,15 +336,16 @@ historique sans semaine active.
 |---|---|---|
 | `challenges` | `closes_at` timestamp non nul, après `ends_at` | `functional/gamification/database/migrations/2026_10_05_000001_add_closes_at_to_challenges_table.php` (nullable → backfill → non nul ; `down` supprime la colonne) |
 | `badge_awards` | `measured_value` double nullable, après `awarded_at` | `functional/gamification/database/migrations/2026_10_05_000002_add_measured_value_to_badge_awards_table.php` (sans backfill) |
+| `moto_rides` | `recorded_at` timestamp non nul, après `created_at` | `functional/moto/database/migrations/2026_10_05_000003_add_recorded_at_to_moto_rides_table.php` (nullable → backfill `recorded_at = created_at`, puis l'instant de la migration pour une ligne sans `created_at` → non nul ; `down` supprime la colonne) |
 
-Aucune autre table ne change : `moto_rides`, `sport_activities`, `explored_cells`, `investment_transactions` et `tasks`
+Aucune autre table ne change : `sport_activities`, `explored_cells`, `investment_transactions` et `tasks`
 ont déjà des `timestamps()` fiables une fois la faille 7 fermée. Aucun identifiant nouveau (les ULID existants restent),
 aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 
 ## 10. Flux
 
 - **Mutation REST** (sortie, transaction, tâche) : validation Lomkit (`rules()` + `serverManagedFieldRules()`) →
-  `forceFill` des seuls champs autorisés → `creating` (propriétaire) → `saving` (`StampTaskCompletion` pour une tâche)
+  `forceFill` des seuls champs autorisés → `creating` (propriétaire) → `saving` (`StampTaskCompletion` pour une tâche, `StampRideRecording` pour une sortie)
   → `created_at` posé par Eloquent.
 - **Formulaire Livewire** : mêmes bornes via la classe `Validation` du module, création Eloquent.
 - **Couverture** : `RebuildUserCoverage` agrège les tracés, upserte, supprime les cellules non dérivées ; lancée par
@@ -342,10 +363,13 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 - **Formulaire moto en fuseau applicatif** : `rideStartedAt` est saisi et interprété en UTC (comportement existant) et
   `before_or_equal:now` compare dans le même fuseau. Un utilisateur qui taperait l'heure de Paris dans les deux heures
   précédant « maintenant » serait refusé ; l'ambiguïté de fuseau du formulaire est antérieure et hors périmètre.
-- **Sortie déplacée** : modifier `started_at` vers une semaine déjà close ne la fait pas compter pour cette semaine
-  (`created_at` inchangé) ; la déplacer dans la semaine en cours la fait compter.
-- **Sortie restaurée** (`restore` Lomkit) : `created_at` d'origine, même règle.
-- **Antidatage dans la semaine en cours** : une sortie créée jeudi et datée de mardi compte (saisie à temps) ; risque
+- **Sortie déplacée ou corrigée** : modifier `started_at` ou `distance` repose `recorded_at` à l'instant de la
+  modification, donc la sortie ne compte pas pour une semaine déjà close (même si elle y avait été saisie à temps) ; la
+  déplacer dans la semaine en cours la fait compter. Modifier le titre, la durée, la note ou la météo n'y change rien.
+- **Sortie restaurée** (`restore` Lomkit) : `recorded_at` d'origine, même règle.
+- **Sorties existantes à la migration** : `recorded_at` reprend leur `created_at` (une ligne sans `created_at`, possible
+  seulement par la faille 7 avant correctif, prend l'instant de la migration et compte donc comme tardive).
+- **Antidatage dans la semaine en cours** : une sortie enregistrée jeudi et datée de mardi compte (saisie à temps) ; risque
   accepté (§12).
 - **Changement de `closing_grace_hours`** : s'applique aux défis proposés ensuite et aux semaines d'historique de la
   prochaine proposition ; les défis existants gardent leur `closes_at`.
@@ -380,7 +404,8 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travelTo(Carbon::parse('…', 'UTC'))`.
 
 - Moto : `tests/Feature/Moto/MotoRideValidationTest.php` (bornes, futur, plancher, `created_at` / `id` interdits,
-  `created_at` serveur), ajouts dans `MotoDashboardComponentTest`.
+  `created_at` serveur), `tests/Feature/Moto/RideRecordingStampTest.php` et `RecordedAtMigrationTest.php`
+  (`recorded_at`), ajouts dans `MotoDashboardComponentTest`.
 - Finance : ajouts dans `InvestmentTransactionValidationTest` et `PortfolioOverviewComponentTest`.
 - Tâches : `tests/Feature/Todo/TaskCompletionStampTest.php`, ajouts dans `TaskValidationTest`.
 - Sport / exploration : ajouts dans `ActivitiesApiScopeTest`, `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`,
@@ -423,8 +448,11 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
    création de la tâche (règle croisée avec la ligne stockée, et l'heure resterait au choix du client) ; laisser le
    champ libre.
 8. **Antidatage traité par l'enregistrement avant la clôture de la semaine, pour les métriques déclaratives, dans
-   l'historique et la progression des défis seulement.** Rejeté : appliquer `created_at` à toutes les sources (casse le
-   backfill Strava de G4 §10) ; compter les lignes à leur `created_at` (déplace une saisie tardive légitime dans la
+   l'historique et la progression des défis seulement.** L'instant d'enregistrement d'une sortie est `moto_rides.recorded_at`,
+   re-posé par le serveur quand `started_at` ou `distance` change. Rejeté : appliquer `created_at` à toutes les sources
+   (casse le backfill Strava de G4 §10) ; utiliser `created_at` pour la moto (une sortie ancienne modifiée garde son
+   `created_at` : jeton d'antidatage réutilisable) ; interdire de modifier `started_at` / `distance` (une correction
+   légitime doit rester possible) ; compter les lignes à leur `created_at` (déplace une saisie tardive légitime dans la
    mauvaise semaine) ; borner l'antidatage à la saisie (suivi) ; l'appliquer à l'XP de base, aux séries et aux badges
    (il faudrait une colonne d'enregistrement sur `xp_entries` pour un seul domaine ; les badges cumulent sans date ; G5
    tient le déclaratif hors du public).
