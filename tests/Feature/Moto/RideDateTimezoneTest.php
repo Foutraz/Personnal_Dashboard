@@ -108,6 +108,30 @@ class RideDateTimezoneTest extends TestCase
         ];
     }
 
+    public static function localStartsOneMinuteBeforeNow(): array
+    {
+        return [
+            'paris ahead of utc' => ['Europe/Paris', '2026-10-01T11:59', '2026-10-01 09:59:00'],
+            'new york behind utc' => ['America/New_York', '2026-10-01T05:59', '2026-10-01 09:59:00'],
+        ];
+    }
+
+    public static function localStartsOneMinuteAfterNow(): array
+    {
+        return [
+            'paris ahead of utc' => ['Europe/Paris', '2026-10-01T12:01'],
+            'new york behind utc' => ['America/New_York', '2026-10-01T06:01'],
+        ];
+    }
+
+    public static function parisLocalStartsNotAfterTheEpochInUtc(): array
+    {
+        return [
+            'half an hour before the epoch in utc' => ['1970-01-01T00:30'],
+            'equal to the epoch in utc' => ['1970-01-01T01:00'],
+        ];
+    }
+
     #[Test]
     #[DataProvider('acceptedZonedStarts')]
     public function it_stores_the_utc_wall_clock_of_a_zoned_start_created_through_the_api(string $startedAt, string $stored): void
@@ -226,5 +250,48 @@ class RideDateTimezoneTest extends TestCase
         $this->logRide($startedAt)->assertHasErrors(['rideStartedAt']);
 
         $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('localStartsOneMinuteBeforeNow')]
+    public function it_stores_a_local_start_one_minute_before_now_as_its_utc_instant(string $displayTimezone, string $localStart, string $stored): void
+    {
+        Config::set('app.display_timezone', $displayTimezone);
+
+        $this->logRide($localStart)->assertHasNoErrors();
+
+        $this->assertSame($stored, $this->storedStartedAt());
+    }
+
+    #[Test]
+    #[DataProvider('localStartsOneMinuteAfterNow')]
+    public function it_rejects_a_local_start_one_minute_after_now_on_the_start_field(string $displayTimezone, string $localStart): void
+    {
+        Config::set('app.display_timezone', $displayTimezone);
+
+        $this->logRide($localStart)->assertHasErrors(['rideStartedAt' => 'before_or_equal']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('parisLocalStartsNotAfterTheEpochInUtc')]
+    public function it_rejects_a_paris_local_start_not_after_the_epoch_in_utc(string $localStart): void
+    {
+        Config::set('app.display_timezone', 'Europe/Paris');
+
+        $this->logRide($localStart)->assertHasErrors(['rideStartedAt' => 'after']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_stores_a_paris_local_start_just_after_the_epoch_in_utc(): void
+    {
+        Config::set('app.display_timezone', 'Europe/Paris');
+
+        $this->logRide('1970-01-01T01:30')->assertHasNoErrors();
+
+        $this->assertSame('1970-01-01 00:30:00', $this->storedStartedAt());
     }
 }
