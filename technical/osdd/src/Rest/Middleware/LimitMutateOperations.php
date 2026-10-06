@@ -16,7 +16,7 @@ class LimitMutateOperations
     {
         $maxOperations = config()->integer('osdd.rest.max_mutate_operations');
 
-        if ($this->countOperations((array) $request->input('mutate', [])) > $maxOperations) {
+        if ($this->countOperations((array) $request->input('mutate', []), $maxOperations) > $maxOperations) {
             throw ValidationException::withMessages([
                 'mutate' => __('osdd::validation.mutate_operations_limit', ['max' => $maxOperations]),
             ]);
@@ -47,21 +47,25 @@ class LimitMutateOperations
     /**
      * @param  array<int|string, mixed>  $payload
      */
-    private function countOperations(array $payload): int
+    private function countOperations(array $payload, int $maxOperations): int
     {
-        $operations = is_string($payload['operation'] ?? null) ? $this->operationsPerKey($payload['key'] ?? null) : 0;
+        $nestedOperations = 0;
 
-        foreach ($payload as $nested) {
-            if (is_array($nested)) {
-                $operations += $this->countOperations($nested);
+        foreach ($payload as $part) {
+            if (is_array($part)) {
+                $nestedOperations += $this->countOperations($part, $maxOperations);
             }
         }
 
-        return $operations;
+        $operations = is_string($payload['operation'] ?? null)
+            ? $this->keyCount($payload['key'] ?? null) * (1 + $nestedOperations)
+            : $nestedOperations;
+
+        return min($maxOperations + 1, $operations);
     }
 
-    private function operationsPerKey(mixed $keys): int
+    private function keyCount(mixed $keys): int
     {
-        return is_array($keys) ? count($keys) : 1;
+        return is_array($keys) ? max(1, count($keys)) : 1;
     }
 }

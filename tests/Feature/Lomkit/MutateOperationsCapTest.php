@@ -3,6 +3,8 @@
 namespace Tests\Feature\Lomkit;
 
 use Functional\Sport\Models\SportActivity;
+use Functional\Todo\Enums\TaskPriority;
+use Functional\Todo\Enums\TaskStatus;
 use Functional\Todo\Models\Task;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -73,6 +75,43 @@ class MutateOperationsCapTest extends TestCase
                 ],
             ]],
         ];
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function mutationWithKeysAndNestedOperations(int $keyCount, int $nestedCount): array
+    {
+        return [
+            'mutate' => [[
+                'operation' => 'update',
+                'key' => $this->unknownTaskIds($keyCount),
+                'relations' => [
+                    'reminders' => array_fill(0, $nestedCount, [
+                        'operation' => 'attach',
+                        'key' => (new Task)->newUniqueId(),
+                    ]),
+                ],
+            ]],
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function deeplyNestedMutationWithKeys(int $depth, int $keyCount): array
+    {
+        $operation = ['operation' => 'attach', 'key' => $this->unknownTaskIds($keyCount)];
+
+        for ($level = 0; $level < $depth; $level++) {
+            $operation = [
+                'operation' => 'update',
+                'key' => $this->unknownTaskIds($keyCount),
+                'relations' => ['reminders' => $operation],
+            ];
+        }
+
+        return ['mutate' => [$operation]];
     }
 
     private function sportActivityOf(User $user): SportActivity
@@ -160,7 +199,7 @@ class MutateOperationsCapTest extends TestCase
         $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->nestedMutationWithKeys($user, 100));
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['mutate' => __('osdd::validation.mutate_operations_limit', ['max' => 100])]);
+        $response->assertJsonValidationErrors(['mutate' => 'A mutate request cannot carry more than 100 operations.']);
     }
 
     #[Test]
@@ -171,9 +210,63 @@ class MutateOperationsCapTest extends TestCase
         $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->nestedMutationWithKeys($user, 99));
 
         $this->assertStringNotContainsString(
-            __('osdd::validation.mutate_operations_limit', ['max' => 100]),
+            'A mutate request cannot carry more than 100 operations.',
             $response->getContent(),
         );
+    }
+
+    #[Test]
+    public function it_counts_an_operation_with_an_empty_key_at_least_once(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', [
+            'mutate' => array_fill(0, 101, [
+                'operation' => 'create',
+                'key' => [],
+                'attributes' => [
+                    'title' => 'Created',
+                    'priority' => TaskPriority::Low->value,
+                    'status' => TaskStatus::Pending->value,
+                ],
+            ]),
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['mutate' => 'A mutate request cannot carry more than 100 operations.']);
+        $this->assertSame(0, Task::query()->count());
+    }
+
+    #[Test]
+    public function it_multiplies_an_operation_by_its_keys_and_its_nested_operations(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->mutationWithKeysAndNestedOperations(10, 10));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['mutate' => 'A mutate request cannot carry more than 100 operations.']);
+    }
+
+    #[Test]
+    public function it_rejects_a_nested_mutation_whose_operation_count_overflows_an_integer(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->deeplyNestedMutationWithKeys(20, 100));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['mutate' => 'A mutate request cannot carry more than 100 operations.']);
+    }
+
+    #[Test]
+    public function it_lets_a_multiplied_operation_reach_the_cap_without_exceeding_it(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->mutationWithKeysAndNestedOperations(10, 9));
+
+        $this->assertStringNotContainsString('A mutate request cannot carry more than 100 operations.', $response->getContent());
     }
 
     #[Test]
@@ -265,7 +358,7 @@ class MutateOperationsCapTest extends TestCase
         $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks', ['resources' => [$taskIds]]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $response->assertJsonValidationErrors(['resources' => 'The resources field must be a list of identifiers.']);
         $this->assertSame(2, Task::query()->count());
     }
 
@@ -278,7 +371,7 @@ class MutateOperationsCapTest extends TestCase
         $response = $this->actingAs($user, 'api')->postJson('/api/tasks/restore', ['resources' => [$taskIds]]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $response->assertJsonValidationErrors(['resources' => 'The resources field must be a list of identifiers.']);
         $this->assertSame(2, Task::onlyTrashed()->count());
     }
 
@@ -291,7 +384,7 @@ class MutateOperationsCapTest extends TestCase
         $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks/force', ['resources' => [$taskIds]]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $response->assertJsonValidationErrors(['resources' => 'The resources field must be a list of identifiers.']);
         $this->assertSame(2, Task::onlyTrashed()->count());
     }
 
@@ -306,7 +399,7 @@ class MutateOperationsCapTest extends TestCase
         ]);
 
         $response->assertUnprocessable();
-        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $response->assertJsonValidationErrors(['resources' => 'The resources field must be a list of identifiers.']);
         $this->assertSame(2, Task::query()->count());
     }
 
