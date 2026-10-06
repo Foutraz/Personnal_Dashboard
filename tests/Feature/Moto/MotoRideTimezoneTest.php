@@ -56,6 +56,24 @@ class MotoRideTimezoneTest extends TestCase
     }
 
     #[Test]
+    public function it_stores_a_past_winter_time_local_start_as_the_utc_instant(): void
+    {
+        Config::set('app.display_timezone', 'Europe/Paris');
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('rideTitle', 'Sortie hivernale')
+            ->set('rideStartedAt', '2026-01-15T08:00')
+            ->set('rideDuration', '90')
+            ->set('rideDistance', '120')
+            ->call('logRide')
+            ->assertHasNoErrors();
+
+        $this->assertSame('2026-01-15 07:00:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+    }
+
+    #[Test]
     public function it_rejects_a_winter_time_local_start_in_the_future(): void
     {
         $user = User::factory()->create();
