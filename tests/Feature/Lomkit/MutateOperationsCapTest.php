@@ -204,6 +204,60 @@ class MutateOperationsCapTest extends TestCase
     }
 
     #[Test]
+    public function it_rejects_nested_resource_ids_on_destroy(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->taskIdsOf($user, 2);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks', ['resources' => [$taskIds]]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $this->assertSame(2, Task::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_nested_resource_ids_on_restore(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->trashedTaskIdsOf($user, 2);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/restore', ['resources' => [$taskIds]]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $this->assertSame(2, Task::onlyTrashed()->count());
+    }
+
+    #[Test]
+    public function it_rejects_nested_resource_ids_on_force_delete(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->trashedTaskIdsOf($user, 2);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks/force', ['resources' => [$taskIds]]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $this->assertSame(2, Task::onlyTrashed()->count());
+    }
+
+    #[Test]
+    public function it_rejects_resource_ids_sent_as_an_object(): void
+    {
+        $user = User::factory()->create();
+        [$firstTaskId, $secondTaskId] = $this->taskIdsOf($user, 2);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks', [
+            'resources' => ['first' => $firstTaskId, 'second' => $secondTaskId],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['resources' => __('osdd::validation.bulk_resources_shape')]);
+        $this->assertSame(2, Task::query()->count());
+    }
+
+    #[Test]
     public function it_caps_the_bulk_id_routes_of_every_rest_controller(): void
     {
         $bulkIdRoutes = collect(Route::getRoutes()->getRoutes())

@@ -22,6 +22,12 @@ class LimitMutateOperations
             ]);
         }
 
+        if ($request->has('resources') && ! $this->isListOfIdentifiers($request->input('resources'))) {
+            throw ValidationException::withMessages([
+                'resources' => __('osdd::validation.bulk_resources_shape'),
+            ]);
+        }
+
         if (count((array) $request->input('resources', [])) > $maxOperations) {
             throw ValidationException::withMessages([
                 'resources' => __('osdd::validation.bulk_resources_limit', ['max' => $maxOperations]),
@@ -29,6 +35,13 @@ class LimitMutateOperations
         }
 
         return $next($request);
+    }
+
+    private function isListOfIdentifiers(mixed $resources): bool
+    {
+        return is_array($resources)
+            && array_is_list($resources)
+            && collect($resources)->every(fn (mixed $identifier): bool => is_string($identifier) || is_int($identifier));
     }
 
     /**
