@@ -26,7 +26,11 @@ Inclus :
   horodatages réservés au serveur.
 - Protection commune de **toutes** les ressources REST (§4.1) : identifiant et horodatages réservés au serveur par une
   règle par défaut de la classe de base (`rules()` renvoie `serverManagedFieldRules()`), `trip-routes` sans aucune écriture
-  possible, plafond de 100 opérations par requête `mutate` et limite de débit nommée sur toutes les routes REST.
+  possible, plafond de 100 opérations par requête `mutate` et de 100 identifiants par suppression, restauration ou
+  suppression définitive groupée, et limite de débit nommée sur toutes les routes REST.
+- Fuseau du formulaire moto, entré dans le périmètre par la fusion de `develop` (`fix/post-gamification-followups`,
+  `Technical\Application\Time\DisplayTimezone`) : la saisie locale est convertie en UTC **avant** la règle « jamais dans
+  le futur » (§4.2, §11).
 - Activités Strava synchronisées : ni suppression, ni restauration, ni suppression définitive par l'API ; la
   synchronisation restaure et met à jour une activité supprimée au lieu d'échouer.
 - Cellules explorées : API en lecture seule, reconstruction de couverture convergente.
@@ -44,7 +48,7 @@ Exclus : le classement, le profil public et les défis entre joueurs eux-mêmes 
 (décision 9) ; la détection des activités Strava manuelles et des pesées Withings saisies à la main (les SDK
 `foutraz/strava` et `foutraz/withings` ne les exposent pas : pré-requis G5, §16) ; la validation métier des autres
 ressources Lomkit (positions, objectifs, utilisateurs, événements), qui ne nourrissent pas le jeu : seules les protections
-communes du §4.1 s'y appliquent ; le fuseau du formulaire moto (§11) ; un plafond d'XP par jour ; la révocation de badges ; toute nouvelle
+communes du §4.1 s'y appliquent ; un plafond d'XP par jour ; la révocation de badges ; toute nouvelle
 dépendance Composer / npm.
 
 ## 3. Failles traitées
@@ -104,8 +108,10 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 - **Lots et débit.** `Technical\Osdd\Rest\Controllers\Controller`, parent de tous les contrôleurs REST, enregistre deux
   middlewares de contrôleur (donc avant la validation Lomkit, et sans toucher au vendor) : la limite nommée `rest`
   (`Technical\Osdd\Rest\Throttle\RestRateLimit`, 120 requêtes par minute et par utilisateur, repli sur l'adresse IP,
-  429 au-delà) sur toutes les routes, et `Technical\Osdd\Rest\Middleware\LimitMutateOperations` sur la route `mutate`
-  (100 opérations, imbriquées comprises ; 422 sur la clé `mutate` au-delà). Les deux valeurs sont dans
+  429 au-delà) sur toutes les routes, et `Technical\Osdd\Rest\Middleware\LimitMutateOperations` sur les routes `mutate`,
+  `destroy`, `restore` et `forceDelete` (100 opérations, imbriquées comprises, 422 sur la clé `mutate` au-delà ; 100
+  identifiants dans `resources`, 422 sur la clé `resources` au-delà, avant la règle `exists` que Lomkit évalue une fois
+  par identifiant). Les deux valeurs sont dans
   `technical/osdd/config/osdd.php` (`rest.max_mutate_operations`, `rest.requests_per_minute`). Le middleware vit sur le
   contrôleur de base et non dans `beforeMutate`, que `RejectsApiCreation` redéfinit.
 - **Dates déclarées** : `['date', 'after:1970-01-01', 'before_or_equal:now']`. Le futur est refusé ; le plancher est la
@@ -135,7 +141,7 @@ réécrit la clé primaire. Toute règle fondée sur `created_at` serait contour
 
 | Champ | API (`MotoRideResource`) | Livewire (`MotoDashboard::logRide`) |
 |---|---|---|
-| départ | `started_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now` | `rideStartedAt` : `required` + mêmes règles |
+| départ | `started_at` : `IsoDatetime`, `date`, `after:1970-01-01`, `before_or_equal:now` | `rideStartedAt` : `required`, `IsoDatetime`, `date` sur la saisie brute, puis mêmes règles sur l'instant converti en UTC (voir ci-dessous) |
 | distance (km) | `distance` : `numeric`, `WithinScale(2)`, `gt:0`, `max:2000` | `rideDistance` : `required` + mêmes règles |
 | durée | `duration` (s) : `integer`, `min:60`, `max:86400` | `rideDuration` (min) : `required`, `numeric`, `min:1`, `max:1440` |
 | serveur | `id`, `created_at`, `updated_at` : `missing` | — (création Eloquent) |
@@ -179,6 +185,17 @@ et `before_or_equal` lisent ces valeurs comme des dates calendaires, alors que l
 numérique comme un timestamp. Le cast `UtcDatetime` lit désormais toute chaîne comme une date (jamais comme un timestamp,
 réservé aux entiers et flottants), de sorte que la valeur validée est celle qui est stockée. Un `Carbon` ou un `DateTime`
 passe tel quel par le cast (la règle ne voit que les entrées du client).
+
+**Formulaire moto et fuseau d'affichage.** Depuis la fusion de `develop`, `rideStartedAt` est saisi dans le fuseau
+d'affichage (`config('app.display_timezone')`, `Europe/Paris` par défaut) et `MotoDashboard::logRide` suit trois
+étapes : la saisie brute ne passe que `required`, `IsoDatetime` et `date` (forme) ;
+`DisplayTimezone::toApplicationTime()` la convertit en instant UTC (un décalage explicite dans la saisie l'emporte sur le
+fuseau d'affichage) ; cet instant, rendu en chaîne ISO 8601 (`toIso8601String()`, que `IsoDatetime` accepte), passe
+`MotoRideRules::startedAt()` dans un second validateur dont la clé est `rideStartedAt`, de sorte que l'erreur (et la
+règle en échec, `before_or_equal` ou `after`) s'affiche sur le champ ; seul l'instant validé est stocké. La fusion
+automatique validait la chaîne locale comme si elle était en UTC puis stockait sa conversion : à Paris, une sortie des
+deux dernières heures (une en hiver) était refusée comme future ; à New York, une sortie jusqu'à 4 h (5 h en hiver) dans
+le futur était acceptée puis stockée dans le futur.
 
 ### 4.3 Finance
 
@@ -444,10 +461,14 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
 ## 11. Cas limites
 
 - **Horloge client en avance** : un `started_at` d'une seconde dans le futur est refusé (422) ; le client renvoie.
-- **Formulaire moto en fuseau applicatif** : `rideStartedAt` est saisi et interprété en UTC (comportement existant) et
-  `before_or_equal:now` compare dans le même fuseau. Un utilisateur qui taperait l'heure de Paris dans les deux heures
-  précédant « maintenant » serait refusé ; l'ambiguïté de fuseau du formulaire est antérieure et hors périmètre. Une valeur saisie avec un décalage explicite est,
-  elle, convertie en UTC avant stockage (§4.2).
+- **Formulaire moto en fuseau d'affichage** : `rideStartedAt` est interprété dans `app.display_timezone`, converti en UTC,
+  puis comparé à « maintenant » (§4.2). Le 2026-10-01 à 10:00 UTC : à Paris, `2026-10-01T11:59` est accepté et stocké
+  `2026-10-01 09:59:00`, `2026-10-01T12:01` est refusé sur `rideStartedAt` ; à New York, `2026-10-01T05:59` est accepté
+  et stocké `2026-10-01 09:59:00`, `2026-10-01T06:01` est refusé. Une saisie refusée ne stocke rien. Une valeur saisie
+  avec un décalage explicite garde ce décalage.
+- **Plancher du formulaire moto en heure locale** : `after:1970-01-01` s'applique à l'instant UTC converti, donc à Paris
+  (UTC+1 en janvier 1970) `1970-01-01T00:30` et `1970-01-01T01:00` (exactement l'époque en UTC) sont refusés et
+  `1970-01-01T01:30` est accepté, stocké `1970-01-01 00:30:00`.
 - **Sortie déplacée ou corrigée** : modifier `started_at` ou `distance` repose `recorded_at` à l'instant de la
   modification, donc la sortie ne compte pas pour une semaine déjà close (même si elle y avait été saisie à temps) ; la
   déplacer dans la semaine en cours la fait compter. Modifier le titre, la durée, la note ou la météo n'y change rien.
@@ -471,7 +492,9 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
   l'attribution qu'elle a pu valoir a `measured_value` nul (§7, orientations).
 - **Vente à 0,01 €** : acceptée (plausible) ; la finance reste déclarative.
 - **Utilisateur supprimé** : aucune donnée nouvelle à purger (colonnes sur des tables déjà purgées par
-  `DeleteUserGamificationData`).
+  `DeleteUserGamificationData`). Les notifications de badges et de défis sont purgées, comme toutes les autres, par
+  `Technical\Notifications\Listeners\DeleteUserNotifications` (venu de `develop`, une ligne à la fois par Eloquent) ;
+  `DeleteUserGamificationData` ne les supprime plus en masse.
 
 ## 12. Risques résiduels acceptés
 
@@ -493,9 +516,9 @@ aucune clé étrangère, aucun enum SQL, aucun SQL propre à SQLite.
   l'XP déjà versée pour un mois désormais exclu disparaît au prochain passage complet (`gamification:recalculate`).
   Risque résiduel accepté : 10 € nets achetés chaque mois depuis l'ouverture du compte valent 10 XP par mois ; hub privé
   seulement, `finance_month` reste hors du classement G5 (§7).
-- **`UserResource`** : elle déclare un champ `ulid` alors que la clé primaire est `id` (toute écriture, filtre ou tri sur
-  `ulid` échoue en 500) et n'utilise pas l'assistant du §4.1 ; elle ne déclare ni `id` ni horodatages, donc aucun champ
-  serveur n'est inscriptible. Correction à part (déclarer `id`, fusionner l'assistant), hors du jeu.
+- **`UserResource`** : corrigée par la fusion de `develop` (elle déclare `id` en `missing` et `email` en `missing`, et ne
+  déclare aucun horodatage) ; elle écrit ses règles sans l'assistant du §4.1, ce que le test d'architecture accepte
+  puisque `id` y est protégé.
 
 ## 13. Tests
 
@@ -513,8 +536,11 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
   refusées au propriétaire), `SyncActivitiesJobTest` (activité supprimée restaurée, le job continue),
   `ExploredCellsApiScopeTest`, `PreventsApiCreationTest`, `RebuildCoverageTest`.
 - API REST commune : `tests/Feature/Lomkit/MutateOperationsCapTest.php` (plafond, imbriqué, configurable, présent sur
-  toutes les routes `mutate`), `RestRateLimitTest.php` (429, seaux par utilisateur, repli IP, présent sur toutes les
-  routes), `ServerManagedFieldsArchitectureTest.php`.
+  toutes les routes `mutate` ; 101 identifiants refusés en suppression, restauration et suppression définitive, 100
+  acceptés, présent sur toutes ces routes), `RestRateLimitTest.php` (429, seaux par utilisateur, repli IP, présent sur
+  toutes les routes), `ServerManagedFieldsArchitectureTest.php`.
+- Formulaire moto en fuseau d'affichage : ajouts dans `RideDateTimezoneTest` (Paris et New York à ±1 minute, plancher à
+  Paris) ; notifications de jeu purgées par la purge générique : `tests/Feature/Gamification/GamificationNotificationPurgeTest.php`.
 - Objectifs : `tests/Feature/Goals/GoalComputedFieldsTest.php` (champs calculés refusés en création et en mise à jour).
 - Objectifs : `tests/Feature/Goals/GoalMetricAggregatorTest.php`, ajouts dans `tests/Unit/Goals/GoalProgressCalculatorTest.php` ;
   tous les tests Objectifs existants restent verts sans modification.
@@ -529,7 +555,8 @@ TDD par tâche, PHPUnit en classes, `#[Test]`, noms `it_...`, factories, `travel
   `ProposeWeeklyChallengesTest::it_measures_the_weeks_of_the_templates_with_data_only` (budget de requêtes),
   `XpRulesTest::it_adds_an_investment_bonus_to_the_month` et
   `ProcessUserGamificationJobTest::it_updates_a_period_award_when_the_month_data_changes` (le compte et la position
-  doivent exister avant le mois de l'achat pour que la part « apport » compte, §12).
+  doivent exister avant le mois de l'achat pour que la part « apport » compte, §12). Les tests du lot de suivi adaptés à
+  la fusion de `develop` sont listés au §15.
 
 ## 14. Décisions prises
 
@@ -636,6 +663,27 @@ nombres JSON, puis le repli sur un flottant laissait passer `1e-400` ; le compte
 **Revue finale.** Aucun constat critique ni élevé. Moyen : « synchronisé » n'est pas « vérifié » (§16). Faibles :
 activités synchronisées supprimables (§4.4), XP finance fabricable (§12), données forgées avant le durcissement qui
 nourrissent encore les clés G5, absence de plafond de lot et de limite de débit (§4.1).
+
+**Fusion de `develop`.** Une fois `fix/post-gamification-followups` fusionnée dans `develop` (PR #37), la branche a
+fusionné `origin/develop` (un commit de fusion, sans rebase), avec Laravel 12.69.3 et `lomkit/laravel-rest-api` 2.23.2.
+Seul `technical/osdd/src/Rest/Resources/Resource.php` était en conflit textuel : les deux côtés sont gardés (le trait
+`ResolvesUndeclaredRelationPathsToNull` de `develop`, `SERVER_MANAGED_FIELDS`, `serverManagedFieldRules()` et `rules()`
+de cette branche). `.env.example` fusionne seul et garde les clés des deux côtés (`APP_DISPLAY_TIMEZONE`,
+`REGISTRATION_ALLOWED_EMAILS`, `DB_TIMEZONE`). `MotoDashboard` fusionnait seul dans un état faux (saisie locale validée
+comme UTC, conversion stockée, six tests moto rouges) ; `logRide` suit désormais la recette du §4.2. Tests adaptés, et
+eux seuls :
+
+| Test | Avant | Après |
+|---|---|---|
+| `MotoRideTimezoneTest::it_stores_a_winter_time_local_start_as_the_utc_instant` | départ d'hiver futur accepté et stocké | `it_rejects_a_winter_time_local_start_in_the_future` : refusé sur `rideStartedAt`, rien de stocké |
+| `MotoRideTimezoneTest::it_respects_a_display_timezone_behind_utc` | départ new-yorkais futur accepté et stocké | `it_rejects_a_local_start_in_the_future_in_a_display_timezone_behind_utc` : préremplissage new-yorkais vérifié, départ refusé, rien de stocké |
+| `MotoRideTimezoneTest::it_stores_a_start_near_now_on_the_right_side_of_now` (quatre lignes) | ±1 minute acceptés, le +1 stocké dans le futur | `it_stores_a_local_start_one_minute_ago_in_the_past` et `it_rejects_a_local_start_one_minute_from_now` (Paris et New York) |
+| `MotoDashboardComponentTest::logRideAt` | heures UTC lues dans le fuseau par défaut | `app.display_timezone` épinglé à `UTC` |
+| `RideDateTimezoneTest::setUp` | ligne « no offset read as utc » lue à Paris | `app.display_timezone` épinglé à `UTC` |
+
+Tous les autres tests de `develop` restent verts sans modification. Suivent trois changements : la purge des
+notifications de jeu retirée de `DeleteUserGamificationData` (la purge générique la couvre, §11), le plafond de 100
+identifiants sur les suppressions et restaurations groupées (§4.1) et les tests de bornes du formulaire moto (§11).
 
 **Livraison.** `DB_TIMEZONE=+00:00` change l'interprétation des colonnes `TIMESTAMP` existantes si la session MySQL de
 production tournait sur un autre fuseau (décalage de 1 à 2 h pour `Europe/Paris`) : exécuter
