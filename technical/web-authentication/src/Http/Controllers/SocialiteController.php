@@ -10,6 +10,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
 use Technical\WebAuthentication\Actions\FindOrCreateSocialUser;
 use Technical\WebAuthentication\Exceptions\SocialProviderDeniedException;
+use Technical\WebAuthentication\Exceptions\SocialSignInRefusedException;
 
 class SocialiteController
 {
@@ -24,7 +25,7 @@ class SocialiteController
     /**
      * Handle the Google callback and authenticate the web session guard.
      *
-     * @throws SocialProviderDeniedException
+     * @throws SocialSignInRefusedException
      */
     public function callback(Request $request, FindOrCreateSocialUser $finder): RedirectResponse
     {

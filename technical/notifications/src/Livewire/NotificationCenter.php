@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class NotificationCenter extends Component
@@ -16,7 +17,7 @@ class NotificationCenter extends Component
      */
     public function markAsRead(string $id): void
     {
-        $this->userNotifications()->where('id', $id)->first()?->markAsRead();
+        $this->userNotifications()->whereKey($id)->first()?->markAsRead();
     }
 
     /**
@@ -52,7 +53,7 @@ class NotificationCenter extends Component
      */
     private function userNotifications(): Builder
     {
-        return DatabaseNotification::query()->where('notifiable_id', auth('web')->id());
+        return DatabaseNotification::query()->whereMorphedTo('notifiable', Auth::guard('web')->user());
     }
 
     /**

@@ -23,7 +23,7 @@ class LoginWebRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
+            'email' => 'required|ascii|email',
             'password' => 'required|string',
             'remember' => 'boolean',
         ];

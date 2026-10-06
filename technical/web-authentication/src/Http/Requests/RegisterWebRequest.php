@@ -4,6 +4,7 @@ namespace Technical\WebAuthentication\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Technical\WebAuthentication\Rules\AllowedRegistrationEmail;
 
 class RegisterWebRequest extends FormRequest
 {
@@ -20,11 +21,11 @@ class RegisterWebRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<int, mixed>|string>
      */
-    public function rules(): array
+    public function rules(AllowedRegistrationEmail $allowedRegistrationEmail): array
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['bail', 'required', 'ascii', 'email', $allowedRegistrationEmail, 'unique:users,email'],
             'password' => 'required|string|min:8|confirmed',
         ];
     }

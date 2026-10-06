@@ -7,20 +7,21 @@
         'lime'   => ['text' => 'text-lime',    'bg' => 'bg-lime-soft',   'bar' => 'bg-lime'],
     ];
     $a = $accents[$item->accent] ?? $accents['cyan'];
+    $startsAt = $item->allDay ? $item->startsAt : $item->startsAt->inDisplayTimezone();
 @endphp
 
 <a href="{{ $item->href ?? '#' }}" class="group glass glass-hover relative flex items-center gap-4 overflow-hidden p-4">
     <div class="absolute inset-y-0 left-0 w-0.5 {{ $a['bar'] }} opacity-40 transition-opacity duration-300 group-hover:opacity-100"></div>
 
     <div class="{{ $a['bg'] }} {{ $a['text'] }} flex min-w-[2.75rem] flex-col items-center rounded-xl px-2 py-2">
-        <span class="font-display text-xl font-bold leading-none">{{ $item->startsAt->isoFormat('D') }}</span>
-        <span class="mt-0.5 text-[0.6rem] font-semibold uppercase tracking-wider opacity-80">{{ $item->startsAt->isoFormat('MMM') }}</span>
+        <span class="font-display text-xl font-bold leading-none">{{ $startsAt->isoFormat('D') }}</span>
+        <span class="mt-0.5 text-[0.6rem] font-semibold uppercase tracking-wider opacity-80">{{ $startsAt->isoFormat('MMM') }}</span>
     </div>
 
     <div class="min-w-0 flex-1">
         <p class="truncate text-sm font-medium">{{ $item->title }}</p>
         <p class="mt-0.5 text-xs text-faint">
-            {{ $item->allDay ? 'Toute la journée' : $item->startsAt->isoFormat('HH:mm') }}
+            {{ $item->allDay ? 'Toute la journée' : $startsAt->isoFormat('HH:mm') }}
             @if ($item->amount) · {{ $item->amount }} €@endif
             @if ($item->location) · {{ $item->location }}@endif
         </p>

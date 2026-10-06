@@ -5,6 +5,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Laravel\Socialite\Two\InvalidStateException;
+use Technical\WebAuthentication\Exceptions\SocialStateMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -24,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
+
+        $exceptions->map(fn (InvalidStateException $exception): SocialStateMismatchException => new SocialStateMismatchException($exception));
 
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             if ($request->is('api/*')) {

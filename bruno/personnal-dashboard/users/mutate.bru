@@ -10,11 +10,13 @@ post {
 
 body:json {
 {
-  "create": [
+  "mutate": [
     {
-      "name": "Test",
-      "email": "new@test.fr",
-      "password": "password"
+      "operation": "update",
+      "key": "{{userId}}",
+      "attributes": {
+        "name": "Test"
+      }
     }
   ]
 }

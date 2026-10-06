@@ -125,6 +125,7 @@ class MotoDashboardComponentTest extends TestCase
     private function logRideAt(User $user, array $form): Testable
     {
         Config::set('weather.api_key', null);
+        Config::set('app.display_timezone', 'UTC');
         $this->travelTo(Carbon::parse('2026-10-01 10:00:00', 'UTC'));
 
         $component = Livewire::actingAs($user, 'web')->test(MotoDashboard::class);

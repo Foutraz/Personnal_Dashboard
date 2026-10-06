@@ -4,6 +4,7 @@ namespace Technical\WebAuthentication\Actions;
 
 use Functional\Users\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Technical\WebAuthentication\Exceptions\EmailAlreadyTakenException;
 
 class RegisterUser
@@ -17,13 +18,15 @@ class RegisterUser
      */
     public function __invoke(array $data): User
     {
-        if (User::query()->where('email', $data['email'])->exists()) {
+        $email = Str::lower(trim($data['email']));
+
+        if (User::query()->where('email', $email)->exists()) {
             throw new EmailAlreadyTakenException;
         }
 
         return User::query()->create([
             'name' => $data['name'],
-            'email' => $data['email'],
+            'email' => $email,
             'password' => Hash::make($data['password']),
         ]);
     }

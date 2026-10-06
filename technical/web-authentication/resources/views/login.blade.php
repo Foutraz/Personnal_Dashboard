@@ -55,9 +55,11 @@
             {{ __('Continuer avec Google') }}
         </x-ui.neon-button>
 
-        <p class="mt-6 text-center text-sm text-muted">
-            {{ __('Pas encore de compte ?') }}
-            <a href="{{ route('register') }}" class="font-medium text-cyan transition hover:text-glow-cyan">{{ __('Créer un compte') }}</a>
-        </p>
+        @if ($registrationOpen)
+            <p class="mt-6 text-center text-sm text-muted">
+                {{ __('Pas encore de compte ?') }}
+                <a href="{{ route('register') }}" class="font-medium text-cyan transition hover:text-glow-cyan">{{ __('Créer un compte') }}</a>
+            </p>
+        @endif
     </x-ui.glass-card>
 </x-layouts.guest>

@@ -2,6 +2,7 @@
 
 namespace Functional\Moto\Livewire;
 
+use Carbon\CarbonImmutable;
 use Foutraz\Weather\Dto\CurrentWeather;
 use Foutraz\Weather\Dto\Forecast;
 use Foutraz\Weather\Dto\Place;
@@ -16,9 +17,12 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Technical\Application\Time\DisplayTimezone;
+use Technical\Osdd\Rules\IsoDatetime;
 
 class MotoDashboard extends Component
 {
@@ -77,12 +81,12 @@ class MotoDashboard extends Component
     /**
      * Initialise the location from the configured default.
      */
-    public function mount(): void
+    public function mount(DisplayTimezone $displayTimezone): void
     {
         $this->lat = (float) config('moto.location.lat');
         $this->lon = (float) config('moto.location.lon');
         $this->locationLabel = (string) config('moto.location.label');
-        $this->rideStartedAt = Carbon::now()->format('Y-m-d\TH:i');
+        $this->rideStartedAt = $displayTimezone->inputValue(CarbonImmutable::now());
     }
 
     /**
@@ -140,27 +144,34 @@ class MotoDashboard extends Component
     /**
      * Create a moto ride owned by the authenticated user from the inline form.
      */
-    public function logRide(): void
+    public function logRide(DisplayTimezone $displayTimezone): void
     {
         $this->validate([
             'rideTitle' => ['required', 'string', 'max:255'],
-            'rideStartedAt' => ['required', ...MotoRideRules::startedAt()],
+            'rideStartedAt' => ['required', new IsoDatetime, 'date'],
             'rideDuration' => ['required', ...MotoRideRules::durationInMinutes()],
             'rideDistance' => ['required', ...MotoRideRules::distance()],
             'rideNote' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $startedAt = $displayTimezone->toApplicationTime($this->rideStartedAt);
+
+        Validator::make(
+            ['rideStartedAt' => $startedAt->toIso8601String()],
+            ['rideStartedAt' => MotoRideRules::startedAt()],
+        )->validate();
+
         MotoRide::query()->create([
             'user_id' => Auth::id(),
             'title' => $this->rideTitle,
-            'started_at' => Carbon::parse($this->rideStartedAt),
+            'started_at' => $startedAt,
             'duration' => (int) round((float) $this->rideDuration * 60),
             'distance' => $this->rideDistance,
             'note' => $this->rideNote !== '' ? $this->rideNote : null,
         ]);
 
         $this->reset('rideTitle', 'rideDuration', 'rideDistance', 'rideNote');
-        $this->rideStartedAt = Carbon::now()->format('Y-m-d\TH:i');
+        $this->rideStartedAt = $displayTimezone->inputValue(CarbonImmutable::now());
     }
 
     /**
@@ -198,6 +209,7 @@ class MotoDashboard extends Component
         MotoFriendlyScore $motoFriendlyScore,
         FavorableSlotFinder $favorableSlotFinder,
         RidingStatsCalculator $ridingStatsCalculator,
+        DisplayTimezone $displayTimezone,
     ): View {
         $configured = $weatherForecastService->isConfigured();
 
@@ -209,7 +221,7 @@ class MotoDashboard extends Component
         if ($configured) {
             $current = $weatherForecastService->currentWeather($this->lat, $this->lon);
             $forecast = $weatherForecastService->forecast($this->lat, $this->lon);
-            $hourly = $this->buildHourly($forecast, $motoFriendlyScore);
+            $hourly = $this->buildHourly($forecast, $motoFriendlyScore, $displayTimezone);
             $condition = $this->nextWindowCondition($forecast, $motoFriendlyScore, $current);
             $slots = array_map(
                 fn ($slot): array => $slot->toArray(),
@@ -240,13 +252,13 @@ class MotoDashboard extends Component
      *
      * @return array<int, array{label: string, temp: float, pop: float, wind: float, score: int, accent: string}>
      */
-    private function buildHourly(Forecast $forecast, MotoFriendlyScore $motoFriendlyScore): array
+    private function buildHourly(Forecast $forecast, MotoFriendlyScore $motoFriendlyScore, DisplayTimezone $displayTimezone): array
     {
-        return array_map(function ($entry) use ($motoFriendlyScore): array {
+        return array_map(function ($entry) use ($motoFriendlyScore, $displayTimezone): array {
             $condition = $motoFriendlyScore->forForecastEntry($entry);
 
             return [
-                'label' => Carbon::instance($entry->dt)->format('D H\h'),
+                'label' => $displayTimezone->toDisplayTime(Carbon::instance($entry->dt))->translatedFormat('D H\h'),
                 'temp' => round($entry->temp, 1),
                 'pop' => round($entry->pop * 100),
                 'wind' => round($entry->windSpeed * 3.6),

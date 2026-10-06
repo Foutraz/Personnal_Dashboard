@@ -25,6 +25,7 @@ class RideDateTimezoneTest extends TestCase
     {
         parent::setUp();
 
+        Config::set('app.display_timezone', 'UTC');
         $this->travelTo(Carbon::parse('2026-10-01 10:00:00', 'UTC'));
         $this->owner = User::factory()->create();
     }
