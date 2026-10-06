@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c7d051c9eed45a2a7ff31903f7a5eb82",
+    "content-hash": "fa1a9bf16fc041dc1a5c0cc2c70b7b54",
     "packages": [
         {
             "name": "brick/math",
@@ -820,16 +820,16 @@
         },
         {
             "name": "foutraz/strava",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:Foutraz/SDK_Strava.git",
-                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23"
+                "reference": "c5b8c9b43a72f026b9579684f1d5cd0cb1bb1860"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Foutraz/SDK_Strava/zipball/7fdbe041aa548f1d59a298fd0fce0eeddef30e23",
-                "reference": "7fdbe041aa548f1d59a298fd0fce0eeddef30e23",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Strava/zipball/c5b8c9b43a72f026b9579684f1d5cd0cb1bb1860",
+                "reference": "c5b8c9b43a72f026b9579684f1d5cd0cb1bb1860",
                 "shasum": ""
             },
             "require": {
@@ -875,7 +875,11 @@
                 }
             ],
             "description": "Strava SDK for PHP / Laravel",
-            "time": "2026-06-26T10:44:26+00:00"
+            "support": {
+                "source": "https://github.com/Foutraz/SDK_Strava/tree/1.1.0",
+                "issues": "https://github.com/Foutraz/SDK_Strava/issues"
+            },
+            "time": "2026-10-05T15:57:52+00:00"
         },
         {
             "name": "foutraz/weather",
@@ -938,16 +942,16 @@
         },
         {
             "name": "foutraz/withings",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Foutraz/SDK_Withings.git",
-                "reference": "12a81af4df2226d6239e0ed6db1c86bb87f2fbcc"
+                "reference": "6fa7fe2696bc31fff19a3b7043c47f98536910f5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Foutraz/SDK_Withings/zipball/12a81af4df2226d6239e0ed6db1c86bb87f2fbcc",
-                "reference": "12a81af4df2226d6239e0ed6db1c86bb87f2fbcc",
+                "url": "https://api.github.com/repos/Foutraz/SDK_Withings/zipball/6fa7fe2696bc31fff19a3b7043c47f98536910f5",
+                "reference": "6fa7fe2696bc31fff19a3b7043c47f98536910f5",
                 "shasum": ""
             },
             "require": {
@@ -994,10 +998,10 @@
             ],
             "description": "Withings SDK for PHP / Laravel",
             "support": {
-                "source": "https://github.com/Foutraz/SDK_Withings/tree/1.0.0",
+                "source": "https://github.com/Foutraz/SDK_Withings/tree/1.1.0",
                 "issues": "https://github.com/Foutraz/SDK_Withings/issues"
             },
-            "time": "2026-06-30T06:54:08+00:00"
+            "time": "2026-10-05T15:58:28+00:00"
         },
         {
             "name": "fruitcake/php-cors",
