@@ -13,7 +13,7 @@ abstract class Controller extends RestController
     public function __construct()
     {
         $this->middleware(RestRateLimit::middleware());
-        $this->middleware(LimitMutateOperations::class)->only('mutate');
+        $this->middleware(LimitMutateOperations::class)->only(['mutate', 'destroy', 'restore', 'forceDelete']);
     }
 
     /**

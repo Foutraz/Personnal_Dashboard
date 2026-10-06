@@ -30,6 +30,22 @@ class MutateOperationsCapTest extends TestCase
         ]);
     }
 
+    /**
+     * @return list<string>
+     */
+    private function taskIdsOf(User $user, int $count): array
+    {
+        return Task::factory()->count($count)->create(['user_id' => $user->id])->modelKeys();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function trashedTaskIdsOf(User $user, int $count): array
+    {
+        return Task::factory()->count($count)->trashed()->create(['user_id' => $user->id])->modelKeys();
+    }
+
     private function sportActivityOf(User $user): SportActivity
     {
         $connection = IntegrationConnection::factory()->for($user)->create();
@@ -134,5 +150,74 @@ class MutateOperationsCapTest extends TestCase
 
         $this->assertGreaterThan(10, $mutateRoutes->count());
         $this->assertSame([], $uncappedUris);
+    }
+
+    #[Test]
+    public function it_rejects_a_destroy_request_above_the_cap(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->taskIdsOf($user, 101);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks', ['resources' => $taskIds]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('resources');
+        $this->assertSame(101, Task::query()->count());
+    }
+
+    #[Test]
+    public function it_destroys_exactly_the_cap_of_resources(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->taskIdsOf($user, 100);
+
+        $this->actingAs($user, 'api')->deleteJson('/api/tasks', ['resources' => $taskIds])->assertOk();
+
+        $this->assertSame(0, Task::query()->count());
+        $this->assertSame(100, Task::onlyTrashed()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_restore_request_above_the_cap(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->trashedTaskIdsOf($user, 101);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/restore', ['resources' => $taskIds]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('resources');
+        $this->assertSame(101, Task::onlyTrashed()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_force_delete_request_above_the_cap(): void
+    {
+        $user = User::factory()->create();
+        $taskIds = $this->trashedTaskIdsOf($user, 101);
+
+        $response = $this->actingAs($user, 'api')->deleteJson('/api/tasks/force', ['resources' => $taskIds]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('resources');
+        $this->assertSame(101, Task::onlyTrashed()->count());
+    }
+
+    #[Test]
+    public function it_caps_the_bulk_id_routes_of_every_rest_controller(): void
+    {
+        $bulkIdRoutes = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn (LaravelRoute $route): bool => str_starts_with($route->uri(), 'api/'))
+            ->filter(fn (LaravelRoute $route): bool => is_subclass_of((string) $route->getControllerClass(), RestController::class))
+            ->filter(fn (LaravelRoute $route): bool => in_array($route->getActionMethod(), ['destroy', 'restore', 'forceDelete'], true));
+
+        $uncappedRoutes = $bulkIdRoutes
+            ->reject(fn (LaravelRoute $route): bool => in_array(LimitMutateOperations::class, $route->gatherMiddleware(), true))
+            ->map(fn (LaravelRoute $route): string => "{$route->getActionMethod()} {$route->uri()}")
+            ->values()
+            ->all();
+
+        $this->assertGreaterThan(10, $bulkIdRoutes->count());
+        $this->assertSame([], $uncappedRoutes);
     }
 }

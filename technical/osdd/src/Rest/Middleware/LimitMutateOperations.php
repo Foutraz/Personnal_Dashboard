@@ -22,6 +22,12 @@ class LimitMutateOperations
             ]);
         }
 
+        if (count((array) $request->input('resources', [])) > $maxOperations) {
+            throw ValidationException::withMessages([
+                'resources' => __('osdd::validation.bulk_resources_limit', ['max' => $maxOperations]),
+            ]);
+        }
+
         return $next($request);
     }
 
