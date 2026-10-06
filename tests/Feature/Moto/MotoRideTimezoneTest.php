@@ -74,6 +74,25 @@ class MotoRideTimezoneTest extends TestCase
     }
 
     #[Test]
+    public function it_resets_the_start_to_the_current_local_minute_in_a_display_timezone_behind_utc(): void
+    {
+        Config::set('app.display_timezone', 'America/New_York');
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('rideTitle', 'Sortie du soir')
+            ->set('rideStartedAt', '2026-10-04T16:00')
+            ->set('rideDuration', '90')
+            ->set('rideDistance', '120')
+            ->call('logRide')
+            ->assertHasNoErrors()
+            ->assertSet('rideStartedAt', CarbonImmutable::now('America/New_York')->format('Y-m-d\TH:i'));
+
+        $this->assertSame('2026-10-04 20:00:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+    }
+
+    #[Test]
     public function it_rejects_a_winter_time_local_start_in_the_future(): void
     {
         $user = User::factory()->create();
