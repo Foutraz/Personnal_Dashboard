@@ -21,6 +21,13 @@ class MotoWeatherTimezoneTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->setLocale('en');
+    }
+
     private function bindClearForecastStartingAt(CarbonImmutable $firstEntry): void
     {
         Config::set('weather.api_key', 'test-key');
