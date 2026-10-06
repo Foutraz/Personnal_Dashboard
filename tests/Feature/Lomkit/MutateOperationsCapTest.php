@@ -46,6 +46,35 @@ class MutateOperationsCapTest extends TestCase
         return Task::factory()->count($count)->trashed()->create(['user_id' => $user->id])->modelKeys();
     }
 
+    /**
+     * @return list<string>
+     */
+    private function unknownTaskIds(int $count): array
+    {
+        return array_map(fn (): string => (new Task)->newUniqueId(), range(1, $count));
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function nestedMutationWithKeys(User $user, int $keyCount): array
+    {
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        return [
+            'mutate' => [[
+                'operation' => 'update',
+                'key' => $task->id,
+                'relations' => [
+                    'reminders' => [
+                        'operation' => 'attach',
+                        'key' => $this->unknownTaskIds($keyCount),
+                    ],
+                ],
+            ]],
+        ];
+    }
+
     private function sportActivityOf(User $user): SportActivity
     {
         $connection = IntegrationConnection::factory()->for($user)->create();
@@ -121,6 +150,30 @@ class MutateOperationsCapTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('mutate');
+    }
+
+    #[Test]
+    public function it_counts_every_key_of_a_nested_mutation_against_the_cap(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->nestedMutationWithKeys($user, 100));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['mutate' => __('osdd::validation.mutate_operations_limit', ['max' => 100])]);
+    }
+
+    #[Test]
+    public function it_lets_a_nested_mutation_reach_the_cap_without_exceeding_it(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/tasks/mutate', $this->nestedMutationWithKeys($user, 99));
+
+        $this->assertStringNotContainsString(
+            __('osdd::validation.mutate_operations_limit', ['max' => 100]),
+            $response->getContent(),
+        );
     }
 
     #[Test]

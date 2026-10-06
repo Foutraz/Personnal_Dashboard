@@ -49,7 +49,7 @@ class LimitMutateOperations
      */
     private function countOperations(array $payload): int
     {
-        $operations = is_string($payload['operation'] ?? null) ? 1 : 0;
+        $operations = is_string($payload['operation'] ?? null) ? $this->operationsPerKey($payload['key'] ?? null) : 0;
 
         foreach ($payload as $nested) {
             if (is_array($nested)) {
@@ -58,5 +58,10 @@ class LimitMutateOperations
         }
 
         return $operations;
+    }
+
+    private function operationsPerKey(mixed $keys): int
+    {
+        return is_array($keys) ? count($keys) : 1;
     }
 }
