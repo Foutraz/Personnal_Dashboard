@@ -24,7 +24,7 @@ class UserResource extends Resource
     public function fields(RestRequest $request): array
     {
         return [
-            'ulid',
+            'id',
             'name',
             'email',
         ];
@@ -38,8 +38,9 @@ class UserResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            'id' => ['missing'],
             'name' => ['string', 'max:255'],
-            'email' => ['string', 'email', 'max:255'],
+            'email' => ['missing'],
         ];
     }
 

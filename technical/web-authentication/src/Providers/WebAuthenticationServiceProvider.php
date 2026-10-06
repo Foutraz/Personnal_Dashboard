@@ -21,6 +21,9 @@ class WebAuthenticationServiceProvider extends OsddServiceProvider
         $this->mergeConfigWithPriorityFrom(
             __DIR__.'/../../config/services.php', 'services'
         );
+        $this->mergeConfigWithPriorityFrom(
+            __DIR__.'/../../config/web-authentication.php', 'web-authentication'
+        );
     }
 
     /**
@@ -30,6 +33,7 @@ class WebAuthenticationServiceProvider extends OsddServiceProvider
     {
         $this->loadRoutesFrom(__DIR__.'/../../routes/web.php');
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'web-authentication');
+        $this->loadTranslationsFrom(__DIR__.'/../../lang', 'web-authentication');
 
         Livewire::component('dashboard', Dashboard::class);
 

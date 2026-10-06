@@ -101,7 +101,7 @@
                     </div>
                     @if ($googleAccount?->google_id)
                         <p class="mt-1.5 text-sm text-muted">Connexion liée à {{ $googleAccount->email }}.</p>
-                    @else
+                    @elseif ($googleAccount?->email_verified_at !== null)
                         <p class="mt-1.5 text-sm text-muted">Utilisez « Continuer avec Google » à la connexion pour lier votre compte.</p>
                     @endif
                 </div>

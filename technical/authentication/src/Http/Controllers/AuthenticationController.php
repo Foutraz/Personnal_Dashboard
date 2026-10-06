@@ -2,7 +2,6 @@
 
 namespace Technical\Authentication\Http\Controllers;
 
-use Functional\Users\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Technical\Authentication\Http\Requests\LoginRequest;
@@ -24,21 +23,10 @@ class AuthenticationController
     {
         $validated = $request->validated();
 
-        $user = User::query()->where('email', $validated['email'])->first();
-
-        if (! $user) {
-            throw new AuthenticationException('User not found');
-        }
-
-        $credentials = [
-            'email' => $user->email,
-            'password' => $validated['password'],
-        ];
-
         /** @var JWTGuard $guard */
         $guard = auth('api');
 
-        $token = $guard->attempt($credentials);
+        $token = $guard->attempt(['email' => $validated['email'], 'password' => $validated['password']]);
 
         if (! is_string($token)) {
             throw new AuthenticationException('Unable to authenticate.');

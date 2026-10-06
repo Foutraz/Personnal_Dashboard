@@ -27,4 +27,8 @@ script:post-response {
     bru.setEnvVar("token", body.access_token);
     console.log("Token stored");
   }
+
+  if (body.user && body.user.id) {
+    bru.setEnvVar("userId", body.user.id);
+  }
 }

@@ -8,15 +8,18 @@ use Illuminate\Support\Facades\Auth;
 use PHPUnit\Framework\Attributes\Test;
 use Technical\WebAuthentication\Actions\RegisterUser;
 use Technical\WebAuthentication\Exceptions\EmailAlreadyTakenException;
+use Tests\Feature\WebAuthentication\Concerns\OpensRegistration;
 use Tests\TestCase;
 
 class RegisterTest extends TestCase
 {
-    use RefreshDatabase;
+    use OpensRegistration, RefreshDatabase;
 
     #[Test]
     public function it_registers_a_user_and_logs_into_the_web_guard(): void
     {
+        $this->allowRegistrationFor('john@example.com');
+
         $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'john@example.com',
