@@ -20,6 +20,13 @@ class MutateOperationsCapTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->app->setLocale('en');
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
