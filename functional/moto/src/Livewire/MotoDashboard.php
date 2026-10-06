@@ -11,15 +11,18 @@ use Functional\Moto\Services\FavorableSlotFinder;
 use Functional\Moto\Services\MotoFriendlyScore;
 use Functional\Moto\Services\RidingStatsCalculator;
 use Functional\Moto\Services\WeatherForecastService;
+use Functional\Moto\Validation\MotoRideRules;
 use Functional\Moto\ValueObjects\RideCondition;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Technical\Application\Time\DisplayTimezone;
+use Technical\Osdd\Rules\IsoDatetime;
 
 class MotoDashboard extends Component
 {
@@ -144,17 +147,24 @@ class MotoDashboard extends Component
     public function logRide(DisplayTimezone $displayTimezone): void
     {
         $this->validate([
-            'rideTitle' => 'required|string|max:255',
-            'rideStartedAt' => 'required|date',
-            'rideDuration' => 'required|numeric|min:1',
-            'rideDistance' => 'required|numeric|min:0',
-            'rideNote' => 'nullable|string|max:1000',
+            'rideTitle' => ['required', 'string', 'max:255'],
+            'rideStartedAt' => ['required', new IsoDatetime, 'date'],
+            'rideDuration' => ['required', ...MotoRideRules::durationInMinutes()],
+            'rideDistance' => ['required', ...MotoRideRules::distance()],
+            'rideNote' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $startedAt = $displayTimezone->toApplicationTime($this->rideStartedAt);
+
+        Validator::make(
+            ['rideStartedAt' => $startedAt->toIso8601String()],
+            ['rideStartedAt' => MotoRideRules::startedAt()],
+        )->validate();
 
         MotoRide::query()->create([
             'user_id' => Auth::id(),
             'title' => $this->rideTitle,
-            'started_at' => $displayTimezone->toApplicationTime($this->rideStartedAt),
+            'started_at' => $startedAt,
             'duration' => (int) round((float) $this->rideDuration * 60),
             'distance' => $this->rideDistance,
             'note' => $this->rideNote !== '' ? $this->rideNote : null,

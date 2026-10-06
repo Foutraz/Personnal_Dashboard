@@ -56,7 +56,44 @@ class MotoRideTimezoneTest extends TestCase
     }
 
     #[Test]
-    public function it_stores_a_winter_time_local_start_as_the_utc_instant(): void
+    public function it_stores_a_past_winter_time_local_start_as_the_utc_instant(): void
+    {
+        Config::set('app.display_timezone', 'Europe/Paris');
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('rideTitle', 'Sortie hivernale')
+            ->set('rideStartedAt', '2026-01-15T08:00')
+            ->set('rideDuration', '90')
+            ->set('rideDistance', '120')
+            ->call('logRide')
+            ->assertHasNoErrors();
+
+        $this->assertSame('2026-01-15 07:00:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_resets_the_start_to_the_current_local_minute_in_a_display_timezone_behind_utc(): void
+    {
+        Config::set('app.display_timezone', 'America/New_York');
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('rideTitle', 'Sortie du soir')
+            ->set('rideStartedAt', '2026-10-04T16:00')
+            ->set('rideDuration', '90')
+            ->set('rideDistance', '120')
+            ->call('logRide')
+            ->assertHasNoErrors()
+            ->assertSet('rideStartedAt', CarbonImmutable::now('America/New_York')->format('Y-m-d\TH:i'));
+
+        $this->assertSame('2026-10-04 20:00:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_rejects_a_winter_time_local_start_in_the_future(): void
     {
         $user = User::factory()->create();
 
@@ -67,13 +104,13 @@ class MotoRideTimezoneTest extends TestCase
             ->set('rideDuration', '90')
             ->set('rideDistance', '120')
             ->call('logRide')
-            ->assertHasNoErrors();
+            ->assertHasErrors(['rideStartedAt' => 'before_or_equal']);
 
-        $this->assertSame('2026-12-06 22:30:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+        $this->assertSame(0, MotoRide::query()->count());
     }
 
     #[Test]
-    public function it_respects_a_display_timezone_behind_utc(): void
+    public function it_rejects_a_local_start_in_the_future_in_a_display_timezone_behind_utc(): void
     {
         Config::set('app.display_timezone', 'America/New_York');
         $user = User::factory()->create();
@@ -86,19 +123,18 @@ class MotoRideTimezoneTest extends TestCase
             ->set('rideDuration', '90')
             ->set('rideDistance', '120')
             ->call('logRide')
-            ->assertHasNoErrors()
-            ->assertSet('rideStartedAt', '2026-10-04T17:30');
+            ->assertHasErrors(['rideStartedAt' => 'before_or_equal']);
 
-        $this->assertSame('2026-10-05 03:30:00', MotoRide::query()->sole()->started_at->toDateTimeString());
+        $this->assertSame(0, MotoRide::query()->count());
     }
 
     #[Test]
-    #[DataProvider('minutesAroundNow')]
-    public function it_stores_a_start_near_now_on_the_right_side_of_now(string $displayTimezone, int $minutesFromNow, bool $expectedInTheFuture): void
+    #[DataProvider('displayTimezonesAroundUtc')]
+    public function it_stores_a_local_start_one_minute_ago_in_the_past(string $displayTimezone): void
     {
         Config::set('app.display_timezone', $displayTimezone);
         $user = User::factory()->create();
-        $localStart = CarbonImmutable::now($displayTimezone)->addMinutes($minutesFromNow)->format('Y-m-d\TH:i');
+        $localStart = CarbonImmutable::now($displayTimezone)->subMinute()->format('Y-m-d\TH:i');
 
         Livewire::actingAs($user, 'web')
             ->test(MotoDashboard::class)
@@ -109,19 +145,37 @@ class MotoRideTimezoneTest extends TestCase
             ->call('logRide')
             ->assertHasNoErrors();
 
-        $this->assertSame($expectedInTheFuture, MotoRide::query()->sole()->started_at->isFuture());
+        $this->assertTrue(MotoRide::query()->sole()->started_at->isPast());
+    }
+
+    #[Test]
+    #[DataProvider('displayTimezonesAroundUtc')]
+    public function it_rejects_a_local_start_one_minute_from_now(string $displayTimezone): void
+    {
+        Config::set('app.display_timezone', $displayTimezone);
+        $user = User::factory()->create();
+        $localStart = CarbonImmutable::now($displayTimezone)->addMinute()->format('Y-m-d\TH:i');
+
+        Livewire::actingAs($user, 'web')
+            ->test(MotoDashboard::class)
+            ->set('rideTitle', 'Sortie dominicale')
+            ->set('rideStartedAt', $localStart)
+            ->set('rideDuration', '90')
+            ->set('rideDistance', '120')
+            ->call('logRide')
+            ->assertHasErrors(['rideStartedAt' => 'before_or_equal']);
+
+        $this->assertSame(0, MotoRide::query()->count());
     }
 
     /**
-     * @return array<string, array{string, int, bool}>
+     * @return array<string, array{string}>
      */
-    public static function minutesAroundNow(): array
+    public static function displayTimezonesAroundUtc(): array
     {
         return [
-            'ahead of UTC, one minute ago' => ['Europe/Paris', -1, false],
-            'ahead of UTC, one minute from now' => ['Europe/Paris', 1, true],
-            'behind UTC, one minute ago' => ['America/New_York', -1, false],
-            'behind UTC, one minute from now' => ['America/New_York', 1, true],
+            'ahead of UTC' => ['Europe/Paris'],
+            'behind UTC' => ['America/New_York'],
         ];
     }
 

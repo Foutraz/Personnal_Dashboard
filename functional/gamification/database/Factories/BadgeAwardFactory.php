@@ -30,6 +30,7 @@ class BadgeAwardFactory extends Factory
             'user_id' => User::factory(),
             'badge_id' => Badge::factory(),
             'awarded_at' => now(),
+            'measured_value' => null,
         ];
     }
 }

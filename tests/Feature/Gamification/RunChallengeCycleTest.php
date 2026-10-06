@@ -111,15 +111,20 @@ class RunChallengeCycleTest extends TestCase
     }
 
     #[Test]
-    public function it_reads_the_closing_grace_on_every_call(): void
+    public function it_keeps_the_closing_grace_frozen_on_each_challenge(): void
     {
-        $this->travelTo(Carbon::parse('2026-09-28 12:00:00', 'UTC'));
         $user = User::factory()->create();
-        $challenge = Challenge::factory()->accepted()->forWeek($this->currentWeek()->previous())->create(['user_id' => $user->id, 'target_value' => 28]);
+        $challenge = $this->acceptedChallengeOfWeekForty($user);
         $cycle = $this->cycle();
-        $cycle->handle($user);
-        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
         config(['gamification.challenges.closing_grace_hours' => 0]);
+        $this->travelTo(Carbon::parse('2026-10-05 10:00:00', 'UTC'));
+
+        $cycle->handle($user);
+
+        $this->assertSame(ChallengeStatus::Accepted, $challenge->fresh()->status);
+
+        config(['gamification.challenges.closing_grace_hours' => 168]);
+        $this->travelTo(Carbon::parse('2026-10-06 22:00:00', 'UTC'));
 
         $cycle->handle($user);
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Lomkit;
 
+use Functional\Exploration\Models\ExploredCell;
 use Functional\Sport\Models\SportActivity;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,6 +38,14 @@ class PreventsApiCreationTest extends TestCase
     public function it_rejects_creating_a_trip_route_through_the_api(): void
     {
         $this->assertCreateRejected('/api/trip-routes/mutate');
+    }
+
+    #[Test]
+    public function it_rejects_creating_an_explored_cell_through_the_api(): void
+    {
+        $this->assertCreateRejected('/api/explored-cells/mutate');
+
+        $this->assertSame(0, ExploredCell::query()->count());
     }
 
     #[Test]

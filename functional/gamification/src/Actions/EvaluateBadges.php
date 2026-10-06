@@ -51,6 +51,7 @@ class EvaluateBadges
                 'user_id' => $user->id,
                 'badge_id' => $badge->id,
                 'awarded_at' => $awardedAt,
+                'measured_value' => round($measures[$badge->rule_key], 2),
                 'created_at' => $awardedAt,
                 'updated_at' => $awardedAt,
             ])

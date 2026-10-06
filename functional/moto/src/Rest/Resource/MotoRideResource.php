@@ -3,6 +3,7 @@
 namespace Functional\Moto\Rest\Resource;
 
 use Functional\Moto\Models\MotoRide;
+use Functional\Moto\Validation\MotoRideRules;
 use Illuminate\Database\Eloquent\Model;
 use Lomkit\Rest\Http\Requests\RestRequest;
 use Technical\Osdd\Rest\Resources\Resource;
@@ -44,10 +45,11 @@ class MotoRideResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'title' => ['string', 'max:255'],
-            'started_at' => ['date'],
-            'duration' => ['integer', 'min:0'],
-            'distance' => ['numeric', 'min:0'],
+            'started_at' => MotoRideRules::startedAt(),
+            'duration' => MotoRideRules::durationInSeconds(),
+            'distance' => MotoRideRules::distance(),
             'weather_label' => ['nullable', 'string', 'max:255'],
             'note' => ['nullable', 'string', 'max:1000'],
         ];

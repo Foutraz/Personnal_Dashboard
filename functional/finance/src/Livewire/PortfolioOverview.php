@@ -9,6 +9,7 @@ use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Finance\Services\CapitalCalculator;
 use Functional\Finance\Services\PerformanceCalculator;
+use Functional\Finance\Validation\InvestmentTransactionRules;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -151,8 +152,8 @@ class PortfolioOverview extends Component
     {
         $this->validate([
             'txType' => ['required', Rule::enum(TransactionType::class)],
-            'txQuantity' => 'required|numeric|min:0.00000001',
-            'txUnitPrice' => 'required|numeric|min:0',
+            'txQuantity' => ['required', ...InvestmentTransactionRules::quantity()],
+            'txUnitPrice' => ['required', ...InvestmentTransactionRules::unitPrice()],
         ]);
 
         $position = $this->ownPosition((string) $this->transactionPositionId);

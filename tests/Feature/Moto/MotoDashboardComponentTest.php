@@ -11,9 +11,12 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Technical\Osdd\Rules\WithinScale;
 use Tests\TestCase;
 
 class MotoDashboardComponentTest extends TestCase
@@ -117,6 +120,139 @@ class MotoDashboardComponentTest extends TestCase
             ->set('rideDistance', '')
             ->call('logRide')
             ->assertHasErrors(['rideTitle' => 'required', 'rideDistance' => 'required']);
+    }
+
+    private function logRideAt(User $user, array $form): Testable
+    {
+        Config::set('weather.api_key', null);
+        Config::set('app.display_timezone', 'UTC');
+        $this->travelTo(Carbon::parse('2026-10-01 10:00:00', 'UTC'));
+
+        $component = Livewire::actingAs($user, 'web')->test(MotoDashboard::class);
+
+        foreach ([
+            'rideTitle' => 'Sortie',
+            'rideStartedAt' => '2026-10-01T09:00',
+            'rideDuration' => '90',
+            'rideDistance' => '120',
+            ...$form,
+        ] as $property => $value) {
+            $component->set($property, $value);
+        }
+
+        return $component->call('logRide');
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_started_after_the_current_minute(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideStartedAt' => '2026-10-01T10:01'])
+            ->assertHasErrors(['rideStartedAt' => 'before_or_equal']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_distance_above_the_maximum(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '2500'])
+            ->assertHasErrors(['rideDistance' => 'max']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_zero_ride_distance(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '0'])
+            ->assertHasErrors(['rideDistance' => 'gt']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_distance_finer_than_the_column_scale(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '0.004'])
+            ->assertHasErrors(['rideDistance' => WithinScale::class]);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_distance_in_exponent_notation_far_below_the_column_scale(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '1e-400'])
+            ->assertHasErrors(['rideDistance' => WithinScale::class]);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_distance_written_with_a_decimal_comma(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '12,5'])
+            ->assertHasErrors(['rideDistance' => 'numeric']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_logs_a_ride_distance_at_the_column_scale(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDistance' => '12.5'])->assertHasNoErrors();
+        $this->assertSame(1, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_ride_duration_above_one_day(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDuration' => '1441'])
+            ->assertHasErrors(['rideDuration' => 'max']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_zero_ride_duration(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, ['rideDuration' => '0'])
+            ->assertHasErrors(['rideDuration' => 'min']);
+
+        $this->assertSame(0, MotoRide::query()->count());
+    }
+
+    #[Test]
+    public function it_logs_a_past_ride_within_bounds(): void
+    {
+        $user = User::factory()->create();
+
+        $this->logRideAt($user, [
+            'rideStartedAt' => '2026-10-01T09:00',
+            'rideDistance' => '120',
+            'rideDuration' => '90',
+        ])->assertHasNoErrors();
+
+        $ride = MotoRide::query()->whereBelongsTo($user)->sole();
+        $this->assertSame(5400, $ride->duration);
     }
 
     #[Test]

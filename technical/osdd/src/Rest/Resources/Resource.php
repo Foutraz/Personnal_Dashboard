@@ -11,6 +11,8 @@ abstract class Resource extends RestResource
 {
     use ResolvesUndeclaredRelationPathsToNull;
 
+    public const SERVER_MANAGED_FIELDS = ['id', 'created_at', 'updated_at'];
+
     /**
      * Enable policy authorization so the controls enforce per-user ownership.
      */
@@ -57,5 +59,25 @@ abstract class Resource extends RestResource
     public function forceDeleteQuery(RestRequest $request, Builder $query): Builder
     {
         return $query->controlled();
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(RestRequest $request): array
+    {
+        return $this->serverManagedFieldRules($request);
+    }
+
+    /**
+     * Lomkit force-fills every declared field, so a client could choose or erase the key and the timestamps, and `prohibited` still lets a null or empty value through.
+     *
+     * @return array<string, list<string>>
+     */
+    protected function serverManagedFieldRules(RestRequest $request): array
+    {
+        $declaredFields = array_intersect(self::SERVER_MANAGED_FIELDS, $this->fields($request));
+
+        return array_fill_keys($declaredFields, ['missing']);
     }
 }

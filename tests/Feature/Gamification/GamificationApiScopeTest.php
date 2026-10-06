@@ -507,6 +507,37 @@ class GamificationApiScopeTest extends TestCase
     }
 
     #[Test]
+    public function it_does_not_expose_the_measured_value_of_a_badge_award(): void
+    {
+        $user = User::factory()->create();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => faker()->number(100, 5000)]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/search', [
+            'search' => [],
+        ]);
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertArrayNotHasKey('measured_value', $response->json('data.0'));
+        $this->assertStringNotContainsString('measured_value', $response->getContent());
+    }
+
+    #[Test]
+    public function it_refuses_filtering_badge_awards_on_the_measured_value(): void
+    {
+        $user = User::factory()->create();
+        BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => faker()->number(100, 5000)]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/search', [
+            'search' => [
+                'filters' => [['field' => 'measured_value', 'operator' => '>', 'value' => 0]],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+    }
+
+    #[Test]
     public function it_refuses_including_the_user_relation_of_badge_awards(): void
     {
         $user = User::factory()->create();
@@ -560,6 +591,28 @@ class GamificationApiScopeTest extends TestCase
 
         $response->assertForbidden();
         $this->assertSame($originalAwardedAt, $award->fresh()->awarded_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_rejects_rewriting_the_measured_value_of_an_own_badge_award_through_the_api(): void
+    {
+        $user = User::factory()->create();
+        $originalMeasure = faker()->number(100, 5000);
+        $award = BadgeAward::factory()->create(['user_id' => $user->id, 'measured_value' => $originalMeasure]);
+
+        $response = $this->actingAs($user, 'api')->postJson('/api/badge-awards/mutate', [
+            'mutate' => [
+                [
+                    'operation' => 'update',
+                    'key' => $award->id,
+                    'attributes' => ['measured_value' => $originalMeasure + faker()->number(1000, 9000)],
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('mutate.0.attributes');
+        $this->assertSame((float) $originalMeasure, $award->fresh()->measured_value);
     }
 
     #[Test]

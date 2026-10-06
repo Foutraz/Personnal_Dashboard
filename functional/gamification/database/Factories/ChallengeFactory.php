@@ -2,6 +2,7 @@
 
 namespace Functional\Gamification\Database\Factories;
 
+use Carbon\CarbonImmutable;
 use Functional\Gamification\Enums\ChallengeStatus;
 use Functional\Gamification\Enums\ChallengeTemplateKey;
 use Functional\Gamification\Models\Challenge;
@@ -44,6 +45,7 @@ class ChallengeFactory extends Factory
             'metric' => $template->metric(),
             'starts_at' => $week->startsAt,
             'ends_at' => $week->endsAt,
+            'closes_at' => fn (array $attributes): CarbonImmutable => CarbonImmutable::parse($attributes['ends_at'])->addHours(ChallengeSettings::fromConfig()->closingGraceHours),
             'baseline_value' => $baseline,
             'target_value' => $baseline + faker()->number(1, 5),
             'current_value' => 0,

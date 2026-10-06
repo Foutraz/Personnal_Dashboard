@@ -41,7 +41,7 @@ class ProposeWeeklyChallenges
         $moment = now()->toDateTimeString();
         $targets = $this->eligibleTargets($user, $week, $settings);
         $rows = collect($this->pickedTemplates($targets, $week))
-            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment, $settings->xpReward))
+            ->map(fn (ChallengeTemplateKey $template): array => $this->row($user, $week, $template, $targets[$template->value], $moment, $settings))
             ->values();
 
         if ($rows->isEmpty()) {
@@ -91,22 +91,21 @@ class ProposeWeeklyChallenges
     }
 
     /**
-     * Measure the whole history of each template, then the single weeks of those with data only.
-     *
      * @return array<string, ChallengeTarget>
      *
      * @throws MissingChallengeTemplateConfigException|InvalidChallengeConfigException
      */
     private function eligibleTargets(User $user, GamificationWeek $week, ChallengeSettings $settings): array
     {
+        $historyWeeks = array_map(
+            fn (int $weeksBack): GamificationWeek => $week->previous($weeksBack),
+            range($settings->historyWeeks, 1),
+        );
         $targets = [];
 
         foreach (ChallengeTemplateKey::cases() as $template) {
-            if (! $this->hasHistory($user, $template, $week, $settings)) {
-                continue;
-            }
-
-            $target = $this->calculator->target($template->settings(), $settings, $this->weeklyValues($user, $template, $week, $settings));
+            $weeklyValues = $this->meter->history($user, $template->metric(), $historyWeeks, $settings->closingGraceHours);
+            $target = $this->calculator->target($template->settings(), $settings, $weeklyValues);
 
             if ($target !== null) {
                 $targets[$template->value] = $target;
@@ -116,28 +115,10 @@ class ProposeWeeklyChallenges
         return $targets;
     }
 
-    private function hasHistory(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): bool
-    {
-        $historyStartsAt = $week->previous($settings->historyWeeks)->startsAt;
-
-        return $this->meter->measure($user, $template->metric(), $historyStartsAt, $week->startsAt) > 0.0;
-    }
-
-    /**
-     * @return list<float>
-     */
-    private function weeklyValues(User $user, ChallengeTemplateKey $template, GamificationWeek $week, ChallengeSettings $settings): array
-    {
-        return array_map(
-            fn (int $weeksBack): float => $this->meter->measureWeek($user, $template->metric(), $week->previous($weeksBack)),
-            range($settings->historyWeeks, 1),
-        );
-    }
-
     /**
      * @return array<string, mixed>
      */
-    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment, int $xpReward): array
+    private function row(User $user, GamificationWeek $week, ChallengeTemplateKey $template, ChallengeTarget $target, string $moment, ChallengeSettings $settings): array
     {
         return [
             'id' => (new Challenge)->newUniqueId(),
@@ -148,10 +129,11 @@ class ProposeWeeklyChallenges
             'metric' => $template->metric()->value,
             'starts_at' => $week->startsAt->toDateTimeString(),
             'ends_at' => $week->endsAt->toDateTimeString(),
+            'closes_at' => $week->closesAt($settings->closingGraceHours)->toDateTimeString(),
             'baseline_value' => $target->baseline,
             'target_value' => $target->target,
             'current_value' => 0,
-            'xp_reward' => $xpReward,
+            'xp_reward' => $settings->xpReward,
             'status' => ChallengeStatus::Proposed->value,
             'accepted_at' => null,
             'resolved_at' => null,

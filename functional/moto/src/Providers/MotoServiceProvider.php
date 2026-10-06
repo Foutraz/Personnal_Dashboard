@@ -8,6 +8,7 @@ use Functional\Moto\Dashboard\MotoAgendaProvider;
 use Functional\Moto\Dashboard\MotoDashboardContribution;
 use Functional\Moto\Database\Seeders\MotoSeeder;
 use Functional\Moto\Listeners\DeleteUserMotoRides;
+use Functional\Moto\Listeners\StampRideRecording;
 use Functional\Moto\Livewire\MotoDashboard;
 use Functional\Moto\Models\MotoRide;
 use Functional\Moto\Rest\Controls\MotoRideControl;
@@ -68,6 +69,7 @@ class MotoServiceProvider extends OsddServiceProvider
         $this->loadListenEvent();
 
         MotoRide::creating(fn (MotoRide $ride) => app(AssignRideOwner::class)->handle($ride));
+        MotoRide::saving(StampRideRecording::class);
 
         Livewire::component('moto-dashboard', MotoDashboard::class);
 

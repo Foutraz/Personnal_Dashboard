@@ -3,7 +3,6 @@
 namespace Functional\Goals\Services;
 
 use Carbon\CarbonInterface;
-use Functional\Exploration\Models\ExploredCell;
 use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Finance\Services\CapitalCalculator;
@@ -13,10 +12,6 @@ use Functional\Goals\Exceptions\UnboundedGoalMetricException;
 use Functional\Goals\Exceptions\UnsupportedGoalMetricException;
 use Functional\Goals\Models\Goal;
 use Functional\Goals\Services\Dto\GoalProgress;
-use Functional\Moto\Models\MotoRide;
-use Functional\Moto\Services\RidingStatsCalculator;
-use Functional\Sport\Models\SportActivity;
-use Functional\Sport\Services\SportStatisticsCalculator;
 use Functional\Todo\Models\Task;
 use Functional\Todo\Services\TaskCompletionCalculator;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,15 +19,11 @@ use Illuminate\Support\Collection;
 
 class GoalProgressCalculator
 {
-    /**
-     * Build the calculator with the sibling module services it aggregates from.
-     */
     public function __construct(
-        private SportStatisticsCalculator $sportStatistics,
+        private GoalMetricAggregator $aggregator,
         private PerformanceCalculator $performance,
         private CapitalCalculator $capital,
         private TaskCompletionCalculator $taskCompletion,
-        private RidingStatsCalculator $ridingStats,
     ) {}
 
     /**
@@ -75,28 +66,16 @@ class GoalProgressCalculator
     public function measure(GoalMetric $metric, string $userId, ?CarbonInterface $from, ?CarbonInterface $until): float
     {
         return match ($metric) {
-            GoalMetric::SportDistance => $this->sportStatistics->totalDistance($this->sportActivities($userId, $from, $until)) / 1000,
-            GoalMetric::SportElevation => $this->sportStatistics->totalElevation($this->sportActivities($userId, $from, $until)),
-            GoalMetric::SportActivityCount => (float) $this->sportActivities($userId, $from, $until)->count(),
-            GoalMetric::SportMovingTime => $this->sportStatistics->totalMovingTime($this->sportActivities($userId, $from, $until)) / 3600,
+            GoalMetric::SportDistance,
+            GoalMetric::SportElevation,
+            GoalMetric::SportActivityCount,
+            GoalMetric::SportMovingTime,
+            GoalMetric::MotoDistance,
+            GoalMetric::MotoRideCount,
+            GoalMetric::ExplorationCells => $this->aggregator->total($metric, $userId, $from, $until),
             GoalMetric::FinanceInvestedCapital => $this->capital->netInvested($this->financeTransactions($userId, $from, $until)),
-            GoalMetric::MotoDistance => $this->ridingStats->totalDistance($this->motoRides($userId, $from, $until)),
-            GoalMetric::MotoRideCount => (float) $this->ridingStats->rideCount($this->motoRides($userId, $from, $until)),
-            GoalMetric::ExplorationCells => (float) $this->exploredCellsCount($userId, $from, $until),
             GoalMetric::FinancePortfolioValue, GoalMetric::Manual, GoalMetric::TodoCompletionRate => throw new UnboundedGoalMetricException($metric),
         };
-    }
-
-    /**
-     * @return Collection<int, SportActivity>
-     */
-    private function sportActivities(string $userId, ?CarbonInterface $from, ?CarbonInterface $until): Collection
-    {
-        return SportActivity::query()
-            ->where('user_id', $userId)
-            ->when($from, fn (Builder $query, CarbonInterface $periodStart): Builder => $query->where('started_at', '>=', $periodStart))
-            ->when($until, fn (Builder $query, CarbonInterface $periodEnd): Builder => $query->where('started_at', '<=', $periodEnd))
-            ->get();
     }
 
     /**
@@ -119,27 +98,6 @@ class GoalProgressCalculator
             ->when($from, fn (Builder $query, CarbonInterface $periodStart): Builder => $query->where('executed_at', '>=', $periodStart))
             ->when($until, fn (Builder $query, CarbonInterface $periodEnd): Builder => $query->where('executed_at', '<=', $periodEnd))
             ->get();
-    }
-
-    /**
-     * @return Collection<int, MotoRide>
-     */
-    private function motoRides(string $userId, ?CarbonInterface $from, ?CarbonInterface $until): Collection
-    {
-        return MotoRide::query()
-            ->where('user_id', $userId)
-            ->when($from, fn (Builder $query, CarbonInterface $periodStart): Builder => $query->where('started_at', '>=', $periodStart))
-            ->when($until, fn (Builder $query, CarbonInterface $periodEnd): Builder => $query->where('started_at', '<=', $periodEnd))
-            ->get();
-    }
-
-    private function exploredCellsCount(string $userId, ?CarbonInterface $from, ?CarbonInterface $until): int
-    {
-        return ExploredCell::query()
-            ->where('user_id', $userId)
-            ->when($from, fn (Builder $query, CarbonInterface $periodStart): Builder => $query->where('first_seen_at', '>=', $periodStart))
-            ->when($until, fn (Builder $query, CarbonInterface $periodEnd): Builder => $query->where('first_seen_at', '<=', $periodEnd))
-            ->count();
     }
 
     /**

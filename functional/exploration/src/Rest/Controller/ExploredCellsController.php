@@ -4,10 +4,13 @@ namespace Functional\Exploration\Rest\Controller;
 
 use Functional\Exploration\Rest\Resource\ExploredCellResource;
 use Lomkit\Rest\Http\Resource;
+use Technical\Osdd\Rest\Controllers\Concerns\RejectsApiCreation;
 use Technical\Osdd\Rest\Controllers\Controller;
 
 class ExploredCellsController extends Controller
 {
+    use RejectsApiCreation;
+
     /**
      * The resource the controller corresponds to.
      *

@@ -57,6 +57,30 @@ class SyncActivitiesJobTest extends TestCase
         Event::assertDispatched(fn (StravaActivitiesSynced $event): bool => $event->userId === $connection->user_id);
     }
 
+    #[Test]
+    public function it_restores_and_updates_a_trashed_activity_then_carries_on_with_the_next_ones(): void
+    {
+        $connection = IntegrationConnection::factory()->create([
+            'expires_at' => now()->addHour(),
+        ]);
+        $trashed = SportActivity::factory()->create([
+            'user_id' => $connection->user_id,
+            'integration_connection_id' => $connection->id,
+            'strava_id' => 1002,
+            'name' => 'Stale name',
+        ]);
+        $trashed->delete();
+
+        $this->bindManagerReturningActivities();
+        SyncStravaActivitiesJob::dispatchSync($connection->id);
+
+        $this->assertSame(3, SportActivity::query()->withTrashed()->count());
+        $this->assertSame(3, SportActivity::query()->count());
+        $this->assertNotSoftDeleted($trashed);
+        $this->assertSame('Evening Ride', $trashed->fresh()->name);
+        $this->assertDatabaseHas('sport_activities', ['strava_id' => 1003, 'user_id' => $connection->user_id]);
+    }
+
     /**
      * Bind a user manager builder serving a single page of three activities.
      */

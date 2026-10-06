@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Lomkit\Access\Controls\HasControl;
 
 /**
@@ -26,6 +27,7 @@ use Lomkit\Access\Controls\HasControl;
  * @property string $average_buy_price
  * @property string|null $current_price
  * @property string $currency
+ * @property Carbon|null $created_at
  */
 #[UseFactory(PositionFactory::class)]
 class Position extends Model

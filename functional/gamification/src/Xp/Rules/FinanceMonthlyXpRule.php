@@ -2,13 +2,14 @@
 
 namespace Functional\Gamification\Xp\Rules;
 
-use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Models\BankTransaction;
 use Functional\Finance\Models\InvestmentTransaction;
+use Functional\Finance\Services\CapitalCalculator;
 use Functional\Gamification\Contracts\XpRule;
 use Functional\Gamification\Enums\GamificationDomain;
 use Functional\Gamification\Enums\XpRuleKey;
 use Functional\Gamification\Enums\XpSourceType;
+use Functional\Gamification\Services\Dto\FinanceXpSettings;
 use Functional\Gamification\Services\Dto\XpAward;
 use Functional\Users\Models\User;
 use Illuminate\Support\Carbon;
@@ -16,6 +17,10 @@ use Illuminate\Support\Collection;
 
 class FinanceMonthlyXpRule implements XpRule
 {
+    private const MONTH_FORMAT = 'Y-m';
+
+    public function __construct(private CapitalCalculator $capital) {}
+
     /**
      * Get the unique ledger key identifying the rule.
      */
@@ -33,29 +38,23 @@ class FinanceMonthlyXpRule implements XpRule
     }
 
     /**
-     * Award one entry per elapsed month of positive savings or investing, re-evaluating every month so late-booked data corrects the ledger.
+     * Award one entry per elapsed month of positive savings or real investing, re-evaluating every month so late-booked data corrects the ledger.
      *
      * @return Collection<int, XpAward>
      */
     public function awards(User $user, ?Carbon $since): Collection
     {
-        $config = config('gamification.xp.finance');
+        $settings = FinanceXpSettings::fromConfig();
         $currentMonthStart = now()->startOfMonth();
 
         $savingsByMonth = BankTransaction::query()
             ->where('user_id', $user->id)
             ->where('booked_at', '<', $currentMonthStart)
             ->get(['id', 'amount', 'booked_at'])
-            ->groupBy(fn (BankTransaction $transaction): string => $transaction->booked_at->format('Y-m'))
+            ->groupBy(fn (BankTransaction $transaction): string => $transaction->booked_at->format(self::MONTH_FORMAT))
             ->map(fn (Collection $transactions): float => (float) $transactions->sum('amount'));
 
-        $investmentMonths = InvestmentTransaction::query()
-            ->where('user_id', $user->id)
-            ->where('type', TransactionType::Buy)
-            ->where('executed_at', '<', $currentMonthStart)
-            ->get(['id', 'executed_at'])
-            ->map(fn (InvestmentTransaction $transaction): string => $transaction->executed_at->format('Y-m'))
-            ->unique();
+        $investmentMonths = $this->qualifyingInvestmentMonths($user, $currentMonthStart, $settings->investmentMinimumNetBought);
 
         return $savingsByMonth->keys()
             ->merge($investmentMonths)
@@ -66,7 +65,7 @@ class FinanceMonthlyXpRule implements XpRule
                 ruleKey: $this->key(),
                 sourceType: XpSourceType::Period->value,
                 sourceId: (string) $month,
-                points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains((string) $month), $config),
+                points: $this->points($savingsByMonth->get($month, 0.0), $investmentMonths->contains((string) $month), $settings),
                 occurredAt: Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfDay(),
             ))
             ->filter(fn (XpAward $award): bool => $award->points > 0)
@@ -74,14 +73,44 @@ class FinanceMonthlyXpRule implements XpRule
     }
 
     /**
-     * Compute the month points from its net savings and investment activity.
-     *
-     * @param  array<string, int>  $config
+     * @return Collection<int, string>
      */
-    private function points(float $netSavings, bool $invested, array $config): int
+    private function qualifyingInvestmentMonths(User $user, Carbon $currentMonthStart, float $minimumNetBought): Collection
     {
-        $savingsPoints = $netSavings > 0 ? $config['positive_savings_month'] : 0;
-        $investmentPoints = $invested ? $config['investment_contribution_month'] : 0;
+        $accountMonth = $user->created_at?->format(self::MONTH_FORMAT) ?? '';
+
+        return InvestmentTransaction::query()
+            ->where('user_id', $user->id)
+            ->where('executed_at', '<', $currentMonthStart)
+            ->with('position:id,created_at')
+            ->get(['id', 'position_id', 'type', 'quantity', 'unit_price', 'executed_at'])
+            ->filter(fn (InvestmentTransaction $transaction): bool => $this->accountAndPositionExisted($transaction, $accountMonth))
+            ->groupBy(fn (InvestmentTransaction $transaction): string => $transaction->executed_at->format(self::MONTH_FORMAT))
+            ->filter(fn (Collection $transactions): bool => $this->capital->netInvested($transactions) >= $minimumNetBought)
+            ->keys()
+            ->map(fn (int|string $month): string => (string) $month);
+    }
+
+    private function accountAndPositionExisted(InvestmentTransaction $transaction, string $accountMonth): bool
+    {
+        $positionCreatedAt = $transaction->position?->created_at;
+
+        if ($positionCreatedAt === null) {
+            return false;
+        }
+
+        $executionMonth = $transaction->executed_at->format(self::MONTH_FORMAT);
+
+        return $executionMonth >= $accountMonth && $executionMonth >= $positionCreatedAt->format(self::MONTH_FORMAT);
+    }
+
+    /**
+     * Compute the month points from its net savings and investment activity.
+     */
+    private function points(float $netSavings, bool $invested, FinanceXpSettings $settings): int
+    {
+        $savingsPoints = $netSavings > 0 ? $settings->positiveSavingsMonth : 0;
+        $investmentPoints = $invested ? $settings->investmentContributionMonth : 0;
 
         return $savingsPoints + $investmentPoints;
     }

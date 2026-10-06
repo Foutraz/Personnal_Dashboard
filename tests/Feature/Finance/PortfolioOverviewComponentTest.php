@@ -5,11 +5,15 @@ namespace Tests\Feature\Finance;
 use Functional\Finance\Enums\AssetType;
 use Functional\Finance\Enums\TransactionType;
 use Functional\Finance\Livewire\PortfolioOverview;
+use Functional\Finance\Models\InvestmentTransaction;
 use Functional\Finance\Models\Position;
 use Functional\Users\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Technical\Osdd\Rules\WithinScale;
 use Tests\TestCase;
 
 class PortfolioOverviewComponentTest extends TestCase
@@ -88,5 +92,132 @@ class PortfolioOverviewComponentTest extends TestCase
             ->call('deletePosition', $position->id);
 
         $this->assertDatabaseHas('positions', ['id' => $position->id, 'deleted_at' => null]);
+    }
+
+    private function recordTransactionWith(User $user, Position $position, array $form): Testable
+    {
+        $component = Livewire::actingAs($user)
+            ->test(PortfolioOverview::class)
+            ->call('startTransaction', $position->id)
+            ->set('txType', TransactionType::Buy->value);
+
+        foreach (['txQuantity' => '2', 'txUnitPrice' => '150.5', ...$form] as $property => $value) {
+            $component->set($property, $value);
+        }
+
+        return $component->call('recordTransaction');
+    }
+
+    #[Test]
+    public function it_rejects_a_zero_transaction_quantity(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, ['txQuantity' => '0'])
+            ->assertHasErrors(['txQuantity' => 'gt']);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_zero_transaction_unit_price(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, ['txUnitPrice' => '0'])
+            ->assertHasErrors(['txUnitPrice' => 'gt']);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_transaction_quantity_above_the_maximum(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, ['txQuantity' => '1000000001'])
+            ->assertHasErrors(['txQuantity' => 'max']);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    public function it_rejects_a_transaction_unit_price_above_the_maximum(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, ['txUnitPrice' => '10000000.01'])
+            ->assertHasErrors(['txUnitPrice' => 'max']);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    public function it_records_a_transaction_within_bounds_and_recomputes_the_position_quantity(): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create([
+            'quantity' => 0,
+            'average_buy_price' => 0,
+        ]);
+
+        $this->recordTransactionWith($user, $position, ['txQuantity' => '2', 'txUnitPrice' => '150.5'])
+            ->assertHasNoErrors();
+
+        $transaction = InvestmentTransaction::query()->whereBelongsTo($position)->sole();
+        $this->assertEquals(2.0, (float) $transaction->quantity);
+        $this->assertEquals(150.5, (float) $transaction->unit_price);
+        $this->assertEquals(2.0, (float) $position->fresh()->quantity);
+    }
+
+    public static function transactionFields(): array
+    {
+        return [
+            'quantity' => ['txQuantity'],
+            'unit price' => ['txUnitPrice'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_accepts_a_transaction_value_at_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '0.00000001'])
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_rejects_a_transaction_value_finer_than_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '0.000000001'])
+            ->assertHasErrors([$field => WithinScale::class]);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
+    }
+
+    #[Test]
+    #[DataProvider('transactionFields')]
+    public function it_rejects_a_transaction_value_in_exponent_notation_far_below_the_column_scale(string $field): void
+    {
+        $user = User::factory()->create();
+        $position = Position::factory()->for($user)->create();
+
+        $this->recordTransactionWith($user, $position, [$field => '1e-400'])
+            ->assertHasErrors([$field => WithinScale::class]);
+
+        $this->assertSame(0, InvestmentTransaction::query()->count());
     }
 }

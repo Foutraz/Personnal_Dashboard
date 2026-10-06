@@ -73,6 +73,43 @@ class ChallengeModelTest extends TestCase
     }
 
     #[Test]
+    public function it_closes_the_current_week_challenge_after_the_grace_by_default(): void
+    {
+        $challenge = Challenge::factory()->create()->fresh();
+
+        $this->assertInstanceOf(Carbon::class, $challenge->closes_at);
+        $this->assertSame('2026-10-06 22:00:00', $challenge->closes_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_closes_a_challenge_built_for_a_given_week_after_the_grace_of_that_week(): void
+    {
+        $week = app(GamificationCalendar::class)->currentWeek()->previous();
+
+        $challenge = Challenge::factory()->forWeek($week)->create()->fresh();
+
+        $this->assertSame('2026-09-29 22:00:00', $challenge->closes_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_closes_a_challenge_after_the_configured_grace_when_it_is_built(): void
+    {
+        config(['gamification.challenges.closing_grace_hours' => 72]);
+
+        $challenge = Challenge::factory()->create()->fresh();
+
+        $this->assertSame('2026-10-07 22:00:00', $challenge->closes_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function it_closes_a_challenge_after_the_grace_from_an_explicit_end(): void
+    {
+        $challenge = Challenge::factory()->create(['ends_at' => Carbon::parse('2026-10-11 22:00:00', 'UTC')])->fresh();
+
+        $this->assertSame('2026-10-13 22:00:00', $challenge->closes_at->toDateTimeString());
+    }
+
+    #[Test]
     public function it_builds_a_challenge_for_a_given_template_with_its_domain_and_metric(): void
     {
         $challenge = Challenge::factory()->forTemplate(ChallengeTemplateKey::MotoRideCount)->create()->fresh();
@@ -219,6 +256,7 @@ class ChallengeModelTest extends TestCase
             'metric' => $template->metric()->value,
             'starts_at' => $currentWeek->startsAt,
             'ends_at' => $currentWeek->endsAt,
+            'closes_at' => $currentWeek->closesAt(48),
             'baseline_value' => 25,
             'target_value' => 28,
             'current_value' => 0,

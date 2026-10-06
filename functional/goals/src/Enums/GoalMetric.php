@@ -87,6 +87,23 @@ enum GoalMetric: string
         };
     }
 
+    public function isSelfReported(): bool
+    {
+        return match ($this) {
+            self::MotoDistance,
+            self::MotoRideCount,
+            self::FinanceInvestedCapital,
+            self::FinancePortfolioValue,
+            self::Manual,
+            self::TodoCompletionRate => true,
+            self::SportDistance,
+            self::SportElevation,
+            self::SportActivityCount,
+            self::SportMovingTime,
+            self::ExplorationCells => false,
+        };
+    }
+
     /**
      * Determine whether the metric is computed automatically from another module.
      */

@@ -48,12 +48,13 @@ class TaskResource extends Resource
     public function rules(RestRequest $request): array
     {
         return [
+            ...$this->serverManagedFieldRules($request),
             'title' => ['string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'priority' => [Rule::enum(TaskPriority::class)],
             'status' => [Rule::enum(TaskStatus::class)],
             'due_at' => ['nullable', 'date'],
-            'completed_at' => ['nullable', 'date'],
+            'completed_at' => ['missing'],
             'position' => ['integer', 'min:0'],
         ];
     }

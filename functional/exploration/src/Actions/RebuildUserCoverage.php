@@ -10,6 +10,8 @@ use Illuminate\Support\Carbon;
 
 class RebuildUserCoverage
 {
+    private const STALE_DELETION_CHUNK_SIZE = 500;
+
     /**
      * The grid cell size in degrees.
      */
@@ -21,7 +23,7 @@ class RebuildUserCoverage
     }
 
     /**
-     * Rebuild the explored cells of the given user from its sport activities idempotently.
+     * Rebuild the explored cells of the given user from its sport activities, deleting every cell no activity route produces.
      */
     public function handle(string $userId): int
     {
@@ -67,6 +69,16 @@ class RebuildUserCoverage
                     'last_seen_at' => $entry['last_seen_at'],
                 ],
             );
+        }
+
+        $storedKeys = ExploredCell::query()->where('user_id', $userId)->pluck('cell_key')->all();
+        $staleKeys = array_diff($storedKeys, array_keys($aggregated));
+
+        foreach (array_chunk($staleKeys, self::STALE_DELETION_CHUNK_SIZE) as $staleKeysChunk) {
+            ExploredCell::query()
+                ->where('user_id', $userId)
+                ->whereIn('cell_key', $staleKeysChunk)
+                ->delete();
         }
 
         return count($aggregated);

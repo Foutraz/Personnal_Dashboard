@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Lomkit\Access\Controls\HasControl;
+use Technical\Osdd\Casts\UtcDatetime;
 
 /**
  * @method static InvestmentTransactionFactory factory($count = null, $state = [])
@@ -58,7 +59,7 @@ class InvestmentTransaction extends Model
             'type' => TransactionType::class,
             'quantity' => 'decimal:8',
             'unit_price' => 'decimal:8',
-            'executed_at' => 'datetime',
+            'executed_at' => UtcDatetime::class,
         ];
     }
 

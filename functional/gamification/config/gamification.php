@@ -33,6 +33,7 @@ return [
         'finance' => [
             'positive_savings_month' => 20,
             'investment_contribution_month' => 10,
+            'investment_minimum_net_bought' => 10,
         ],
     ],
     'streaks' => [
